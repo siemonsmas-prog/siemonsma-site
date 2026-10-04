@@ -54,7 +54,7 @@ nav svg{width:18px;height:18px;flex:none}
 .hero .photo::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--night) 0%,color-mix(in srgb,var(--night) 70%,transparent) 22%,transparent 55%),linear-gradient(0deg,color-mix(in srgb,var(--night) 50%,transparent),transparent 40%)}
 .hero .wrap{position:relative;padding-block:clamp(40px,7vw,84px)}
 .eyebrow{margin:0;font-size:clamp(.9rem,1.6vw,1.25rem);letter-spacing:.42em;text-transform:uppercase;font-weight:500}
-.big{margin:.15em 0 0;font-family:var(--display);font-weight:900;font-stretch:125%;font-size:clamp(2.3rem,7.2vw,5rem);line-height:1;letter-spacing:.005em;text-wrap:balance}
+.big{margin:.15em 0 0;font-family:var(--display);font-weight:900;font-stretch:125%;font-size:clamp(1.5rem,7.4vw,5rem);line-height:1;letter-spacing:.005em;text-wrap:balance} /* 7.4vw keeps SIEMONSMA.ORG on a phone screen */
 .rule{width:76px;height:3px;background:var(--signal);margin:22px 0 20px;border:0}
 .lede{margin:0;max-width:30ch;font-size:clamp(1.15rem,2.3vw,1.6rem);line-height:1.35;text-wrap:balance}
 .cta{display:inline-flex;align-items:center;gap:18px;margin-top:30px;padding:16px 26px;border-radius:6px;background:var(--signal);color:var(--signal-ink);text-decoration:none;font-weight:700;font-size:clamp(1rem,1.6vw,1.2rem);letter-spacing:.12em;text-transform:uppercase;box-shadow:0 10px 30px -10px color-mix(in srgb,var(--signal) 70%,transparent);transition:transform .15s,box-shadow .15s}
@@ -131,7 +131,7 @@ footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;
     <div class="photo" role="img" aria-label="Warehouse with lit loading docks at sunset"></div>
     <div class="wrap">
       <p class="eyebrow">Welcome to</p>
-      <h1 class="big">SIEMONSMA<span>.ORG</span></h1>
+      <h1 class="big">SIEMONSMA<wbr><span>.ORG</span></h1>
       <hr class="rule">
       <p class="lede">A central place for projects, facilities, equipment, planning, and the tools I use every day.</p>
       <a class="cta" href="tracker/"><svg><use href="#i-list"/></svg>Open Project Tracker<svg><use href="#i-arrow"/></svg></a>
