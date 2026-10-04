@@ -25,3 +25,19 @@ Dump the claude.ai artifact's collections with ArtifactData (projects, projects/
 
 ## Not yet
 Email or text reminders need Cloud Functions (Blaze plan) plus an email sender.
+
+## Update files (meeting notes → Apply updates)
+
+Clint drops meeting notes in the project thread; Claude reads them and sends back a JSON file. In the tracker, **Apply updates** loads it, shows each change with a checkbox, and saves the ticked ones as project updates (marked `source: "meeting notes"`).
+
+```json
+{"kind": "siemonsma-updates", "source": "Weekly facilities meeting, Oct 5",
+ "changes": [{"projectId": "imp02", "project": "Building I (Add a garage door)",
+   "set": {"status": "On track", "phase": "Rough-In", "percent": 40, "priority": "High",
+           "startDate": "2026-10-01", "dueDate": "2026-10-30",
+           "nextMilestone": "Door install", "milestoneDate": "2026-10-20", "budget": 12000},
+   "note": {"done": "...", "next": "...", "blockers": "..."},
+   "why": "short quote from the notes"}]}
+```
+
+Every key under `set` and `note` is optional. Projects match by `projectId`, then by exact name. Status, phase and priority must be values the tracker already uses; anything else is shown to Clint as skipped.

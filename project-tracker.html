@@ -318,6 +318,7 @@ details.cols .pop input{width:18px;height:18px;accent-color:var(--accent);margin
 .chip button{border:0;background:none;color:var(--muted);cursor:pointer;font-size:1.1rem;line-height:1;min-width:32px;min-height:32px;border-radius:50%}
 .chip button:hover{color:var(--bad)}
 .autoapp{margin-top:22px;padding-top:16px;border-top:1px solid var(--line)}
+.aptab{border-collapse:collapse;font-size:.95rem}.aptab td{padding:2px 10px 2px 0;vertical-align:top}.aptab td:first-child{color:var(--muted);white-space:nowrap}
 .reqlink{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px}
 .reqlink .meta{flex:1;min-width:180px;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
@@ -341,6 +342,7 @@ details.cols .pop input{width:18px;height:18px;accent-color:var(--accent);margin
 <script>
 /* ---------- reference data ---------- */
 const IC={
+  notes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>',
   inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l1.5 3h5l1.5-3h5"/><path d="M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg>',
   req:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
@@ -588,7 +590,7 @@ function render(){
     <div class="actbar">
       ${S.isOwner?`<button class="btn primary desk-only" data-act="new">${IC.plus}New project</button>`:""}
       ${mine.length?`<label class="search"><span hidden>Search projects</span>${IC.search}<input type="text" id="pSearch" placeholder="Search projects…" value="${esc(S.q||"")}" autocomplete="off"></label>`:""}
-      ${S.isOwner?`<button class="btn" data-act="groups">${IC.people}People &amp; groups</button><button class="btn" data-act="requests">${IC.inbox}Requests${newReqs().length?` <span class="badge">${newReqs().length}</span>`:""}</button>`:`<button class="btn" data-act="reqForm">${IC.req}Request a project</button>`}
+      ${S.isOwner?`<button class="btn" data-act="groups">${IC.people}People &amp; groups</button><button class="btn" data-act="requests">${IC.inbox}Requests${newReqs().length?` <span class="badge">${newReqs().length}</span>`:""}</button><button class="btn" data-act="apply">${IC.notes}Apply updates</button>`:`<button class="btn" data-act="reqForm">${IC.req}Request a project</button>`}
       ${mine.length?`<button class="btn" data-act="report">${IC.report}Report</button>`:""}
       ${mine.length&&S.isOwner?`<div class="seg" role="group" aria-label="View"><button type="button" data-layout="table" aria-pressed="${S.layout==="table"}">${IC.table} Table</button><button type="button" data-layout="cards" aria-pressed="${S.layout==="cards"}">${IC.cards} Cards</button></div>`:""}
     </div>
@@ -736,6 +738,63 @@ function segHTML(id,opts,val){return `<div class="seg" id="${id}">${opts.map(o=>
 /* ---------- sheet ---------- */
 function openSheet(view,html){document.body.classList.remove("psplit");layer.dataset.view=view;layer.innerHTML=`<div class="scrim" data-scrim="1"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;segWire(layer);document.body.style.overflow="hidden"}
 function closeSheet(){if(S.open&&layer.dataset.view==="project")markSeen(S.open);S.unsubs.forEach(u=>u());S.unsubs=[];S.open=null;delete layer.dataset.view;layer.innerHTML="";document.body.style.overflow="";document.body.classList.remove("psplit");render()}
+
+/* ---------- apply updates from meeting notes ---------- */
+// The file is JSON: {kind:"siemonsma-updates", source, changes:[{projectId, project, set:{status,phase,percent,priority,startDate,dueDate,nextMilestone,milestoneDate,budget}, note:{done,next,blockers}, why}]}
+const APPLY_LABELS={status:"Status",phase:"Phase",percent:"% complete",priority:"Priority",startDate:"Start date",dueDate:"Target date",nextMilestone:"Next milestone",milestoneDate:"Milestone date",budget:"Budget"};
+const isDay=v=>/^\d{4}-\d{2}-\d{2}$/.test(String(v||""));
+const pick=(list,v)=>list.find(x=>low(x)===low(v));
+function budgetKey(p){const f=CATS[p.category]?.fields.find(f=>f.k==="budget"||f.k==="cost");return f?.k||""}
+function planChange(c){
+  const p=S.projects.find(x=>x.id===c.projectId)||S.projects.find(x=>low(x.name)===low(c.project));
+  const it={name:p?.name||c.project||"Unknown project",pid:p?.id||"",set:{},rows:[],note:{},why:String(c.why||"").slice(0,400),skipped:[]};
+  if(!p){it.skipped.push("No project on your list matches this name.");return it}
+  const set=c.set||{},bk=budgetKey(p);
+  for(const [k,v] of Object.entries(set)){let val=null,old=p[k];
+    if(k==="status")val=pick(STATUSES,v);else if(k==="phase")val=pick(phasesFor(p.category),v);else if(k==="priority")val=pick(PRIORITIES,v);
+    else if(k==="percent"){const n=Math.round(Number(v));if(isFinite(n)&&n>=0&&n<=100)val=n}
+    else if(["startDate","dueDate","milestoneDate"].includes(k)){if(isDay(v))val=v}
+    else if(k==="nextMilestone"){if(typeof v==="string"&&v.trim())val=v.trim().slice(0,200)}
+    else if(k==="budget"){const n=Number(String(v).replace(/[$,\s]/g,""));if(bk&&isFinite(n)&&n>=0){val=n;old=p.details?.[bk]}}
+    if(val==null){it.skipped.push(`${APPLY_LABELS[k]||k}: "${v}" isn't something I can set here.`);continue}
+    if(String(old??"")===String(val))continue;
+    it.set[k]=val;it.rows.push([APPLY_LABELS[k],k==="percent"?(old??0)+"%":k==="budget"&&old?"$"+Number(old).toLocaleString():old||"—",k==="percent"?val+"%":k==="budget"?"$"+val.toLocaleString():val])}
+  for(const k of ["done","next","blockers"]){const v=String(c.note?.[k]||"").trim();if(v)it.note[k]=v.slice(0,1000)}
+  return it}
+function renderApply(){const pl=S.applyPlan;
+  const row=(it,i)=>{const has=it.rows.length||Object.keys(it.note).length,ok=it.pid&&has;
+    return `<div class="pg applyit" style="padding:12px 14px;display:grid;gap:8px">
+      <label class="row" style="gap:10px;align-items:flex-start"><input type="checkbox" data-apck="${i}" ${ok?"checked":"disabled"} style="margin-top:4px;width:20px;height:20px"><b style="font-size:1.05rem">${esc(it.name)}</b></label>
+      ${it.rows.length?`<table class="aptab">${it.rows.map(([l,a,b])=>`<tr><td>${esc(l)}</td><td class="meta">${esc(a)}</td><td>→</td><td><b>${esc(b)}</b></td></tr>`).join("")}</table>`:""}
+      ${[["done","Done"],["next","Next"],["blockers","Blockers"]].filter(([k])=>it.note[k]).map(([k,l])=>`<div><span class="meta">${l}:</span> ${esc(it.note[k])}</div>`).join("")}
+      ${it.why?`<div class="meta" style="font-style:italic">From the notes: “${esc(it.why)}”</div>`:""}
+      ${!has&&it.pid?`<div class="meta">Nothing new for this project.</div>`:""}
+      ${it.skipped.map(x=>`<div class="meta" style="color:var(--bad)">${esc(x)}</div>`).join("")}</div>`};
+  openSheet("apply",`<div class="sheet-head"><h2>Apply updates</h2><button class="btn small" data-act="close">Close</button></div>
+  <div class="stack" style="margin-top:14px">
+    <p class="meta" style="margin:0">Choose the update file Claude made from your meeting notes. You'll see every change first. Only the ones you leave ticked get saved, and each one is posted as an update on its project.</p>
+    <label class="btn" style="justify-self:start">${IC.notes}${pl?"Choose a different file":"Choose update file"}<input type="file" id="applyFile" accept=".json,application/json" hidden></label>
+    ${pl?`${pl.source?`<div class="meta">From: <b>${esc(pl.source)}</b></div>`:""}<div class="pglist">${pl.items.map(row).join("")||`<div class="empty">This file has no changes in it.</div>`}</div>
+      <div class="row"><button class="btn primary" data-act="applyGo">Save ticked changes</button></div>`:""}
+  </div>`)}
+async function loadApplyFile(f){
+  try{const j=JSON.parse(await f.text());if(j.kind!=="siemonsma-updates"||!Array.isArray(j.changes))throw new Error("bad");
+    S.applyPlan={source:String(j.source||f.name).slice(0,200),items:j.changes.slice(0,100).map(planChange)};renderApply()}
+  catch(e){toast("That isn't an update file. Use the file Claude sent you.")}}
+async function applyGo(){const pl=S.applyPlan;if(!pl)return;
+  const ticked=[...document.querySelectorAll("[data-apck]:checked")].map(x=>pl.items[Number(x.dataset.apck)]);
+  if(!ticked.length)return toast("Tick at least one project.");
+  const btn=document.querySelector('[data-act="applyGo"]');btn.disabled=true;let n=0;
+  for(const it of ticked){const p=S.projects.find(x=>x.id===it.pid);if(!p)continue;
+    const u={source:"meeting notes"};
+    for(const k of ["status","phase","percent","nextMilestone","milestoneDate"])if(it.set[k]!=null)u[k]=it.set[k];
+    Object.assign(u,it.note);if(u.percent==null)u.percent=p.percent||0;if(u.percent===100&&!u.status&&p.status!=="Complete")u.status="Complete";
+    if(!await postUpdate(it.pid,u))continue;
+    const patch={};for(const k of ["priority","startDate","dueDate"])if(it.set[k]!=null)patch[k]=it.set[k];
+    if(it.set.budget!=null)patch.details={...(p.details||{}),[budgetKey(p)]:String(it.set.budget)};
+    if(Object.keys(patch).length){patch.updatedAt=now();try{await S.db.doc("projects/"+it.pid).update(patch)}catch(e){toast(friendly(e));continue}}
+    n++}
+  S.applyPlan=null;closeSheet();render();toast(n?`Saved updates on ${n} project${n>1?"s":""}`:"Nothing was saved")}
 
 /* ---------- people trying to sign in ---------- */
 function knockBarHTML(){const n=S.knocks;if(!n.length)return"";
@@ -1374,6 +1433,8 @@ document.addEventListener("click",async e=>{
   switch(a){
     case"new":return startWizard();
     case"requests":return renderRequests();
+    case"apply":S.applyPlan=null;return renderApply();
+    case"applyGo":return applyGo();
     case"knocks":return renderKnocks();
     case"reqForm":return openReqForm();
     case"reqSend":return sendReq();
@@ -1414,6 +1475,7 @@ document.addEventListener("change",async e=>{
   if(e.target.dataset?.ck)return toggleItem(e.target.dataset.ck,e.target.checked);
   if(e.target.id==="autoPct"){const p=curProject(),on=e.target.checked,patch={autoPct:on};if(on&&p.status!=="Complete")patch.percent=autoPct(p);try{await S.db.doc("projects/"+p.id).update(patch);toast(on?"% complete now follows the checklist":"% complete is back to manual")}catch(err){toast(friendly(err))}return}
   if(e.target.id==="rDays")return openReport(Number(e.target.value));
+  if(e.target.id==="applyFile"&&e.target.files[0])return loadApplyFile(e.target.files[0]);
   if(e.target.id==="pFilter"){S.filter=e.target.value;return render()}
   if(e.target.dataset?.col){const on=colsOn();e.target.checked?on.add(e.target.dataset.col):on.delete(e.target.dataset.col);try{localStorage.setItem("cols",JSON.stringify([...on]))}catch(err){}S.colsOpen=true;render();S.colsOpen=false;return}
   if(e.target.id==="vpAdd"&&e.target.value&&W){W.d.members=[...(W.d.members||[]),e.target.value];wizardCollect();renderWizard();setTimeout(()=>document.getElementById("vpAdd")?.focus(),0);return}if(e.target.dataset?.prio){const id=e.target.dataset.prio,v=e.target.value;try{await S.db.doc("projects/"+id).update({priority:v,updatedAt:now()});toast("Urgency set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.id==="fileIn"&&e.target.files.length){const n=await uploadFiles(S.open,e.target.files,"");if(n.length)toast(n.length+" file"+(n.length>1?"s":"")+" added")}});
