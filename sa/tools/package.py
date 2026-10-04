@@ -12,6 +12,7 @@ HERE = pathlib.Path(__file__).resolve().parent.parent
 SRC = (HERE / "home" / "home.src.html").read_text()
 REQ = (HERE / "request" / "request.src.html").read_text()
 HARVARD = "data:image/png;base64," + base64.b64encode((HERE / "home/img/harvard.png").read_bytes()).decode()
+LOGO = "data:image/png;base64," + base64.b64encode((HERE / "home/img/logo.png").read_bytes()).decode()  # top-left logo (Clint's, 2026-10-04)
 IMGS = ["hero", "projects", "equipment", "facilities", "documents", "tools"]
 PREVIEW_TRACKER = "https://claude.ai/artifact/MjokkX6mXjEaUNbPoZgq55"
 PREVIEW_HOME = "https://claude.ai/artifact/24NUMwDYFEptnUb7mGcMkC"
@@ -23,14 +24,14 @@ def check(s):
     return s
 
 def fill(img, tracker, target, request):
-    s = SRC.replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request)
+    s = SRC.replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request).replace("__LOGO__", LOGO)
     for k in IMGS:
         s = s.replace(f"__IMG_{k}__", img(k))
     return check(s)
 
 def fill_request(home, tracker, target, mode):
     s = REQ
-    for k, v in {"__HOME_URL__": home, "__TRACKER_URL__": tracker, "__LINK_TARGET__": target, "__HARVARD__": HARVARD, "__MODE__": mode,
+    for k, v in {"__HOME_URL__": home, "__TRACKER_URL__": tracker, "__LINK_TARGET__": target, "__HARVARD__": HARVARD, "__LOGO__": LOGO, "__MODE__": mode,
                  "__CONFIG_TAG__": '<script src="../tracker/config.js"></script>' if mode == "live" else "",
                  "__FB_MODULE__": "../tracker/vendor/firebase.js"}.items():
         s = s.replace(k, v)
