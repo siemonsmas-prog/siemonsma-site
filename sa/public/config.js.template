@@ -1,0 +1,7 @@
+// Filled in during setup. These Firebase values are public by design; access is controlled by the security rules.
+window.APP_CONFIG = {
+  ownerEmail: "__OWNER_EMAIL__",
+  firebase: __FIREBASE_CONFIG__,
+  notifyTopic: "__NOTIFY_TOPIC__", // ntfy.sh topic for Clint's phone alerts; empty = off
+  useEmulators: false
+};

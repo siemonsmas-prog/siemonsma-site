@@ -1,0 +1,163 @@
+<title>Siemonsma.org</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap">
+<style>
+/* Layout: night-shift hero (photo bleeding in from the right, headline on the dark side), then a five-up row of section cards. Single dark look by design. */
+:root{
+  --night:#0b111b;      /* page ground */
+  --panel:#121a27;      /* cards, header */
+  --line:#223047;       /* hairlines */
+  --steel:#e9eef6;      /* headline / primary text */
+  --mist:#9aa9be;       /* secondary text */
+  --signal:#3d8bff;     /* the one accent: Harvard blue */
+  --signal-ink:#ffffff;
+  --display:"Archivo","Arial Black","Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);color:var(--steel);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:clamp(16px,3vw,28px)}
+
+/* header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--night) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;min-height:64px;flex-wrap:wrap;padding-block:8px}
+.brand{font-family:var(--display);font-weight:900;font-stretch:125%;font-size:1.5rem;letter-spacing:.01em;text-decoration:none;white-space:nowrap}
+.brand span,.big span{color:var(--signal)}
+.lockup{display:flex;flex-direction:column;gap:5px;text-decoration:none;flex:none}
+.lockup .brand{line-height:1}
+.powered{display:flex;align-items:center;gap:9px;font-size:.6rem;font-weight:600;letter-spacing:.36em;text-transform:uppercase;color:var(--mist);white-space:nowrap}
+.powered img{height:21px;width:auto;display:block}
+nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+nav a,nav .soon{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:6px;font-size:.92rem;text-decoration:none;color:var(--mist)}
+nav a:hover{color:var(--steel);background:var(--panel)}
+nav a[aria-current]{color:var(--steel);box-shadow:inset 0 -2px 0 var(--signal);border-radius:6px 6px 0 0}
+nav a[aria-current] svg{color:var(--signal)}
+nav .soon{opacity:.55;cursor:default}
+nav svg{width:18px;height:18px;flex:none}
+
+/* hero */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:var(--night)}
+.hero .photo{position:absolute;inset:0 0 0 auto;width:min(68%,860px);background:url(__IMG_hero__) center/cover no-repeat}
+.hero .photo::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,var(--night) 0%,color-mix(in srgb,var(--night) 70%,transparent) 22%,transparent 55%),linear-gradient(0deg,color-mix(in srgb,var(--night) 50%,transparent),transparent 40%)}
+.hero .wrap{position:relative;padding-block:clamp(40px,7vw,84px)}
+.eyebrow{margin:0;font-size:clamp(.9rem,1.6vw,1.25rem);letter-spacing:.42em;text-transform:uppercase;font-weight:500}
+.big{margin:.15em 0 0;font-family:var(--display);font-weight:900;font-stretch:125%;font-size:clamp(2.3rem,7.2vw,5rem);line-height:1;letter-spacing:.005em;text-wrap:balance}
+.rule{width:76px;height:3px;background:var(--signal);margin:22px 0 20px;border:0}
+.lede{margin:0;max-width:30ch;font-size:clamp(1.15rem,2.3vw,1.6rem);line-height:1.35;text-wrap:balance}
+.cta{display:inline-flex;align-items:center;gap:18px;margin-top:30px;padding:16px 26px;border-radius:6px;background:var(--signal);color:var(--signal-ink);text-decoration:none;font-weight:700;font-size:clamp(1rem,1.6vw,1.2rem);letter-spacing:.12em;text-transform:uppercase;box-shadow:0 10px 30px -10px color-mix(in srgb,var(--signal) 70%,transparent);transition:transform .15s,box-shadow .15s}
+.cta:hover{transform:translateY(-1px);box-shadow:0 14px 34px -10px color-mix(in srgb,var(--signal) 80%,transparent)}
+.cta svg{width:24px;height:24px;flex:none}
+.cta.ghost{margin-left:12px;background:color-mix(in srgb,var(--night) 55%,transparent);color:var(--steel);border:1px solid color-mix(in srgb,var(--steel) 35%,transparent);box-shadow:none;backdrop-filter:blur(4px)}
+.cta.ghost:hover{border-color:var(--signal);box-shadow:none}
+
+/* sections */
+.cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;padding-block:22px 30px}
+.card{position:relative;display:flex;flex-direction:column;min-height:280px;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);text-decoration:none;color:var(--steel);transition:border-color .15s,transform .15s}
+.card .pic{height:120px;background-size:cover;background-position:center}
+.card .pic::after{content:"";display:block;height:100%;background:linear-gradient(0deg,var(--panel),transparent 70%)}
+.card .in{display:flex;flex-direction:column;gap:8px;padding:0 18px 18px;margin-top:-26px;position:relative;flex:1}
+.card svg.ic{width:34px;height:34px;color:var(--steel)}
+.card h2{margin:8px 0 0;font-family:var(--display);font-weight:800;font-stretch:110%;font-size:1.2rem;letter-spacing:.04em;text-transform:uppercase}
+.card p{margin:0;color:var(--mist);font-size:.95rem;line-height:1.45}
+.card .go{margin-top:auto;padding-top:12px;display:flex;align-items:center;gap:8px;color:var(--signal);font-size:.85rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.card .go svg{width:22px;height:22px}
+a.card:hover{border-color:var(--signal);transform:translateY(-2px)}
+.card.later .go{color:var(--mist)}
+.card.later .pic{filter:brightness(.9)}
+
+footer{border-top:1px solid var(--line);padding-block:26px 34px;text-align:center}
+footer .mark{display:flex;align-items:center;gap:22px;justify-content:center}
+footer .mark::before,footer .mark::after{content:"";height:2px;flex:1;max-width:300px;background:linear-gradient(90deg,transparent,var(--signal))}
+footer .mark::after{background:linear-gradient(270deg,transparent,var(--signal))}
+footer .brand{font-size:1.15rem}
+footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;color:var(--mist);text-transform:uppercase}
+
+@media (max-width:1000px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){
+  nav .soon{display:none}
+  .hero .photo{width:100%;opacity:.45}
+  .hero .photo::after{background:linear-gradient(0deg,var(--night),color-mix(in srgb,var(--night) 40%,transparent))}
+  .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .card{min-height:0}
+}
+@media (max-width:640px){.cta{display:flex;width:100%;justify-content:center}.cta.ghost{margin-left:0;margin-top:12px}}
+@media (max-width:440px){.cards{grid-template-columns:1fr}.card .pic{height:96px}.cta{gap:12px;letter-spacing:.08em}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3z"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="m8.5 13.5 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-3-3 8-8-1.3-1.3a4 4 0 0 0-5-5l2.6 2.6-2.1 2.1-2.6-2.6a4 4 0 0 0 5 5"/><path d="m3 21 6-6"/></symbol>
+  <symbol id="i-bldg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M2 21h20"/><path d="M8 11h2M14 11h2M8 15h2M14 15h2"/><path d="M10 21v-3h4v3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-req" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="lockup" href="#top"><span class="brand">SIEMONSMA<span>.ORG</span></span><span class="powered">Powered by<img src="data:image/png;base64,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" alt="Harvard Integrations" width="89" height="21"></span></a>
+    <nav aria-label="Sections">
+      <a href="#top" aria-current="page"><svg><use href="#i-home"/></svg>Home</a>
+      <a href="__TRACKER_URL__"__TRACKER_TARGET__><svg><use href="#i-clip"/></svg>Projects</a>
+      <a href="__REQUEST_URL__"__TRACKER_TARGET__><svg><use href="#i-req"/></svg>Request</a>
+      <span class="soon" title="Coming soon"><svg><use href="#i-wrench"/></svg>Equipment</span>
+      <span class="soon" title="Coming soon"><svg><use href="#i-bldg"/></svg>Facilities</span>
+      <span class="soon" title="Coming soon"><svg><use href="#i-doc"/></svg>Documents</span>
+      <span class="soon" title="Coming soon"><svg><use href="#i-gear"/></svg>Tools</span>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="photo" role="img" aria-label="Warehouse with lit loading docks at sunset"></div>
+    <div class="wrap">
+      <p class="eyebrow">Welcome to</p>
+      <h1 class="big">SIEMONSMA<span>.ORG</span></h1>
+      <hr class="rule">
+      <p class="lede">A central place for projects, facilities, equipment, planning, and the tools I use every day.</p>
+      <a class="cta" href="__TRACKER_URL__"__TRACKER_TARGET__><svg><use href="#i-list"/></svg>Open Project Tracker<svg><use href="#i-arrow"/></svg></a>
+      <a class="cta ghost" href="__REQUEST_URL__"__TRACKER_TARGET__><svg><use href="#i-req"/></svg>Request a project</a>
+    </div>
+  </section>
+
+  <div class="wrap">
+    <div class="cards">
+      <a class="card" href="__TRACKER_URL__"__TRACKER_TARGET__>
+        <div class="pic" style="background-image:url(__IMG_projects__)"></div>
+        <div class="in"><svg class="ic"><use href="#i-clip"/></svg><h2>Projects</h2><p>Current projects, status, budgets, and schedules.</p><span class="go">Open<svg><use href="#i-arrow"/></svg></span></div>
+      </a>
+      <div class="card later">
+        <div class="pic" style="background-image:url(__IMG_equipment__)"></div>
+        <div class="in"><svg class="ic"><use href="#i-wrench"/></svg><h2>Equipment</h2><p>Equipment information, downtime tracking, and maintenance.</p><span class="go">Coming soon</span></div>
+      </div>
+      <div class="card later">
+        <div class="pic" style="background-image:url(__IMG_facilities__)"></div>
+        <div class="in"><svg class="ic"><use href="#i-bldg"/></svg><h2>Facilities</h2><p>Building information, maintenance, and planning.</p><span class="go">Coming soon</span></div>
+      </div>
+      <div class="card later">
+        <div class="pic" style="background-image:url(__IMG_documents__)"></div>
+        <div class="in"><svg class="ic"><use href="#i-doc"/></svg><h2>Documents</h2><p>Forms, PDFs, drawings, and reference material.</p><span class="go">Coming soon</span></div>
+      </div>
+      <div class="card later">
+        <div class="pic" style="background-image:url(__IMG_tools__)"></div>
+        <div class="in"><svg class="ic"><use href="#i-gear"/></svg><h2>Tools</h2><p>Calculators, utilities, and other helpful tools.</p><span class="go">Coming soon</span></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="mark"><span class="brand">SIEMONSMA<span>.ORG</span></span></div>
+    <small>Built for getting things done.</small>
+  </div>
+</footer>

@@ -1,0 +1,13 @@
+# Netlify publishes the ready-built site/ folder as is; there is no build step.
+[build]
+  publish = "site"
+
+[[headers]]
+  for = "/tracker/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"

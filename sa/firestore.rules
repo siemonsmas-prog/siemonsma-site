@@ -1,0 +1,51 @@
+rules_version = '2';
+// Facilities Project Tracker. Only the facilities manager changes projects;
+// people on the access list (contacts with an email) can read, register themselves and ask questions.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function email() { return request.auth.token.email.lower(); }
+    function isOwner() { return signedIn() && email() == 'csiemonsma@harvardintegrations.com'; }
+    function invited() { return signedIn() && exists(/databases/$(database)/documents/access/$(email())); }
+    function allowed() { return isOwner() || invited(); }
+
+    // project requests are for the owner's eyes only; everything else is readable by people on the list
+    match /{coll}/{rest=**} {
+      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock']));
+      allow write: if isOwner();
+    }
+    // anyone can send a project request from the public request page, without an account
+    function text(d, k, max) { return !(k in d) || (d[k] is string && d[k].size() <= max); }
+    function validRequest(d) {
+      return d.keys().hasOnly(['name','email','phone','department','title','type','location','description','priority','neededBy','budget','status','at','via','by'])
+        && d.keys().hasAll(['name','title','description','status','at'])
+        && d.status == 'new' && d.name.size() > 0 && d.title.size() > 0 && d.description.size() > 0
+        && text(d,'name',100) && text(d,'email',200) && text(d,'phone',40) && text(d,'department',100)
+        && text(d,'title',150) && text(d,'type',20) && text(d,'location',150) && text(d,'description',4000)
+        && text(d,'priority',10) && text(d,'neededBy',10) && text(d,'budget',60) && text(d,'at',40) && text(d,'via',10)
+        && (!('by' in d) || (request.auth != null && d.by == request.auth.uid));
+    }
+    // someone who signed in but isn't on the list leaves their name so the owner sees them (once; only the owner reads or clears it)
+    match /knock/{addr} {
+      allow create: if signedIn() && addr == email()
+        && request.resource.data.keys().hasOnly(['email','name','uid','at'])
+        && request.resource.data.email == email() && request.resource.data.uid == request.auth.uid
+        && text(request.resource.data,'name',100) && text(request.resource.data,'at',40);
+    }
+    match /requests/{rid} {
+      allow create: if validRequest(request.resource.data);
+    }
+    // each person keeps their own profile (name, role, what they've read)
+    match /people/{uid} {
+      allow create, update: if allowed() && request.auth.uid == uid;
+    }
+    // anyone on the list can ask or answer a question; only the owner deletes
+    match /questions/{qid} {
+      allow create, update: if allowed();
+    }
+    // lets someone check whether their own email is on the list
+    match /access/{addr} {
+      allow get: if signedIn() && addr == email();
+    }
+  }
+}

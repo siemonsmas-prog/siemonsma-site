@@ -1,0 +1,251 @@
+<title>Request a project · Siemonsma.org</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap">
+<style>
+/* Same night look as the home page: one form card on the dark ground, blue only for the action. */
+:root{
+  --night:#0b111b;--panel:#121a27;--sunk:#1a2436;--line:#26344c;
+  --steel:#e9eef6;--mist:#9aa9be;--signal:#3d8bff;--signal-ink:#fff;--bad:#ff6b6b;--ok:#4cc38a;
+  --display:"Archivo","Arial Black","Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);color:var(--steel);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1180px;margin:0 auto;padding-inline:clamp(16px,3vw,28px)}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--night) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:20px;min-height:64px;flex-wrap:wrap;padding-block:8px}
+.brand{font-family:var(--display);font-weight:900;font-stretch:125%;font-size:1.5rem;letter-spacing:.01em;text-decoration:none;white-space:nowrap}
+.brand span,.big span{color:var(--signal)}
+.lockup{display:flex;flex-direction:column;gap:5px;text-decoration:none;flex:none}
+.lockup .brand{line-height:1}
+.powered{display:flex;align-items:center;gap:9px;font-size:.6rem;font-weight:600;letter-spacing:.36em;text-transform:uppercase;color:var(--mist);white-space:nowrap}
+.powered img{height:21px;width:auto;display:block}
+nav{margin-left:auto;display:flex;gap:4px;flex-wrap:wrap}
+nav a,nav .soon{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:6px;font-size:.92rem;text-decoration:none;color:var(--mist)}
+nav a:hover{color:var(--steel);background:var(--panel)}
+nav a[aria-current]{color:var(--steel);box-shadow:inset 0 -2px 0 var(--signal);border-radius:6px 6px 0 0}
+nav a[aria-current] svg{color:var(--signal)}
+nav .soon{opacity:.55;cursor:default}
+nav svg{width:18px;height:18px;flex:none}
+
+.head{border-bottom:1px solid var(--line);background:radial-gradient(120% 140% at 100% 0,color-mix(in srgb,var(--signal) 14%,transparent),transparent 60%)}
+.head .wrap{padding-block:clamp(28px,5vw,52px)}
+.eyebrow{margin:0;font-size:.9rem;letter-spacing:.38em;text-transform:uppercase;font-weight:500;color:var(--mist)}
+.big{margin:.2em 0 0;font-family:var(--display);font-weight:900;font-stretch:125%;font-size:clamp(2rem,5.4vw,3.6rem);line-height:1;text-transform:uppercase}
+.rule{width:76px;height:3px;background:var(--signal);margin:20px 0 16px;border:0}
+.lede{margin:0;max-width:52ch;font-size:clamp(1.05rem,1.8vw,1.25rem);color:var(--steel)}
+
+main .wrap{padding-block:26px 48px}
+.card{max-width:780px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:clamp(18px,3vw,30px)}
+fieldset{border:0;margin:0 0 26px;padding:0;display:grid;gap:16px}
+legend{padding:0;margin-bottom:14px;font-family:var(--display);font-weight:800;font-stretch:110%;font-size:1.05rem;letter-spacing:.06em;text-transform:uppercase}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.field{display:grid;gap:6px;min-width:0}
+label,.lbl{font-weight:600;font-size:.95rem}
+.opt{color:var(--mist);font-weight:400}
+.hint{color:var(--mist);font-size:.85rem}
+input[type=text],input[type=email],input[type=tel],input[type=date],textarea{width:100%;font:inherit;color:var(--steel);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:11px 12px;min-height:46px}
+textarea{min-height:130px;resize:vertical}
+input:focus,textarea:focus{outline:2px solid var(--signal);outline-offset:0;border-color:transparent}
+input[aria-invalid=true],textarea[aria-invalid=true]{border-color:var(--bad)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips label{position:relative;font-weight:500}
+.chips input{position:absolute;opacity:0;pointer-events:none}
+.chips span{display:inline-flex;align-items:center;min-height:42px;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--sunk);cursor:pointer;color:var(--mist)}
+.chips input:checked+span{background:color-mix(in srgb,var(--signal) 22%,var(--sunk));border-color:var(--signal);color:var(--steel)}
+.chips input:focus-visible+span{outline:2px solid var(--signal);outline-offset:2px}
+.trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.err{color:var(--bad);font-size:.88rem;min-height:1.2em}
+.send{display:inline-flex;align-items:center;gap:14px;padding:15px 26px;border:0;border-radius:6px;background:var(--signal);color:var(--signal-ink);font:inherit;font-weight:700;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;box-shadow:0 10px 30px -10px color-mix(in srgb,var(--signal) 70%,transparent)}
+.send:disabled{opacity:.6;cursor:wait}
+.send svg{width:22px;height:22px}
+.foot{display:flex;flex-wrap:wrap;align-items:center;gap:16px}
+.done{display:grid;gap:14px;justify-items:start}
+.done .tick{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}
+.done .tick svg{width:28px;height:28px}
+.done h2{margin:0;font-family:var(--display);font-weight:800;font-stretch:110%;font-size:1.6rem}
+.done p{margin:0;max-width:54ch}
+.btn2{display:inline-flex;align-items:center;min-height:44px;padding:10px 18px;border:1px solid var(--line);border-radius:6px;background:var(--sunk);color:var(--steel);font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
+.row{display:flex;flex-wrap:wrap;gap:10px}
+.layout{display:grid;grid-template-columns:minmax(0,780px) minmax(220px,1fr);gap:28px;align-items:start}
+.next{position:sticky;top:96px;display:grid;gap:18px;padding:4px 0}
+.next h2{margin:0;font-family:var(--display);font-weight:800;font-stretch:110%;font-size:1rem;letter-spacing:.06em;text-transform:uppercase}
+.next ol{list-style:none;margin:0;padding:0;display:grid;gap:16px;counter-reset:s}
+.next li{display:grid;grid-template-columns:34px 1fr;gap:12px;color:var(--mist);font-size:.95rem;counter-increment:s}
+.next li::before{content:counter(s);width:34px;height:34px;border-radius:50%;display:grid;place-items:center;border:1px solid var(--signal);color:var(--signal);font-weight:700}
+.next li b{display:block;color:var(--steel)}
+.banner{max-width:780px;margin-bottom:16px;padding:10px 14px;border-radius:8px;border:1px dashed var(--line);color:var(--mist);font-size:.9rem}
+
+footer{border-top:1px solid var(--line);padding-block:26px 34px;text-align:center}
+footer .mark{display:flex;align-items:center;gap:22px;justify-content:center}
+footer .mark::before,footer .mark::after{content:"";height:2px;flex:1;max-width:300px;background:linear-gradient(90deg,transparent,var(--signal))}
+footer .mark::after{background:linear-gradient(270deg,transparent,var(--signal))}
+footer .brand{font-size:1.15rem}
+footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;color:var(--mist);text-transform:uppercase}
+
+@media (max-width:1000px){.layout{grid-template-columns:1fr}.next{position:static;max-width:780px}}
+@media (max-width:760px){nav .soon{display:none}}
+@media (max-width:560px){.two{grid-template-columns:1fr}.send{width:100%;justify-content:center}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 2 11.5h3V21h5.5v-6h3v6H19v-9.5h3z"/></symbol>
+  <symbol id="i-clip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="m8.5 13.5 2.5 2.5 4.5-5"/></symbol>
+  <symbol id="i-req" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0 5 5L21 13l-8 8-3-3 8-8-1.3-1.3a4 4 0 0 0-5-5l2.6 2.6-2.1 2.1-2.6-2.6a4 4 0 0 0 5 5"/><path d="m3 21 6-6"/></symbol>
+  <symbol id="i-bldg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V8l8-5 8 5v13"/><path d="M2 21h20"/><path d="M8 11h2M14 11h2M8 15h2M14 15h2"/><path d="M10 21v-3h4v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="lockup" href="__HOME_URL__"__LINK_TARGET__><span class="brand">SIEMONSMA<span>.ORG</span></span><span class="powered">Powered by<img src="__HARVARD__" alt="Harvard Integrations" width="89" height="21"></span></a>
+    <nav aria-label="Sections">
+      <a href="__HOME_URL__"__LINK_TARGET__><svg><use href="#i-home"/></svg>Home</a>
+      <a href="__TRACKER_URL__"__LINK_TARGET__><svg><use href="#i-clip"/></svg>Projects</a>
+      <a href="#top" aria-current="page"><svg><use href="#i-req"/></svg>Request</a>
+      <span class="soon" title="Coming soon"><svg><use href="#i-wrench"/></svg>Equipment</span>
+      <span class="soon" title="Coming soon"><svg><use href="#i-bldg"/></svg>Facilities</span>
+      <span class="soon" title="Coming soon"><svg><use href="#i-gear"/></svg>Tools</span>
+    </nav>
+  </div>
+</header>
+
+<section class="head" id="top">
+  <div class="wrap">
+    <p class="eyebrow">Facilities</p>
+    <h1 class="big">Request a <span>project</span></h1>
+    <hr class="rule">
+    <p class="lede">Need something built, fixed, cleaned or bought? Tell us here. Facilities reviews every request and follows up with you.</p>
+  </div>
+</section>
+
+<main>
+  <div class="wrap">
+    <div class="banner" id="previewNote" hidden>This is the test copy. Requests sent here aren't saved. On siemonsma.org they go straight to Facilities.</div>
+    <div class="layout"><div class="card" id="card">
+      <form id="reqForm" novalidate>
+        <fieldset>
+          <legend>About you</legend>
+          <div class="two">
+            <div class="field"><label for="rName">Your name</label><input type="text" id="rName" autocomplete="name" maxlength="100" required></div>
+            <div class="field"><label for="rDept">Department <span class="opt">(optional)</span></label><input type="text" id="rDept" autocomplete="organization-title" maxlength="100"></div>
+          </div>
+          <div class="two">
+            <div class="field"><label for="rEmail">Email</label><input type="email" id="rEmail" autocomplete="email" autocapitalize="off" maxlength="200"></div>
+            <div class="field"><label for="rPhone">Phone</label><input type="tel" id="rPhone" autocomplete="tel" maxlength="40"></div>
+          </div>
+          <div class="err" id="eContact" role="alert"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend>The project</legend>
+          <div class="field"><label for="rTitle">What do you need?</label><input type="text" id="rTitle" maxlength="150" placeholder="e.g. New lighting in the shipping office" required></div>
+          <div class="field"><span class="lbl" id="typeLbl">What kind of work?</span>
+            <div class="chips" role="radiogroup" aria-labelledby="typeLbl">
+              <label><input type="radio" name="rType" value="construction"><span>Construction or renovation</span></label>
+              <label><input type="radio" name="rType" value="maintenance"><span>Maintenance or repair</span></label>
+              <label><input type="radio" name="rType" value="custodial"><span>Custodial or cleaning</span></label>
+              <label><input type="radio" name="rType" value="purchasing"><span>Equipment or purchase</span></label>
+              <label><input type="radio" name="rType" value="other" checked><span>Not sure</span></label>
+            </div>
+          </div>
+          <div class="field"><label for="rLoc">Building or area <span class="opt">(optional)</span></label><input type="text" id="rLoc" maxlength="150" placeholder="e.g. Building C, shipping office"></div>
+          <div class="field"><label for="rDesc">Details</label><span class="hint">What needs to happen, and why. Anything you've already tried or quotes you have.</span><textarea id="rDesc" maxlength="4000" required></textarea></div>
+          <div class="field"><span class="lbl" id="urgLbl">How urgent is it?</span>
+            <div class="chips" role="radiogroup" aria-labelledby="urgLbl">
+              <label><input type="radio" name="rUrg" value="Low"><span>Whenever there's time</span></label>
+              <label><input type="radio" name="rUrg" value="Normal" checked><span>Normal</span></label>
+              <label><input type="radio" name="rUrg" value="High"><span>Soon</span></label>
+              <label><input type="radio" name="rUrg" value="Urgent"><span>Urgent: safety or work stopped</span></label>
+            </div>
+          </div>
+          <div class="two">
+            <div class="field"><label for="rNeed">Needed by <span class="opt">(optional)</span></label><input type="date" id="rNeed"></div>
+            <div class="field"><label for="rBudget">Budget <span class="opt">(if you know it)</span></label><input type="text" id="rBudget" maxlength="60" inputmode="decimal" placeholder="e.g. 5,000"></div>
+          </div>
+          <div class="trap" aria-hidden="true"><label for="rWebsite">Leave this empty</label><input type="text" id="rWebsite" tabindex="-1" autocomplete="off"></div>
+        </fieldset>
+
+        <div class="foot">
+          <button class="send" type="submit" id="rSend">Send request<svg><use href="#i-send"/></svg></button>
+          <div class="err" id="eSend" role="alert"></div>
+        </div>
+      </form>
+    </div>
+    <aside class="next" aria-label="What happens next">
+      <h2>What happens next</h2>
+      <ol>
+        <li><span><b>Facilities reviews it</b>Your request goes straight to the facilities manager.</span></li>
+        <li><span><b>We follow up</b>We'll reach out if we need details, a site visit or quotes.</span></li>
+        <li><span><b>It becomes a project</b>Approved requests go on the project tracker with a schedule and updates.</span></li>
+      </ol>
+    </aside></div>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="mark"><span class="brand">SIEMONSMA<span>.ORG</span></span></div>
+    <small>Built for getting things done.</small>
+  </div>
+</footer>
+
+__CONFIG_TAG__
+<script type="module">
+const MODE="__MODE__";
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const card=$("card"),form=$("reqForm");
+if(MODE==="preview")$("previewNote").hidden=false;
+let send=null;
+async function connect(){ // loads the database only when someone sends, so the page opens fast
+  if(send)return send;
+  const fb=await import("__FB_MODULE__");
+  const app=fb.initializeApp(window.APP_CONFIG.firebase,"requests");
+  const db=fb.initializeFirestore(app,{});
+  if(window.APP_CONFIG.useEmulators&&["localhost","127.0.0.1"].includes(location.hostname))fb.connectFirestoreEmulator(db,"127.0.0.1",8080);
+  return send=d=>fb.addDoc(fb.collection(db,"requests"),d);
+}
+const v=id=>$(id).value.trim();
+const radio=n=>form.querySelector(`input[name="${n}"]:checked`)?.value||"";
+function mark(id,bad){if(bad)$(id).setAttribute("aria-invalid","true")}
+form.addEventListener("submit",async e=>{
+  e.preventDefault();$("eSend").textContent="";$("eContact").textContent="";form.querySelectorAll("[aria-invalid]").forEach(x=>x.removeAttribute("aria-invalid"));
+  const d={name:v("rName"),department:v("rDept"),email:v("rEmail").toLowerCase(),phone:v("rPhone"),title:v("rTitle"),type:radio("rType"),
+    location:v("rLoc"),description:v("rDesc"),priority:radio("rUrg"),neededBy:v("rNeed"),budget:v("rBudget"),status:"new",at:new Date().toISOString(),via:"web"};
+  const miss=[["rName",!d.name],["rTitle",!d.title],["rDesc",!d.description]];
+  miss.forEach(([id,bad])=>mark(id,bad));
+  const badEmail=d.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email);mark("rEmail",badEmail);
+  if(!d.email&&!d.phone){$("eContact").textContent="Add an email or phone number so Facilities can reach you.";mark("rEmail",true);mark("rPhone",true)}
+  else if(badEmail)$("eContact").textContent="Check the email address.";
+  const first=form.querySelector('[aria-invalid="true"]');
+  if(first){if(!$("eContact").textContent)$("eSend").textContent="Fill in the boxes marked in red.";first.focus();return}
+  for(const k of Object.keys(d))if(d[k]==="")delete d[k];
+  const btn=$("rSend");btn.disabled=true;btn.firstChild.textContent="Sending… ";
+  try{
+    if($("rWebsite").value){/* filled by a bot: act as if it went through */}
+    else if(MODE==="preview")await new Promise(r=>setTimeout(r,500));
+    else{await (await connect())(d);ping()}
+    done(d);
+  }catch(err){console.warn(err);$("eSend").textContent="That didn't send. Check your connection and try again.";btn.disabled=false;btn.firstChild.textContent="Send request"}
+});
+function ping(){const t=window.APP_CONFIG?.notifyTopic;if(!t)return; // phone alert to Facilities; no names, anyone can read a topic
+  const q=new URLSearchParams({title:"New project request",click:new URL("../tracker/",location.href).href,tags:"bell"});
+  fetch("https://ntfy.sh/"+encodeURIComponent(t)+"?"+q,{method:"POST",body:"Open your tracker to approve or decline it.",keepalive:true}).catch(()=>{})}
+function done(d){
+  card.innerHTML=`<div class="done" role="status"><div class="tick"><svg><use href="#i-check"/></svg></div>
+    <h2>Request sent</h2>
+    <p>Thanks, ${esc(d.name.split(" ")[0])}. Facilities has your request for <b>${esc(d.title)}</b> and will follow up${d.email?` at ${esc(d.email)}`:d.phone?` at ${esc(d.phone)}`:""}.</p>
+    <div class="row"><button class="btn2" type="button" id="again">Send another request</button><a class="btn2" href="__HOME_URL__"__LINK_TARGET__>Back to home</a></div></div>`;
+  $("again").onclick=()=>location.reload();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+</script>
