@@ -11,7 +11,7 @@ service cloud.firestore {
 
     // project requests are for the owner's eyes only; everything else is readable by people on the list
     match /{coll}/{rest=**} {
-      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock']));
+      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock', 'notes']));
       allow write: if isOwner();
     }
     // anyone can send a project request from the public request page, without an account
@@ -42,6 +42,15 @@ service cloud.firestore {
     // anyone on the list can ask or answer a question; only the owner deletes
     match /questions/{qid} {
       allow create, update: if allowed();
+    }
+    // notes from people on a project: hidden from others until the owner approves them
+    match /notes/{nid} {
+      allow read: if isOwner() || (invited() && (resource.data.status == 'approved' || resource.data.author == request.auth.uid));
+      allow create: if isOwner() || (invited()
+        && request.resource.data.keys().hasOnly(['projectId','text','author','at','status'])
+        && request.resource.data.author == request.auth.uid && request.resource.data.status == 'pending'
+        && request.resource.data.projectId is string && request.resource.data.text is string
+        && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 2000 && text(request.resource.data,'at',40));
     }
     // lets someone check whether their own email is on the list
     match /access/{addr} {

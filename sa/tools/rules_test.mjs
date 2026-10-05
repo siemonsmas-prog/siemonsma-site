@@ -1,7 +1,7 @@
 // Checks the Firestore rules for project requests against the emulator.
 import {initializeApp} from "firebase/app";
 import {getAuth,connectAuthEmulator,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut} from "firebase/auth";
-import {getFirestore,connectFirestoreEmulator,doc,setDoc,getDoc,getDocs,collection,addDoc,updateDoc,deleteDoc} from "firebase/firestore";
+import {getFirestore,connectFirestoreEmulator,doc,setDoc,getDoc,getDocs,collection,addDoc,updateDoc,deleteDoc,query,where} from "firebase/firestore";
 const P="demo-tracker";
 const mk=n=>{const a=initializeApp({projectId:P,apiKey:"demo"},n);const au=getAuth(a);connectAuthEmulator(au,"http://127.0.0.1:9099",{disableWarnings:true});const db=getFirestore(a);connectFirestoreEmulator(db,"127.0.0.1",8080);return{au,db}};
 async function user(n,email){const c=mk(n);await createUserWithEmailAndPassword(c.au,email,"secret123");
@@ -50,4 +50,20 @@ await ok("owner ignores a knock",updateDoc(doc(owner.db,"knock/stranger@example.
 await ok("owner lets them in",setDoc(doc(owner.db,"access/stranger@example.com"),{name:"Stranger"}));
 await ok("let-in person reads projects",getDocs(collection(stranger.db,"projects")));
 await ok("owner clears the knock",deleteDoc(doc(owner.db,"knock/stranger@example.com")));
+// notes: followers add them, only the owner approves, nobody else sees them until approved
+const jid=jim.au.currentUser.uid,sid=stranger.au.currentUser.uid,note=(extra={})=>({projectId:"p1",text:"Gate is sticking",author:jid,at:new Date().toISOString(),status:"pending",...extra});
+const n1=await addDoc(collection(jim.db,"notes"),note());console.log("PASS follower adds a pending note");
+await ok("follower adds an already-approved note",addDoc(collection(jim.db,"notes"),note({status:"approved"})),false);
+await ok("follower adds a note as someone else",addDoc(collection(jim.db,"notes"),note({author:sid})),false);
+await ok("follower adds a note with extra fields",addDoc(collection(jim.db,"notes"),note({decidedAt:"x"})),false);
+await ok("anonymous adds a note",addDoc(collection(anon.db,"notes"),note()),false);
+await ok("follower approves their own note",updateDoc(doc(jim.db,"notes/"+n1.id),{status:"approved"}),false);
+await ok("follower reads their own notes",getDocs(query(collection(jim.db,"notes"),where("author","==",jid))));
+await ok("follower reads approved notes",getDocs(query(collection(jim.db,"notes"),where("status","==","approved"))));
+await ok("follower reads every note",getDocs(collection(jim.db,"notes")),false);
+await ok("other follower reads the pending note",getDoc(doc(stranger.db,"notes/"+n1.id)),false);
+await ok("owner reads every note",getDocs(collection(owner.db,"notes")));
+await ok("owner approves the note",updateDoc(doc(owner.db,"notes/"+n1.id),{status:"approved",decidedAt:"now"}));
+await ok("other follower reads it once approved",getDoc(doc(stranger.db,"notes/"+n1.id)));
+await ok("owner adds a note directly",addDoc(collection(owner.db,"notes"),{projectId:"p1",text:"x",author:"o",at:"now",status:"approved"}));
 process.exit(0);

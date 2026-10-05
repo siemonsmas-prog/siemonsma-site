@@ -467,6 +467,28 @@ function lastScheduled(p,ref=new Date()){
   return t}
 function checksMe(p){return S.isOwner}
 const dayStart=v=>new Date(v+"T00:00:00");
+function subscribeNotes(){const got={},merge=()=>{S.notes=Object.values(Object.assign({},...Object.values(got))).sort((a,b)=>String(b.at).localeCompare(String(a.at)));render();if(layer.dataset.view==="project")renderSheet()};
+  const sub=(key,q)=>q.onSnapshot(s=>{const seen=key==="all"&&S.notesSeen;got[key]=Object.fromEntries(s.docs.map(d=>[d.id,{id:d.id,...d.data()}]));
+    if(key==="all"){const pend=Object.values(got.all).filter(n=>n.status==="pending");if(seen)pend.filter(n=>!seen.has(n.id)).forEach(n=>toast(nameOf(n.author)+" added a note to approve"));S.notesSeen=new Set(pend.map(n=>n.id))}
+    merge()},e=>console.warn(e));
+  if(S.isOwner)sub("all",S.db.collection("notes").orderBy("at","desc").limit(500)); // followers' queries must match the database rules (approved, or their own)
+  else{sub("ok",S.db.collection("notes").where("status","==","approved").limit(500));sub("mine",S.db.collection("notes").where("author","==",S.me).limit(200))}}
+const pendingNotes=pid=>(S.notes||[]).filter(n=>n.status==="pending"&&(!pid||n.projectId===pid));
+function notesHTML(p){const list=(S.notes||[]).filter(n=>n.projectId===p.id&&(n.status==="approved"||S.isOwner&&n.status==="pending"||n.author===S.me));
+  const tag=n=>n.status==="pending"?`<span class="pill" style="background:var(--warn,#b7791f);color:#fff">${S.isOwner?"Waiting for your approval":"Waiting for approval"}</span>`:n.status==="declined"?`<span class="pill" style="background:var(--sunk);color:var(--muted)">Not approved</span>`:"";
+  const one=n=>`<div class="pg" style="padding:10px 12px;display:grid;gap:6px"><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="row meta" style="gap:8px">${esc(nameOf(n.author))} · ${ago(n.at)} ${tag(n)}</div>
+    ${S.isOwner&&n.status==="pending"?`<div class="row"><button class="btn small primary" data-noteok="${n.id}">Approve</button><button class="btn small ghost" data-noteno="${n.id}">Decline</button></div>`:""}</div>`;
+  const form=S.noteOpen===p.id?`<div class="stack" style="gap:8px"><textarea id="noteText" maxlength="2000" placeholder="${S.isOwner?"Add a note everyone on this project can see":"Your note. The facilities manager approves it before others can see it."}"></textarea>
+    <div class="row"><button class="btn primary small" data-noteadd="${p.id}">${S.isOwner?"Add note":"Send for approval"}</button><button class="btn small ghost" data-act="noteCancel">Cancel</button></div></div>`:`<div><button class="btn small" data-noteopen="${p.id}">${IC.pen}Add a note</button></div>`;
+  return `<div class="sec-h">Notes</div><div class="stack" style="gap:8px">${list.map(one).join("")||`<div class="meta">No notes yet.</div>`}${form}</div>`}
+async function addNote(pid){const el=document.getElementById("noteText"),t=(el?.value||"").trim();if(!t)return toast("Type a note first.");
+  const d={projectId:pid,text:t.slice(0,2000),author:S.me,at:now(),status:S.isOwner?"approved":"pending"};
+  try{await S.db.collection("notes").add(d);S.noteOpen=null;
+    if(!S.isOwner)window.pingOwner?.("New note to approve","Someone added a note on a project. Open your tracker to approve it.");
+    toast(S.isOwner?"Note added":"Sent. It'll show to others once it's approved.");renderSheet()}catch(e){toast(friendly(e))}}
+async function decideNote(id,ok){try{await S.db.doc("notes/"+id).update({status:ok?"approved":"declined",decidedAt:now()});toast(ok?"Note approved":"Note declined")}catch(e){toast(friendly(e))}}
+const askOf=r=>String(r.ask||"").trim();
+function asksHTML(p){const rs=pendingReqs(p).filter(askOf);return rs.length?`<div class="stack" style="gap:4px">${rs.map(r=>`<div class="meta">“${esc(askOf(r))}” – ${esc(nameOf(r.author))}</div>`).join("")}</div>`:""}
 function pendingReqs(p){const last=new Date(p.lastUpdateAt||p.createdAt||0);return (S.updReqs||[]).filter(r=>r.projectId===p.id&&new Date(r.at)>last)}
 function whyDue(p){ // Clint, 2026-10-05: only at a milestone, or when someone following the project asks
   if(p.status==="Complete"||p.status==="On hold")return"";
@@ -475,12 +497,13 @@ function whyDue(p){ // Clint, 2026-10-05: only at a milestone, or when someone f
   if(isDay(p.milestoneDate)&&dayStart(p.milestoneDate)<=new Date()&&last<dayStart(p.milestoneDate))return "Milestone reached"+(p.nextMilestone?": "+p.nextMilestone:"")+" ("+fmtDate(p.milestoneDate)+")";
   return""}
 function isDue(p){return checksMe(p)&&!!whyDue(p)}
-async function requestUpdate(pid){const p=S.projects.find(x=>x.id===pid);if(!p)return;
-  try{await S.db.collection("questions").add({projectId:pid,kind:"update",text:"Asked for an update",author:S.me,at:now(),answers:[]});
+async function requestUpdate(pid){const p=S.projects.find(x=>x.id===pid);if(!p)return;const ask=(document.getElementById("ruText")?.value||"").trim().slice(0,500);
+  try{await S.db.collection("questions").add({projectId:pid,kind:"update",text:"Asked for an update",ask,author:S.me,at:now(),answers:[]});S.ruOpen=null;
     window.pingOwner?.("Update requested","Someone asked for a project update. Open your tracker to post it.");
     toast("Asked. You'll see the update here once it's posted.")}catch(e){toast(friendly(e))}}
 function reqUpdHTML(p){const mine=pendingReqs(p).find(r=>r.author===S.me);
-  return mine?`<div class="notice">You asked for an update ${ago(mine.at)}. It'll show up here when it's posted.</div>`:`<div><button class="btn" data-requpd="${p.id}">${IC.pen}Request an update</button></div>`}
+  return mine?`<div class="notice">You asked for an update ${ago(mine.at)}. It'll show up here when it's posted.</div>`:S.ruOpen===p.id?`<div class="stack" style="gap:8px"><label for="ruText" class="meta">What do you want an update on? (optional)</label><textarea id="ruText" maxlength="500" placeholder="e.g. When will the door be installed?"></textarea>
+    <div class="row"><button class="btn primary small" data-requpd="${p.id}">Send request</button><button class="btn small ghost" data-act="ruCancel">Cancel</button></div></div>`:`<div><button class="btn" data-ruopen="${p.id}">${IC.pen}Request an update</button></div>`}
 function nextLabel(p){const s=p.schedule||{freq:"daily"};return s.freq==="weekly"?"Every "+DAYS[s.day??1]:FREQS[s.freq]}
 
 /* ---------- needs attention ---------- */
@@ -560,6 +583,7 @@ async function boot(){
     if(S.knockSeen)ks.filter(k=>!S.knockSeen.has(k.id)).forEach(k=>toast((k.name||k.email)+" is trying to sign in"));S.knockSeen=new Set(ks.map(k=>k.id));
     S.knocks=ks.sort((a,b)=>String(b.at).localeCompare(String(a.at)));render();if(layer.dataset.view==="knocks")renderKnocks()},e=>console.warn(e));
   if(S.isOwner)S.db.doc("settings/requests").onSnapshot(s=>{S.reqSettings=s.exists?s.data():null;S.reqSettingsLoaded=true;runAutoApprove();if(layer.dataset.view==="requests")renderRequests()},e=>{console.warn(e);S.reqSettingsLoaded=true;runAutoApprove()});
+  subscribeNotes();
   S.db.collection("questions").orderBy("at","desc").limit(500).onSnapshot(s=>{const all=s.docs.map(d=>({id:d.id,...d.data()}));S.allQs=all.filter(q=>q.kind!=="update");S.updReqs=all.filter(q=>q.kind==="update");render();if(layer.dataset.view==="project")renderSheet()},e=>console.warn(e));
   // random check-ins turned off (Clint, 2026-10-05): updates are asked for at milestones or on request
 }
@@ -621,11 +645,14 @@ function render(){
     </div>
   </section>
   ${attnHTML(mine)}
+  ${S.isOwner&&pendingNotes().length?`<section class="section"><div class="section-head"><h2>Notes to approve</h2><span class="meta">${pendingNotes().length} waiting</span></div>
+    <div class="grid">${pendingNotes().slice(0,12).map(n=>{const p=S.projects.find(x=>x.id===n.projectId);return p?`<div class="card due"><div class="eyebrow">${esc(p.name)}</div><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="meta">${esc(nameOf(n.author))} · ${ago(n.at)}</div>
+      <div class="row"><button class="btn small primary" data-noteok="${n.id}">Approve</button><button class="btn small ghost" data-noteno="${n.id}">Decline</button><button class="btn small" data-open="${p.id}">Open project</button></div></div>`:""}).join("")}</div></section>`:""}
   ${S.isOwner&&openQs().length?`<section class="section"><div class="section-head"><h2>Questions for you</h2><span class="meta">${openQs().length} waiting for an answer</span></div>
     <div class="grid">${openQs().slice(0,12).map(q=>{const p=S.projects.find(x=>x.id===q.projectId);return p?`<div class="card due" data-openq="${p.id}"><div class="eyebrow">${esc(p.name)}</div><div style="font-weight:600">${esc(q.text)}</div><div class="meta">${esc(nameOf(q.author))} · ${ago(q.at)}</div></div>`:""}).join("")}</div></section>`:""}
   ${due.length?`<section class="section"><div class="section-head"><h2>Updates due</h2><span class="meta">${due.length} waiting on you</span></div>
     <div class="grid">${due.map(p=>`<div class="card due" data-open="${p.id}"><div class="row"><span class="tag cat-${esc(p.category)}">${esc(CATS[p.category]?.label)}</span></div>
-      <h3>${esc(p.name)}</h3><div class="meta">${esc(whyDue(p))}</div><div class="meta">Last update: ${ago(p.lastUpdateAt)}</div>
+      <h3>${esc(p.name)}</h3><div class="meta">${esc(whyDue(p))}</div>${asksHTML(p)}<div class="meta">Last update: ${ago(p.lastUpdateAt)}</div>
       <div><button class="btn primary small" data-update="${p.id}">Give update</button></div></div>`).join("")}</div></section>`:""}
   ${S.nudge&&!due.length?nudgeHTML():""}
   ${S.isOwner?`<button class="btn primary fab" data-act="new">+ New project</button>`:""}`;
@@ -1010,11 +1037,12 @@ function renderSheet(){
         ${fact(IC.hash,"Job number or FA#",esc(p.jobNumber))}
       </div>
       <div class="prog" aria-label="${p.percent||0}% complete"><i style="width:${p.percent||0}%"></i></div>
-      ${!isLead?reqUpdHTML(p):isDue(p)?`<div class="notice">Update due. ${esc(whyDue(p))}. <button class="btn primary small" data-update="${p.id}">Give update</button></div>`:`<div><button class="btn primary" data-update="${p.id}">${IC.pen}Post an update</button></div>`}
+      ${!isLead?reqUpdHTML(p):isDue(p)?`<div class="notice">Update due. ${esc(whyDue(p))}. ${asksHTML(p)}<button class="btn primary small" data-update="${p.id}">Give update</button></div>`:`<div><button class="btn primary" data-update="${p.id}">${IC.pen}Post an update</button></div>`}
       ${p.description?`<div class="sec-h">Description</div><p style="margin:0;white-space:pre-wrap">${esc(p.description)}</p>`:""}
       <div class="sec-h">Quick links</div>
       <div class="qlinks"><button data-tab="updates">${IC.list}Updates (${S.updates.length})</button><button data-tab="checklist">${IC.check}Checklist${(()=>{const it=p.phase?chkFor(p,p.phase):[];return it.length?` ${it.filter(x=>x.done).length}/${it.length}`:""})()}</button><button data-tab="files">${IC.clip}Files (${nf})</button><button data-tab="questions">${IC.chat}Questions (${S.questions.length})</button></div>
       ${last?`<div><div class="sec-h" style="margin-bottom:8px">Latest update</div>${updateHTML(last)}</div>`:""}
+      ${notesHTML(p)}
       <div class="sec-h">Details</div>
       <dl class="kv">
         ${p.department?`<dt>Department</dt><dd>${esc(p.department)}</dd>`:""}
@@ -1209,6 +1237,7 @@ function openUpdate(pid,prefillQ){
   S.updFor=pid;S.updQ=q;
   openSheet("update",`<div class="sheet-head"><div style="min-width:0"><div class="eyebrow">Update</div><h2>${esc(p.name)}</h2></div><button class="btn small" data-act="backToProject">Cancel</button></div>
     <div class="stack">
+      ${pendingReqs(p).filter(askOf).length?`<div class="notice"><b>They asked:</b>${asksHTML(p)}</div>`:""}
       <div class="field"><label>How's it going?</label>${segHTML("uStatus",STATUSES,p.status==="Not started"?"On track":p.status)}</div>
       <div class="field"><label for="uPct">Percent complete: <span id="pctOut">${p.percent||0}</span>%</label><input type="range" id="uPct" min="0" max="100" step="5" value="${p.percent||0}"></div>
       <div class="field"><label>Phase</label>${segHTML("uPhase",phasesFor(p.category),p.phase)}</div>
@@ -1409,6 +1438,11 @@ document.addEventListener("click",async e=>{
   const ck=t.closest("[data-ckdel],[data-ckadd],[data-cktpl]");if(ck){const d=ck.dataset;return d.ckdel?delItem(d.ckdel):d.ckadd?addItem(d.ckadd):addTpl(d.cktpl)}
   const vr=t.closest("[data-vprm]");if(vr&&W){W.d.members=(W.d.members||[]).filter(x=>x!==vr.dataset.vprm);wizardCollect();return renderWizard()}
   const ru=t.closest("[data-requpd]");if(ru){ru.disabled=true;return requestUpdate(ru.dataset.requpd)}
+  const ro=t.closest("[data-ruopen]");if(ro){S.ruOpen=ro.dataset.ruopen;renderSheet();return document.getElementById("ruText")?.focus()}
+  const no=t.closest("[data-noteopen],[data-noteadd],[data-noteok],[data-noteno]");if(no){const d=no.dataset;
+    if(d.noteopen){S.noteOpen=d.noteopen;renderSheet();return document.getElementById("noteText")?.focus()}
+    if(d.noteadd){no.disabled=true;return addNote(d.noteadd)}
+    return decideNote(d.noteok||d.noteno,!!d.noteok)}
   const kn=t.closest("[data-knockin],[data-knockno]");
   if(kn){if(kn.dataset.knockin)return letIn(kn.dataset.knockin);try{await S.db.doc("knock/"+kn.dataset.knockno).update({ignored:true});toast("Ignored")}catch(err){toast(friendly(err))}return}
   const rq=t.closest("[data-rqtab],[data-rqcat],[data-autodel],[data-rqok],[data-rqno],[data-rqnoyes],[data-rqnocancel],[data-rqdel],[data-rqreopen]");
@@ -1445,6 +1479,8 @@ document.addEventListener("click",async e=>{
     case"new":return startWizard();
     case"requests":return renderRequests();
     case"apply":S.applyPlan=null;return renderApply();
+    case"ruCancel":S.ruOpen=null;return renderSheet();
+    case"noteCancel":S.noteOpen=null;return renderSheet();
     case"applyGo":return applyGo();
     case"knocks":return renderKnocks();
     case"reqForm":return openReqForm();
