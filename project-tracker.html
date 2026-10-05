@@ -466,11 +466,21 @@ function lastScheduled(p,ref=new Date()){
   if(f==="monthly"){t.setDate(1);return t}
   return t}
 function checksMe(p){return S.isOwner}
-function isDue(p){
-  if(!checksMe(p)||p.status==="Complete"||p.status==="On hold")return false;
-  const last=p.lastUpdateAt||p.createdAt;
-  const since=new Date(last);
-  return since<lastScheduled(p)}
+const dayStart=v=>new Date(v+"T00:00:00");
+function pendingReqs(p){const last=new Date(p.lastUpdateAt||p.createdAt||0);return (S.updReqs||[]).filter(r=>r.projectId===p.id&&new Date(r.at)>last)}
+function whyDue(p){ // Clint, 2026-10-05: only at a milestone, or when someone following the project asks
+  if(p.status==="Complete"||p.status==="On hold")return"";
+  const last=new Date(p.lastUpdateAt||p.createdAt||0),reqs=pendingReqs(p);
+  if(reqs.length){const who=[...new Set(reqs.map(r=>nameOf(r.author)))];return "Requested by "+who.slice(0,2).join(" and ")+(who.length>2?` and ${who.length-2} more`:"")}
+  if(isDay(p.milestoneDate)&&dayStart(p.milestoneDate)<=new Date()&&last<dayStart(p.milestoneDate))return "Milestone reached"+(p.nextMilestone?": "+p.nextMilestone:"")+" ("+fmtDate(p.milestoneDate)+")";
+  return""}
+function isDue(p){return checksMe(p)&&!!whyDue(p)}
+async function requestUpdate(pid){const p=S.projects.find(x=>x.id===pid);if(!p)return;
+  try{await S.db.collection("questions").add({projectId:pid,kind:"update",text:"Asked for an update",author:S.me,at:now(),answers:[]});
+    window.pingOwner?.("Update requested","Someone asked for a project update. Open your tracker to post it.");
+    toast("Asked. You'll see the update here once it's posted.")}catch(e){toast(friendly(e))}}
+function reqUpdHTML(p){const mine=pendingReqs(p).find(r=>r.author===S.me);
+  return mine?`<div class="notice">You asked for an update ${ago(mine.at)}. It'll show up here when it's posted.</div>`:`<div><button class="btn" data-requpd="${p.id}">${IC.pen}Request an update</button></div>`}
 function nextLabel(p){const s=p.schedule||{freq:"daily"};return s.freq==="weekly"?"Every "+DAYS[s.day??1]:FREQS[s.freq]}
 
 /* ---------- needs attention ---------- */
@@ -550,8 +560,8 @@ async function boot(){
     if(S.knockSeen)ks.filter(k=>!S.knockSeen.has(k.id)).forEach(k=>toast((k.name||k.email)+" is trying to sign in"));S.knockSeen=new Set(ks.map(k=>k.id));
     S.knocks=ks.sort((a,b)=>String(b.at).localeCompare(String(a.at)));render();if(layer.dataset.view==="knocks")renderKnocks()},e=>console.warn(e));
   if(S.isOwner)S.db.doc("settings/requests").onSnapshot(s=>{S.reqSettings=s.exists?s.data():null;S.reqSettingsLoaded=true;runAutoApprove();if(layer.dataset.view==="requests")renderRequests()},e=>{console.warn(e);S.reqSettingsLoaded=true;runAutoApprove()});
-  S.db.collection("questions").orderBy("at","desc").limit(500).onSnapshot(s=>{S.allQs=s.docs.map(d=>({id:d.id,...d.data()}));render();if(layer.dataset.view==="project")renderSheet()},e=>console.warn(e));
-  if(S.isOwner)scheduleRandomNudge();
+  S.db.collection("questions").orderBy("at","desc").limit(500).onSnapshot(s=>{const all=s.docs.map(d=>({id:d.id,...d.data()}));S.allQs=all.filter(q=>q.kind!=="update");S.updReqs=all.filter(q=>q.kind==="update");render();if(layer.dataset.view==="project")renderSheet()},e=>console.warn(e));
+  // random check-ins turned off (Clint, 2026-10-05): updates are asked for at milestones or on request
 }
 function fatal(msg){app.innerHTML=`<div class="section"><div class="notice">${esc(msg)}</div></div>`}
 let projUnsub=null;
@@ -614,8 +624,8 @@ function render(){
   ${S.isOwner&&openQs().length?`<section class="section"><div class="section-head"><h2>Questions for you</h2><span class="meta">${openQs().length} waiting for an answer</span></div>
     <div class="grid">${openQs().slice(0,12).map(q=>{const p=S.projects.find(x=>x.id===q.projectId);return p?`<div class="card due" data-openq="${p.id}"><div class="eyebrow">${esc(p.name)}</div><div style="font-weight:600">${esc(q.text)}</div><div class="meta">${esc(nameOf(q.author))} · ${ago(q.at)}</div></div>`:""}).join("")}</div></section>`:""}
   ${due.length?`<section class="section"><div class="section-head"><h2>Updates due</h2><span class="meta">${due.length} waiting on you</span></div>
-    <div class="grid">${due.map(p=>`<div class="card due" data-open="${p.id}"><div class="row"><span class="tag cat-${esc(p.category)}">${esc(CATS[p.category]?.label)}</span><span class="meta">${esc(nextLabel(p))}</span></div>
-      <h3>${esc(p.name)}</h3><div class="meta">Last update: ${ago(p.lastUpdateAt)}</div>
+    <div class="grid">${due.map(p=>`<div class="card due" data-open="${p.id}"><div class="row"><span class="tag cat-${esc(p.category)}">${esc(CATS[p.category]?.label)}</span></div>
+      <h3>${esc(p.name)}</h3><div class="meta">${esc(whyDue(p))}</div><div class="meta">Last update: ${ago(p.lastUpdateAt)}</div>
       <div><button class="btn primary small" data-update="${p.id}">Give update</button></div></div>`).join("")}</div></section>`:""}
   ${S.nudge&&!due.length?nudgeHTML():""}
   ${S.isOwner?`<button class="btn primary fab" data-act="new">+ New project</button>`:""}`;
@@ -691,7 +701,7 @@ function nudgeHTML(){const {p,q}=S.nudge;return `<section class="section"><div c
   <textarea id="nudgeAns" aria-label="Your answer" placeholder="A sentence is plenty"></textarea>
   <div class="row"><button class="btn primary small" data-act="nudgeSend">Send</button><button class="btn ghost small" data-act="nudgeSkip">Not now</button></div>
 </div></section>`}
-function pickNudge(){
+function pickNudge(){S.nudge=null;return;
   if(S.nudgeOff)return;
   if(S.nudge&&S.projects.some(p=>p.id===S.nudge.p.id))return;
   const pool=S.projects.filter(p=>checksMe(p)&&p.status!=="Complete"&&p.status!=="Not started"&&!isDue(p)&&(Date.now()-new Date(p.lastCheckin?.[S.me]||0))>18*36e5);
@@ -900,7 +910,6 @@ function wizardCollect(){
   const g=id=>document.getElementById(id);const d=W.d;
   if(W.step===1){d.name=g("fName").value.trim();d.location=g("fLoc").value.trim();d.priority=segVal(g("fPri"))||"Normal";d.startDate=g("fStart").value;d.dueDate=g("fDue").value;d.description=g("fDesc").value.trim();d.jobNumber=g("fJob").value.trim();d.department=g("fDept").value.trim();d.lead=g("fLead").value.trim();d.phase=segVal(g("fPhase"));d.nextMilestone=g("fMs").value.trim();d.milestoneDate=g("fMsDate").value;d.notes=g("fNotes").value.trim();if(W.edit)d.percent=Number(g("fPct").value)||0;if(W.edit)d.status=g("fStatus").value}
   if(W.step===2){CATS[d.category].fields.forEach(f=>{const el=g("c_"+f.k);d.details[f.k]=f.type==="seg"?segVal(el):el.value.trim()})}
-  if(W.step===3){d.schedule={freq:g("fFreq").value,day:Number(g("fDay").value)}}
   if(W.step===4){d.groups=[...document.querySelectorAll('input[name="vg"]:checked')].map(x=>x.value);}
 }
 function pickable(){ // app users plus contacts, minus contacts who already use the app
@@ -929,6 +938,7 @@ function renderWizard(){
     ${W.edit?`<div class="field"><label for="fPct">Percent complete</label><input type="number" id="fPct" min="0" max="100" value="${esc(d.percent||0)}"></div>`:""}
     <div class="row" style="align-items:start"><div class="field" style="flex:2;min-width:180px"><label for="fMs">Next milestone</label><input type="text" id="fMs" value="${esc(d.nextMilestone)}" placeholder="e.g. Insulation"></div>
     <div class="field" style="flex:1;min-width:140px"><label for="fMsDate">Milestone date</label><input type="date" id="fMsDate" value="${esc(d.milestoneDate)}"></div></div>
+    <p class="meta" style="margin:-6px 0 0">You'll be asked for an update when the milestone date arrives, or when someone following the project taps Request an update.</p>
     <div class="field"><label for="fDesc">Short description</label><textarea id="fDesc" placeholder="What needs to happen and why">${esc(d.description)}</textarea></div>
     <div class="field"><label for="fNotes">Notes</label><textarea id="fNotes" placeholder="e.g. Warranty set to expire 9/11/2027">${esc(d.notes)}</textarea></div>`;
   if(W.step===2)body=c.fields.map(f=>{const v=d.details[f.k]??"";const id="c_"+f.k;
@@ -945,10 +955,10 @@ function renderWizard(){
     <div class="field"><label>Groups</label>${allG.length?`<div class="checks">${allG.map(g=>`<label class="ck"><input type="checkbox" name="vg" value="${esc(g)}" ${(d.groups||[]).includes(g)?"checked":""}><span>${esc(groupLabel(g))} <span class="meta">(${groupMembers(g).length})</span></span></label>`).join("")}</div>`:`<span class="hint">No groups yet. Check some people below and save them as a group.</span>`}</div>
     <div class="field"><label for="vpAdd">People</label>${peoplePickerHTML(d.members||[],people)}</div>
     ${(d.members||[]).length>1?`<div class="row"><input type="text" id="newGroup" placeholder="New group name, e.g. Jim's team" style="flex:1;min-width:180px"><button class="btn" data-act="wGroup">Save these people as a group</button></div>`:""}`}
-  const total=5,first=W.edit?1:0;
+  const total=4,first=W.edit?1:0,shown=W.step>3?W.step:W.step+1;
   openSheet("wizard",`<div class="sheet-head"><h2>${W.edit?"Edit project":"New project"}</h2><button class="btn small" data-act="close">Close</button></div>
-    <div class="steps">${[0,1,2,3,4].map(i=>`<i class="${i<=W.step?"on":""}"></i>`).join("")}</div>
-    <div class="stack"><div class="eyebrow">Step ${W.step+1} of ${total}</div><h3 style="font-size:1.4rem">${esc(titles[W.step])}</h3>${body}</div>
+    <div class="steps">${[0,1,2,4].map(i=>`<i class="${i<=W.step?"on":""}"></i>`).join("")}</div>
+    <div class="stack"><div class="eyebrow">Step ${shown} of ${total}</div><h3 style="font-size:1.4rem">${esc(titles[W.step])}</h3>${body}</div>
     <div class="actions">${W.step>first?`<button class="btn" data-act="wBack">Back</button>`:""}
     ${W.step<4?`<button class="btn primary" data-act="wNext" ${W.step===0&&!d.category?"disabled":""}>Next</button>`:`<button class="btn primary" data-act="wSave">${W.edit?"Save changes":"Create project"}</button>`}</div>`);
   const ff=document.getElementById("fFreq");if(ff)ff.onchange=()=>document.getElementById("dayWrap").hidden=ff.value!=="weekly";
@@ -1000,7 +1010,7 @@ function renderSheet(){
         ${fact(IC.hash,"Job number or FA#",esc(p.jobNumber))}
       </div>
       <div class="prog" aria-label="${p.percent||0}% complete"><i style="width:${p.percent||0}%"></i></div>
-      ${!isLead?"":isDue(p)?`<div class="notice">Your update is due. <button class="btn primary small" data-update="${p.id}">Give update</button></div>`:`<div><button class="btn primary" data-update="${p.id}">${IC.pen}Post an update</button></div>`}
+      ${!isLead?reqUpdHTML(p):isDue(p)?`<div class="notice">Update due. ${esc(whyDue(p))}. <button class="btn primary small" data-update="${p.id}">Give update</button></div>`:`<div><button class="btn primary" data-update="${p.id}">${IC.pen}Post an update</button></div>`}
       ${p.description?`<div class="sec-h">Description</div><p style="margin:0;white-space:pre-wrap">${esc(p.description)}</p>`:""}
       <div class="sec-h">Quick links</div>
       <div class="qlinks"><button data-tab="updates">${IC.list}Updates (${S.updates.length})</button><button data-tab="checklist">${IC.check}Checklist${(()=>{const it=p.phase?chkFor(p,p.phase):[];return it.length?` ${it.filter(x=>x.done).length}/${it.length}`:""})()}</button><button data-tab="files">${IC.clip}Files (${nf})</button><button data-tab="questions">${IC.chat}Questions (${S.questions.length})</button></div>
@@ -1398,6 +1408,7 @@ document.addEventListener("click",async e=>{
   const oq=t.closest("[data-openq]");if(oq)return openProject(oq.dataset.openq,"questions");
   const ck=t.closest("[data-ckdel],[data-ckadd],[data-cktpl]");if(ck){const d=ck.dataset;return d.ckdel?delItem(d.ckdel):d.ckadd?addItem(d.ckadd):addTpl(d.cktpl)}
   const vr=t.closest("[data-vprm]");if(vr&&W){W.d.members=(W.d.members||[]).filter(x=>x!==vr.dataset.vprm);wizardCollect();return renderWizard()}
+  const ru=t.closest("[data-requpd]");if(ru){ru.disabled=true;return requestUpdate(ru.dataset.requpd)}
   const kn=t.closest("[data-knockin],[data-knockno]");
   if(kn){if(kn.dataset.knockin)return letIn(kn.dataset.knockin);try{await S.db.doc("knock/"+kn.dataset.knockno).update({ignored:true});toast("Ignored")}catch(err){toast(friendly(err))}return}
   const rq=t.closest("[data-rqtab],[data-rqcat],[data-autodel],[data-rqok],[data-rqno],[data-rqnoyes],[data-rqnocancel],[data-rqdel],[data-rqreopen]");
@@ -1440,8 +1451,8 @@ document.addEventListener("click",async e=>{
     case"reqSend":return sendReq();
     case"autoAdd":{const v=document.getElementById("autoAdd").value.trim();if(!v)return toast("Type a name or email.");if(autoList().some(x=>low(x)===low(v)))return toast("Already on the list.");return saveAutoList([...autoList(),v])}
         case"close":W=null;if(aiCtl)aiCtl.abort();return closeSheet();
-    case"wNext":wizardCollect();if(W.step===1&&!W.d.name)return toast("Give the project a name.");W.step++;return renderWizard();
-    case"wBack":wizardCollect();W.step--;return renderWizard();
+    case"wNext":wizardCollect();if(W.step===1&&!W.d.name)return toast("Give the project a name.");W.step++;if(W.step===3)W.step=4;return renderWizard();
+    case"wBack":wizardCollect();W.step--;if(W.step===3)W.step=2;return renderWizard();
     case"wSave":return saveWizard();
     case"edit":return startWizard(curProject());
     case"editVis":startWizard(curProject());W.step=4;W.back="team";return renderWizard();
