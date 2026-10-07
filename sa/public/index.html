@@ -114,6 +114,7 @@ select.prio-sel option{background:#fff;color:#13223a}
 table.list{border-collapse:collapse;width:100%;min-width:980px;font-size:.9rem}
 table.list thead th{background:var(--sunk)}
 table.list th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+#fLocOther[hidden]{display:none}
 table.list th .thsort{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;border-radius:4px}table.list th .thsort:hover{color:var(--ink)}table.list th .thsort:focus-visible{outline:2px solid var(--accent);outline-offset:2px}table.list th[aria-sort] .thsort{color:var(--ink)}table.list th .thsort i{font-style:normal;font-size:.7rem;opacity:.35}table.list th[aria-sort] .thsort i{opacity:1}
 table.list td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
 table.list tr[data-open]{cursor:pointer} table.list tr[data-open]:hover td{background:var(--sunk)}
@@ -545,7 +546,7 @@ const FILTERS={all:p=>p.status!=="Complete",done:p=>p.status==="Complete",attn:p
   risk:p=>["At risk","Blocked"].includes(p.status),plan:p=>p.status!=="Complete"&&(p.status==="Not started"||PLAN_PHASES.includes(p.phase)),hold:p=>p.status==="On hold",week:p=>{const md=daysTo(p.milestoneDate);return p.status!=="Complete"&&md!=null&&md>=0&&md<=7},q:p=>openQs(p.id).length>0,new:p=>isNew(p)};
 const PLAN_PHASES=["Planning","Design & Permits","Request","Specs & Quotes"];
 const FILTER_LABEL={plan:"In planning",hold:"On hold",done:"Completed",attn:"Needs attention",hot:"Critical & urgent",risk:"At risk or blocked",week:"Milestones in the next 7 days",q:"Projects with open questions",new:"Projects with new updates"};
-function matchSearch(p){const q=(S.q||"").trim().toLowerCase();return !q||[p.name,p.location,p.jobNumber,p.department,p.lead,p.phase,p.status,CATS[p.category]?.label].filter(Boolean).join(" ").toLowerCase().includes(q)}
+function matchSearch(p){const q=(S.q||"").trim().toLowerCase();return !q||[p.name,p.location,p.area,p.address,p.jobNumber,p.department,p.lead,p.phase,p.status,CATS[p.category]?.label].filter(Boolean).join(" ").toLowerCase().includes(q)}
 const matchFilter=p=>FILTERS[S.filter]?FILTERS[S.filter](p):p.category===S.filter;
 
 /* ---------- phase checklists ---------- */
@@ -707,7 +708,8 @@ const COLS=[
   ["idx","#",1,(p,i)=>`<td class="idx">${i+1}</td>`],
   ["name","Project",1,p=>`<td class="nm">${esc(p.name)}${isDue(p)?` <span class="pill" style="background:var(--accent);color:var(--accent-ink)">Update due</span>`:""}${S.filter==="attn"?whyHTML(p):""}</td>`],
   ["job","Job # / FA#",1,p=>`<td>${esc(p.jobNumber)}</td>`],
-  ["loc","Building",1,p=>`<td>${esc(p.location)}</td>`],
+  ["loc","Building",1,p=>`<td>${esc(locLabel(p))}</td>`],
+  ["addr","Address",0,p=>`<td>${esc(p.address)}</td>`],
   ["dept","Department",0,p=>`<td>${esc(p.department)}</td>`],
   ["status","Status",1,p=>`<td>${statusPill(p.status)}</td>`],
   ["phase","Phase",1,p=>`<td>${phasePill(p)}</td>`],
@@ -723,7 +725,7 @@ const COLS=[
   ["upd","Updated",1,p=>`<td class="dt">${fmtDate((p.lastUpdateAt||p.createdAt||"").slice(0,10))}</td>`],
   ["notes","Notes",0,p=>`<td>${esc(p.notes)}</td>`]];
 function colsOn(){let c=null;try{c=JSON.parse(localStorage.getItem("cols")||"null")}catch(e){}return new Set(Array.isArray(c)?c:COLS.filter(x=>x[2]).map(x=>x[0]))}
-const SORT_KEY={job:p=>p.jobNumber,loc:p=>p.location,dept:p=>p.department,name:p=>p.name,lead:p=>p.lead,next:p=>p.nextMilestone,notes:p=>p.notes,
+const SORT_KEY={job:p=>p.jobNumber,loc:p=>locLabel(p),addr:p=>p.address,dept:p=>p.department,name:p=>p.name,lead:p=>p.lead,next:p=>p.nextMilestone,notes:p=>p.notes,
   status:p=>{const i=STATUSES.indexOf(p.status||"Not started");return i<0?null:i},phase:p=>{const i=phasesFor(p.category).indexOf(p.phase);return i<0?null:i},
   prio:p=>{const i=PRIORITIES.indexOf(p.priority);return i<0?null:i},budget:p=>budgetOf(p)||null,pct:p=>p.percent==null||p.percent===""?null:Number(p.percent),
   start:p=>p.startDate,due:p=>p.dueDate,mdate:p=>p.milestoneDate,upd:p=>(p.lastUpdateAt||p.createdAt||"").slice(0,10)};
@@ -744,6 +746,22 @@ function deptField(v){v=String(v||"").trim();const opts=deptOptions(),hit=opts.f
   return `<select id="fDept"><option value="">Choose a department</option>${opts.map(x=>`<option${x===hit?" selected":""}>${esc(x)}</option>`).join("")}<option value="__other"${v&&!hit?" selected":""}>Other…</option></select>
   <input type="text" id="fDeptOther" aria-label="Other department" placeholder="Type the department" maxlength="60" style="margin-top:6px" ${v&&!hit?`value="${esc(v)}"`:"hidden"}>`}
 function deptVal(){const s=document.getElementById("fDept");if(!s)return "";if(s.value!=="__other")return s.value;const o=document.getElementById("fDeptOther").value.trim();return o}
+const BUILDINGS=[["A","27157 470th Ave","Tea SD, 57064",4.2],["B","46999 Monty St","Tea SD, 57064",4.2],["C","27179 470th Ave","Tea SD, 57064",4.2],["D","1801 Monty St (46987 Monty St)","Tea SD, 57064",6.2],
+  ["E","1810 Monty St","Tea SD, 57064",4.2],["F","27157 470th Ave","Tea SD, 57064",4.2],["G","1815 Mindy St","Tea SD, 57064",6.2],["H","27157 470th Ave","Tea SD, 57064",4.2],
+  ["I","1820 Mindy St","Tea SD, 57064",6.2],["J","1900 Mindy St","Tea SD, 57064",6.2],["K","1625 Mindy St","Tea SD, 57064",6.2],["L","1615 Mindy St","Tea SD, 57064",6.2],
+  ["M","1626 Mindy St","Tea SD, 57064",6.2],["M1","1620 Mindy St","Tea SD, 57064",6.2],["X","125 S Sundowner Ave (470th Ave)","Tea SD, 57064",6.2],["Z","1501 E. 1st Street","Tea SD, 57064",6.2],
+  ["SFA","4401 E Producer Lane","Sioux Falls SD, 57064",6.2],["J1","1810 Mindy St (Ste 2)","Tea SD, 57064",6.2],["ARK","1701 Mindy St","Tea SD, 57065",6.2]]
+  .map(([name,street,city,tax])=>({name,street,city,tax,address:street+", "+city})).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
+const bldgOf=v=>{v=String(v||"").trim().toLowerCase().replace(/^(building|bldg\.?)\s*/,"");return v?BUILDINGS.find(b=>b.name.toLowerCase()===v):null};
+const locLabel=p=>[p.location,p.area].map(x=>String(x||"").trim()).filter(Boolean).join(" · ");
+const mapsLink=a=>`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a)}" target="_blank" rel="noopener">${esc(a)}</a>`;
+function bldgAddrLine(b){return b?`${esc(b.address)} · ${b.tax}% tax`:""}
+function bldgField(d){const v=String(d.location||"").trim(),hit=bldgOf(v),other=!!v&&!hit;
+  return `<select id="fLoc"><option value="">Choose a building</option>${BUILDINGS.map(b=>`<option value="${esc(b.name)}"${b===hit?" selected":""}>${esc(b.name)} · ${esc(b.street)}</option>`).join("")}<option value="__other"${other?" selected":""}>Other…</option></select>
+  <div id="fLocOther" class="row" style="margin-top:6px;align-items:start" ${other?"":"hidden"}><input type="text" id="fLocName" aria-label="Building name" placeholder="Building name" maxlength="60" value="${other?esc(v):""}" style="flex:1;min-width:120px"><input type="text" id="fLocAddr" aria-label="Address" placeholder="Address (optional)" maxlength="120" value="${other?esc(d.address||""):""}" style="flex:2;min-width:180px"></div>
+  <p class="meta" id="fLocShow" style="margin:6px 0 0" ${hit?"":"hidden"}>${bldgAddrLine(hit)}</p>`}
+function bldgVal(){const s=document.getElementById("fLoc");if(!s)return {};if(s.value==="__other")return {location:document.getElementById("fLocName").value.trim(),address:document.getElementById("fLocAddr").value.trim(),taxRate:null};
+  const b=bldgOf(s.value);return b?{location:b.name,address:b.address,taxRate:b.tax}:{location:"",address:"",taxRate:null}}
 function colsMenuHTML(){const on=colsOn();return `<details class="cols" id="colsMenu" ${S.colsOpen?"open":""}><summary class="btn small">${IC.cols}Columns</summary><div class="pop">${COLS.filter(c=>c[0]!=="name").map(([k,l])=>`<label><input type="checkbox" data-col="${k}" ${on.has(k)?"checked":""}>${esc(l)}</label>`).join("")}</div></details>`}
 function tableHTML(list){const on=colsOn(),cols=COLS.filter(c=>c[0]==="name"||on.has(c[0]));return `<div class="tblwrap"><table class="list"><thead><tr>${cols.map(thHTML).join("")}</tr></thead><tbody>
   ${list.map((p,i)=>`<tr data-open="${p.id}" class="${S.open===p.id?"sel":""}">${cols.map(c=>c[3](p,i)).join("")}</tr>`).join("")}</tbody></table></div>`}
@@ -753,7 +771,7 @@ function cardHTML(p){
     <div class="row"><span class="tag cat-${esc(p.category)}">${esc(CATS[p.category]?.label)}</span>${phasePill(p)}<span class="pill ${STATUS_CLS[p.status]||"s-idle"}">${esc(p.status)}</span>${["High","Urgent","Critical"].includes(p.priority)?prioPill(p.priority):""}${isNew(p)?`<span class="pill" style="background:var(--accent);color:var(--accent-ink)">New update</span>`:""}</div>
     <h3>${esc(p.name)}</h3>${S.filter==="attn"?whyHTML(p):""}
     ${p.lastSummary?`<div style="font-size:.95rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(p.lastSummary)}</div>`:""}
-    ${p.location||p.jobNumber||p.department?`<div class="meta">${[p.jobNumber,p.department,p.location].filter(Boolean).map(esc).join(" · ")}</div>`:""}
+    ${p.location||p.jobNumber||p.department?`<div class="meta">${[p.jobNumber,p.department,locLabel(p)].filter(Boolean).map(esc).join(" · ")}</div>`:""}
     ${p.nextMilestone?`<div class="meta">Next: <b style="color:var(--ink)">${esc(p.nextMilestone)}</b>${p.milestoneDate?" · "+fmtDate(p.milestoneDate):""}</div>`:""}
     <div class="prog" aria-label="${pct}% complete"><i style="width:${pct}%"></i></div>
     <div class="row meta"><span>${pct}%</span>${(()=>{const it=p.phase?chkFor(p,p.phase):[];return it.length?`<span>· Checklist ${it.filter(x=>x.done).length}/${it.length}</span>`:""})()}${p.dueDate?`<span>· Due ${fmtDate(p.dueDate)}</span>`:""}<span>· Updated ${ago(p.lastUpdateAt)}</span>${S.isOwner?`<span>· ${(p.members||[]).filter(x=>x!==S.me).length} following</span>`:""}${openQs(p.id).length&&S.isOwner?`<span>· ${openQs(p.id).length} open question${openQs(p.id).length>1?"s":""}</span>`:""}</div>
@@ -956,7 +974,7 @@ async function approveRequest(id,cat,auto){const r=S.requests.find(x=>x.id===id)
   if(!cat){const box=document.getElementById("rqno_"+id);if(box)box.innerHTML=`<div class="stack" style="gap:8px"><span class="meta">What kind of project is it?</span><div class="row">${Object.entries(CATS).map(([k,c])=>`<button class="btn small" data-rqcat="${k}" data-rqid="${esc(id)}">${esc(c.label)}</button>`).join("")}</div></div>`;return false}
   const num=Number(String(r.budget||"").replace(/[$,\s]/g,"")),bf=CATS[cat].fields.find(f=>f.k==="budget"||f.k==="cost"),useNum=bf&&isFinite(num)&&num>0;
   const who=[r.name,r.department].map(x=>String(x||"").trim()).filter(Boolean).join(", "),reach=[r.email,r.phone].filter(Boolean).join(", "),mem=requesterKey(r),t=now(),pid="req_"+id;
-  const body={name:r.title||"Untitled request",category:cat,location:r.location||"",priority:PRIORITIES.includes(r.priority)?r.priority:"Normal",startDate:"",dueDate:r.neededBy||"",
+  const rb=bldgOf(r.location);const body={name:r.title||"Untitled request",category:cat,location:rb?rb.name:r.location||"",address:rb?rb.address:"",taxRate:rb?rb.tax:null,priority:PRIORITIES.includes(r.priority)?r.priority:"Normal",startDate:"",dueDate:r.neededBy||"",
     description:r.description||"",members:mem?[mem]:[],groups:[],jobNumber:"",department:r.department||"",lead:S.people[S.me]?.name||"",phase:"",nextMilestone:"",milestoneDate:"",
     notes:["Requested by "+who+(reach?" ("+reach+")":"")+(r.at?" on "+dayOf(r.at):"")+".",r.budget&&!useNum?"Budget given: "+r.budget+".":"",auto&&!CATS[r.type]?"Kind of work wasn't given, so this was filed under Maintenance.":""].filter(Boolean).join(" "),
     details:useNum?{[bf.k]:String(num)}:{},schedule:{freq:"weekly",day:1},status:"Not started",updatedAt:t,percent:0,owner:S.me,memberInfo:{[S.me]:{addedAt:t}},createdAt:t,lastUpdateAt:t,lastCheckin:{[S.me]:t},requestId:id};
@@ -971,7 +989,7 @@ function startWizard(edit){
   renderWizard()}
 function wizardCollect(){
   const g=id=>document.getElementById(id);const d=W.d;
-  if(W.step===1){d.name=g("fName").value.trim();d.location=g("fLoc").value.trim();d.priority=segVal(g("fPri"))||"Normal";d.startDate=g("fStart").value;d.dueDate=g("fDue").value;d.description=g("fDesc").value.trim();d.jobNumber=g("fJob").value.trim();d.department=deptVal();d.lead=g("fLead").value.trim();d.phase=segVal(g("fPhase"));d.nextMilestone=g("fMs").value.trim();d.milestoneDate=g("fMsDate").value;d.notes=g("fNotes").value.trim();if(W.edit)d.percent=Number(g("fPct").value)||0;if(W.edit)d.status=g("fStatus").value}
+  if(W.step===1){d.name=g("fName").value.trim();Object.assign(d,bldgVal());d.area=g("fArea").value.trim();d.priority=segVal(g("fPri"))||"Normal";d.startDate=g("fStart").value;d.dueDate=g("fDue").value;d.description=g("fDesc").value.trim();d.jobNumber=g("fJob").value.trim();d.department=deptVal();d.lead=g("fLead").value.trim();d.phase=segVal(g("fPhase"));d.nextMilestone=g("fMs").value.trim();d.milestoneDate=g("fMsDate").value;d.notes=g("fNotes").value.trim();if(W.edit)d.percent=Number(g("fPct").value)||0;if(W.edit)d.status=g("fStatus").value}
   if(W.step===2){CATS[d.category].fields.forEach(f=>{const el=g("c_"+f.k);d.details[f.k]=f.type==="seg"?segVal(el):el.value.trim()})}
   if(W.step===4){d.groups=[...document.querySelectorAll('input[name="vg"]:checked')].map(x=>x.value);}
 }
@@ -993,7 +1011,8 @@ function renderWizard(){
     <div class="field" style="flex:1;min-width:140px"><label for="fDept">Department</label>${deptField(d.department)}</div></div>
     <div class="field"><label for="fLead">Lead</label><input type="text" id="fLead" value="${esc(d.lead??(S.people[S.me]?.name||""))}"></div>
     <div class="field"><label>Phase</label>${segHTML("fPhase",phasesFor(d.category),d.phase)}</div>
-    <div class="field"><label for="fLoc">Building / area</label><input type="text" id="fLoc" value="${esc(d.location)}" placeholder="e.g. Main building, Room 114"></div>
+    <div class="row" style="align-items:start"><div class="field" style="flex:1;min-width:180px"><label for="fLoc">Building</label>${bldgField(d)}</div>
+    <div class="field" style="flex:1;min-width:140px"><label for="fArea">Area or room <span class="meta">(optional)</span></label><input type="text" id="fArea" value="${esc(d.area||"")}" maxlength="80" placeholder="e.g. Room 114, north dock"></div></div>
     <div class="field"><label>Priority</label>${segHTML("fPri",PRIORITIES,d.priority)}</div>
     ${W.edit?`<div class="field"><label for="fStatus">Status</label><select id="fStatus">${STATUSES.map(s=>`<option ${s===d.status?"selected":""}>${s}</option>`).join("")}</select></div>`:""}
     <div class="row" style="align-items:start"><div class="field" style="flex:1;min-width:140px"><label for="fStart">Start date</label><input type="date" id="fStart" value="${esc(d.startDate)}"></div>
@@ -1029,7 +1048,7 @@ function renderWizard(){
 async function saveWizard(){
   wizardCollect();const d=W.d;
   if(!d.name){W.step=1;renderWizard();return toast("Give the project a name.")}
-  const body={name:d.name,category:d.category,location:d.location||"",priority:d.priority,startDate:d.startDate||"",dueDate:d.dueDate||"",description:d.description||"",members:d.members||[],groups:d.groups||[],jobNumber:d.jobNumber||"",department:d.department||"",lead:d.lead||"",phase:d.phase||"",nextMilestone:d.nextMilestone||"",milestoneDate:d.milestoneDate||"",notes:d.notes||"",...(W.edit?{percent:Math.max(0,Math.min(100,d.percent||0))}:{}),details:d.details,schedule:d.schedule,status:d.status||"Not started",updatedAt:now()};
+  const body={name:d.name,category:d.category,location:d.location||"",area:d.area||"",address:d.address||"",taxRate:d.taxRate??null,priority:d.priority,startDate:d.startDate||"",dueDate:d.dueDate||"",description:d.description||"",members:d.members||[],groups:d.groups||[],jobNumber:d.jobNumber||"",department:d.department||"",lead:d.lead||"",phase:d.phase||"",nextMilestone:d.nextMilestone||"",milestoneDate:d.milestoneDate||"",notes:d.notes||"",...(W.edit?{percent:Math.max(0,Math.min(100,d.percent||0))}:{}),details:d.details,schedule:d.schedule,status:d.status||"Not started",updatedAt:now()};
   try{
     if(W.edit){await S.db.doc("projects/"+W.edit).update(body);toast("Saved");const back=W.back;W=null;openProject(d.id,back)}
     else{const t=now();const ref=await S.db.collection("projects").add({...body,percent:0,owner:S.me,memberInfo:{[S.me]:{addedAt:t}},createdAt:t,lastUpdateAt:t,lastCheckin:{[S.me]:t}});
@@ -1063,7 +1082,8 @@ function renderSheet(){
     body=`<div class="stack">
       ${phs.length?`<div class="stepper" aria-label="Phase">${phs.map((x,i)=>`<div class="stp ${done||i<pi?"done":i===pi?"cur":""}"><span class="dot"></span>${esc(x)}</div>`).join("")}</div>`:""}
       <div class="facts">
-        ${fact(IC.bldg,"Building / area",esc(p.location))}
+        ${fact(IC.bldg,"Building",esc(locLabel(p)))}
+        ${fact(IC.bldg,"Address",p.address?mapsLink(p.address)+(p.taxRate!=null&&p.taxRate!==""?` <small style="display:inline">· ${esc(p.taxRate)}% tax</small>`:""):"")}
         ${fact(IC.target,"Status",statusPill(p.status))}
         ${fact(IC.dollar,p.details?.cost&&!p.details?.budget?"Cost":"Budget",budgetOf(p)?money(budgetOf(p)):"")}
         ${fact(IC.flag,"Priority",prioPill(p.priority))}
@@ -1118,7 +1138,7 @@ function renderSheet(){
         <div class="nm"><b>${esc(nameOf(id))}</b><div class="meta">${esc(subOf(id))}${isContactKey(id)?" · hasn't signed in yet":""}${directOf(p).includes(id)?"":" · via group"}</div></div></div>`).join("")||`<div class="empty">Only you can see this project.</div>`}</div></div>
     </div>`}
   layer.innerHTML=`<div class="scrim" data-scrim="1"><div class="sheet" role="dialog" aria-modal="true">
-    <div class="sheet-head"><div style="min-width:0"><h2>${esc(p.name)}</h2><div class="meta">${[p.jobNumber?"#"+esc(p.jobNumber):"",esc(c.label),p.location?esc(p.location):""].filter(Boolean).join(" · ")}${p.status?` · <span style="color:var(--blue)">${esc(p.status)}</span>`:""}</div></div><button class="btn small" data-act="close" aria-label="Close">✕</button></div>
+    <div class="sheet-head"><div style="min-width:0"><h2>${esc(p.name)}</h2><div class="meta">${[p.jobNumber?"#"+esc(p.jobNumber):"",esc(c.label),locLabel(p)?esc(locLabel(p)):""].filter(Boolean).join(" · ")}${p.status?` · <span style="color:var(--blue)">${esc(p.status)}</span>`:""}</div></div><button class="btn small" data-act="close" aria-label="Close">✕</button></div>
     <div class="tabs" role="tablist">${tabs.map(([k,l])=>`<button class="tab" role="tab" data-tab="${k}" aria-selected="${S.openTab===k}">${esc(l)}</button>`).join("")}</div>
     ${body}</div></div>`;
   document.body.style.overflow="hidden";document.body.classList.add("psplit");
@@ -1333,7 +1353,7 @@ let aiCtl=null;
 async function askAI(){
   const t=document.getElementById("qText").value.trim();if(!t)return toast("Type a question first.");
   const p=curProject(),c=CATS[p.category];
-  const facts={name:p.name,category:c.label,location:p.location,status:p.status,percent:p.percent,priority:p.priority,start:p.startDate,due:p.dueDate,description:p.description,jobNumber:p.jobNumber,department:p.department,lead:p.lead,phase:p.phase,nextMilestone:p.nextMilestone,milestoneDate:p.milestoneDate,notes:p.notes,
+  const facts={name:p.name,category:c.label,location:locLabel(p),address:p.address,status:p.status,percent:p.percent,priority:p.priority,start:p.startDate,due:p.dueDate,description:p.description,jobNumber:p.jobNumber,department:p.department,lead:p.lead,phase:p.phase,nextMilestone:p.nextMilestone,milestoneDate:p.milestoneDate,notes:p.notes,
     details:Object.fromEntries(c.fields.map(f=>[f.label,p.details?.[f.k]]).filter(([,v])=>v)),
     
     recentUpdates:S.updates.slice(0,15).map(u=>({by:nameOf(u.author),when:u.at,status:u.status,percent:u.percent,done:u.done,next:u.next,blockers:u.blockers,[u.question||"q"]:u.answer})),
@@ -1584,6 +1604,7 @@ document.addEventListener("change",async e=>{
   if(e.target.id==="rDays")return openReport(Number(e.target.value));
   if(e.target.id==="applyFile"&&e.target.files[0])return loadApplyFile(e.target.files[0]);
   if(e.target.id==="pFilter"){S.filter=e.target.value;return render()}
+  if(e.target.id==="fLoc"){const o=document.getElementById("fLocOther"),sh=document.getElementById("fLocShow"),b=bldgOf(e.target.value);o.hidden=e.target.value!=="__other";sh.hidden=!b;sh.innerHTML=bldgAddrLine(b);if(!o.hidden)document.getElementById("fLocName").focus();return}
   if(e.target.id==="fDept"){const o=document.getElementById("fDeptOther");o.hidden=e.target.value!=="__other";if(!o.hidden)o.focus();return}
   if(e.target.dataset?.col){const on=colsOn();e.target.checked?on.add(e.target.dataset.col):on.delete(e.target.dataset.col);try{localStorage.setItem("cols",JSON.stringify([...on]))}catch(err){}S.colsOpen=true;render();S.colsOpen=false;return}
   if(e.target.id==="vpAdd"&&e.target.value&&W){W.d.members=[...(W.d.members||[]),e.target.value];wizardCollect();renderWizard();setTimeout(()=>document.getElementById("vpAdd")?.focus(),0);return}if(e.target.dataset?.prio){const id=e.target.dataset.prio,v=e.target.value;try{await S.db.doc("projects/"+id).update({priority:v,updatedAt:now()});toast("Urgency set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.id==="importFile"&&e.target.files.length)return importOld(e.target.files[0]);if(e.target.id==="fileIn"&&e.target.files.length){const n=await uploadFiles(S.open,e.target.files,"");if(n.length)toast(n.length+" file"+(n.length>1?"s":"")+" added")}});
