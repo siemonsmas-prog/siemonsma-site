@@ -114,6 +114,7 @@ select.prio-sel option{background:#fff;color:#13223a}
 table.list{border-collapse:collapse;width:100%;min-width:980px;font-size:.9rem}
 table.list thead th{background:var(--sunk)}
 table.list th{font-family:var(--display);text-transform:uppercase;letter-spacing:.05em;font-size:.8rem;color:var(--muted);text-align:left;padding:10px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.list th .thsort{all:unset;cursor:pointer;display:inline-flex;align-items:center;gap:4px;border-radius:4px}table.list th .thsort:hover{color:var(--ink)}table.list th .thsort:focus-visible{outline:2px solid var(--accent);outline-offset:2px}table.list th[aria-sort] .thsort{color:var(--ink)}table.list th .thsort i{font-style:normal;font-size:.7rem;opacity:.35}table.list th[aria-sort] .thsort i{opacity:1}
 table.list td{padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
 table.list tr[data-open]{cursor:pointer} table.list tr[data-open]:hover td{background:var(--sunk)}
 table.list td.num{text-align:right;font-variant-numeric:tabular-nums}
@@ -630,7 +631,7 @@ function render(){
   const due=mine.filter(isDue);
   const list=mine.filter(matchFilter).sort(S.filter==="attn"?(a,b)=>attnScore(b)-attnScore(a)||prioSort(a,b):prioSort);
   const counts={};mine.forEach(p=>counts[p.category]=(counts[p.category]||0)+1);
-  const shown=list.filter(matchSearch);
+  const shown=S.isOwner&&S.layout==="table"?applySort(list.filter(matchSearch)):list.filter(matchSearch);
   app.innerHTML=`
   <section class="hero">
     <h1>Project Tracker</h1>
@@ -722,8 +723,29 @@ const COLS=[
   ["upd","Updated",1,p=>`<td class="dt">${fmtDate((p.lastUpdateAt||p.createdAt||"").slice(0,10))}</td>`],
   ["notes","Notes",0,p=>`<td>${esc(p.notes)}</td>`]];
 function colsOn(){let c=null;try{c=JSON.parse(localStorage.getItem("cols")||"null")}catch(e){}return new Set(Array.isArray(c)?c:COLS.filter(x=>x[2]).map(x=>x[0]))}
+const SORT_KEY={job:p=>p.jobNumber,loc:p=>p.location,dept:p=>p.department,name:p=>p.name,lead:p=>p.lead,next:p=>p.nextMilestone,notes:p=>p.notes,
+  status:p=>{const i=STATUSES.indexOf(p.status||"Not started");return i<0?null:i},phase:p=>{const i=phasesFor(p.category).indexOf(p.phase);return i<0?null:i},
+  prio:p=>{const i=PRIORITIES.indexOf(p.priority);return i<0?null:i},budget:p=>budgetOf(p)||null,pct:p=>p.percent==null||p.percent===""?null:Number(p.percent),
+  start:p=>p.startDate,due:p=>p.dueDate,mdate:p=>p.milestoneDate,upd:p=>(p.lastUpdateAt||p.createdAt||"").slice(0,10)};
+const SORT_DESC_FIRST=["prio","budget","pct","upd"];
+function sortOf(){if(S.sort!==undefined)return S.sort;let v=null;try{v=JSON.parse(localStorage.getItem("sort")||"null")}catch(e){}return S.sort=v&&SORT_KEY[v.k]&&(v.dir===1||v.dir===-1)?v:null}
+function setSort(k){const cur=sortOf(),first=SORT_DESC_FIRST.includes(k)?-1:1;
+  S.sort=!cur||cur.k!==k?{k,dir:first}:cur.dir===first?{k,dir:-first}:null;
+  try{S.sort?localStorage.setItem("sort",JSON.stringify(S.sort)):localStorage.removeItem("sort")}catch(e){}}
+function applySort(list){const so=sortOf();if(!so)return list;const f=SORT_KEY[so.k];
+  const blank=v=>v==null||v==="";
+  return list.map((p,i)=>({p,i,v:f(p)})).sort((a,b)=>{const ea=blank(a.v),eb=blank(b.v);if(ea||eb)return ea&&eb?a.i-b.i:ea?1:-1;
+    const c=typeof a.v==="number"&&typeof b.v==="number"?a.v-b.v:String(a.v).localeCompare(String(b.v),undefined,{numeric:true,sensitivity:"base"});return c*so.dir||a.i-b.i}).map(x=>x.p)}
+function thHTML(c){if(!SORT_KEY[c[0]])return `<th>${esc(c[1])}</th>`;const so=sortOf(),on=so&&so.k===c[0];
+  return `<th${on?` aria-sort="${so.dir>0?"ascending":"descending"}"`:""}><button type="button" class="thsort" data-sort="${c[0]}" title="Sort by ${esc(c[1])}">${esc(c[1])}<i aria-hidden="true">${on?(so.dir>0?"▲":"▼"):"↕"}</i></button></th>`}
+const DEPTS=["Construction","Custodial","Facilities","Logistics","Maintenance","Purchasing"];
+function deptOptions(){const m=new Map();[...DEPTS,...S.projects.map(p=>p.department)].forEach(x=>{x=String(x||"").trim();if(x&&!m.has(x.toLowerCase()))m.set(x.toLowerCase(),x)});return [...m.values()].sort((a,b)=>a.localeCompare(b))}
+function deptField(v){v=String(v||"").trim();const opts=deptOptions(),hit=opts.find(x=>x.toLowerCase()===v.toLowerCase());
+  return `<select id="fDept"><option value="">Choose a department</option>${opts.map(x=>`<option${x===hit?" selected":""}>${esc(x)}</option>`).join("")}<option value="__other"${v&&!hit?" selected":""}>Other…</option></select>
+  <input type="text" id="fDeptOther" aria-label="Other department" placeholder="Type the department" maxlength="60" style="margin-top:6px" ${v&&!hit?`value="${esc(v)}"`:"hidden"}>`}
+function deptVal(){const s=document.getElementById("fDept");if(!s)return "";if(s.value!=="__other")return s.value;const o=document.getElementById("fDeptOther").value.trim();return o}
 function colsMenuHTML(){const on=colsOn();return `<details class="cols" id="colsMenu" ${S.colsOpen?"open":""}><summary class="btn small">${IC.cols}Columns</summary><div class="pop">${COLS.filter(c=>c[0]!=="name").map(([k,l])=>`<label><input type="checkbox" data-col="${k}" ${on.has(k)?"checked":""}>${esc(l)}</label>`).join("")}</div></details>`}
-function tableHTML(list){const on=colsOn(),cols=COLS.filter(c=>c[0]==="name"||on.has(c[0]));return `<div class="tblwrap"><table class="list"><thead><tr>${cols.map(c=>`<th>${esc(c[1])}</th>`).join("")}</tr></thead><tbody>
+function tableHTML(list){const on=colsOn(),cols=COLS.filter(c=>c[0]==="name"||on.has(c[0]));return `<div class="tblwrap"><table class="list"><thead><tr>${cols.map(thHTML).join("")}</tr></thead><tbody>
   ${list.map((p,i)=>`<tr data-open="${p.id}" class="${S.open===p.id?"sel":""}">${cols.map(c=>c[3](p,i)).join("")}</tr>`).join("")}</tbody></table></div>`}
 function cardHTML(p){
   const pct=p.percent||0;
@@ -949,7 +971,7 @@ function startWizard(edit){
   renderWizard()}
 function wizardCollect(){
   const g=id=>document.getElementById(id);const d=W.d;
-  if(W.step===1){d.name=g("fName").value.trim();d.location=g("fLoc").value.trim();d.priority=segVal(g("fPri"))||"Normal";d.startDate=g("fStart").value;d.dueDate=g("fDue").value;d.description=g("fDesc").value.trim();d.jobNumber=g("fJob").value.trim();d.department=g("fDept").value.trim();d.lead=g("fLead").value.trim();d.phase=segVal(g("fPhase"));d.nextMilestone=g("fMs").value.trim();d.milestoneDate=g("fMsDate").value;d.notes=g("fNotes").value.trim();if(W.edit)d.percent=Number(g("fPct").value)||0;if(W.edit)d.status=g("fStatus").value}
+  if(W.step===1){d.name=g("fName").value.trim();d.location=g("fLoc").value.trim();d.priority=segVal(g("fPri"))||"Normal";d.startDate=g("fStart").value;d.dueDate=g("fDue").value;d.description=g("fDesc").value.trim();d.jobNumber=g("fJob").value.trim();d.department=deptVal();d.lead=g("fLead").value.trim();d.phase=segVal(g("fPhase"));d.nextMilestone=g("fMs").value.trim();d.milestoneDate=g("fMsDate").value;d.notes=g("fNotes").value.trim();if(W.edit)d.percent=Number(g("fPct").value)||0;if(W.edit)d.status=g("fStatus").value}
   if(W.step===2){CATS[d.category].fields.forEach(f=>{const el=g("c_"+f.k);d.details[f.k]=f.type==="seg"?segVal(el):el.value.trim()})}
   if(W.step===4){d.groups=[...document.querySelectorAll('input[name="vg"]:checked')].map(x=>x.value);}
 }
@@ -968,7 +990,7 @@ function renderWizard(){
   if(W.step===1)body=`
     <div class="field"><label for="fName">Project name</label><input type="text" id="fName" value="${esc(d.name)}" placeholder="e.g. Gym floor refinish"></div>
     <div class="row" style="align-items:start"><div class="field" style="flex:1;min-width:140px"><label for="fJob">Job number or FA#</label><input type="text" id="fJob" value="${esc(d.jobNumber)}" placeholder="e.g. 26-69"></div>
-    <div class="field" style="flex:1;min-width:140px"><label for="fDept">Department</label><input type="text" id="fDept" value="${esc(d.department)}" placeholder="e.g. Construction"></div></div>
+    <div class="field" style="flex:1;min-width:140px"><label for="fDept">Department</label>${deptField(d.department)}</div></div>
     <div class="field"><label for="fLead">Lead</label><input type="text" id="fLead" value="${esc(d.lead??(S.people[S.me]?.name||""))}"></div>
     <div class="field"><label>Phase</label>${segHTML("fPhase",phasesFor(d.category),d.phase)}</div>
     <div class="field"><label for="fLoc">Building / area</label><input type="text" id="fLoc" value="${esc(d.location)}" placeholder="e.g. Main building, Room 114"></div>
@@ -1469,6 +1491,7 @@ document.addEventListener("click",async e=>{
   if(t.closest('a[data-act="home"]'))e.preventDefault();
   if(t.closest?.("select.prio-sel"))return;
   if(t.classList?.contains("scrim")){if(layer.dataset.view==="update"&&S.updFor)return openProject(S.updFor);return closeSheet()}
+  const srt=t.closest("[data-sort]");if(srt){setSort(srt.dataset.sort);return render()}
   const pt=t.closest("[data-pgtab]");if(pt){S.pgTab=pt.dataset.pgtab;return renderGroups()}
   const oq=t.closest("[data-openq]");if(oq)return openProject(oq.dataset.openq,"questions");
   const ck=t.closest("[data-ckdel],[data-ckadd],[data-cktpl]");if(ck){const d=ck.dataset;return d.ckdel?delItem(d.ckdel):d.ckadd?addItem(d.ckadd):addTpl(d.cktpl)}
@@ -1561,6 +1584,7 @@ document.addEventListener("change",async e=>{
   if(e.target.id==="rDays")return openReport(Number(e.target.value));
   if(e.target.id==="applyFile"&&e.target.files[0])return loadApplyFile(e.target.files[0]);
   if(e.target.id==="pFilter"){S.filter=e.target.value;return render()}
+  if(e.target.id==="fDept"){const o=document.getElementById("fDeptOther");o.hidden=e.target.value!=="__other";if(!o.hidden)o.focus();return}
   if(e.target.dataset?.col){const on=colsOn();e.target.checked?on.add(e.target.dataset.col):on.delete(e.target.dataset.col);try{localStorage.setItem("cols",JSON.stringify([...on]))}catch(err){}S.colsOpen=true;render();S.colsOpen=false;return}
   if(e.target.id==="vpAdd"&&e.target.value&&W){W.d.members=[...(W.d.members||[]),e.target.value];wizardCollect();renderWizard();setTimeout(()=>document.getElementById("vpAdd")?.focus(),0);return}if(e.target.dataset?.prio){const id=e.target.dataset.prio,v=e.target.value;try{await S.db.doc("projects/"+id).update({priority:v,updatedAt:now()});toast("Urgency set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.id==="importFile"&&e.target.files.length)return importOld(e.target.files[0]);if(e.target.id==="fileIn"&&e.target.files.length){const n=await uploadFiles(S.open,e.target.files,"");if(n.length)toast(n.length+" file"+(n.length>1?"s":"")+" added")}});
 document.addEventListener("keydown",e=>{
