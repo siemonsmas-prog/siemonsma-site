@@ -738,8 +738,8 @@ function applySort(list){const so=sortOf();if(!so)return list;const f=SORT_KEY[s
     const c=typeof a.v==="number"&&typeof b.v==="number"?a.v-b.v:String(a.v).localeCompare(String(b.v),undefined,{numeric:true,sensitivity:"base"});return c*so.dir||a.i-b.i}).map(x=>x.p)}
 function thHTML(c){if(!SORT_KEY[c[0]])return `<th>${esc(c[1])}</th>`;const so=sortOf(),on=so&&so.k===c[0];
   return `<th${on?` aria-sort="${so.dir>0?"ascending":"descending"}"`:""}><button type="button" class="thsort" data-sort="${c[0]}" title="Sort by ${esc(c[1])}">${esc(c[1])}<i aria-hidden="true">${on?(so.dir>0?"▲":"▼"):"↕"}</i></button></th>`}
-const DEPTS=["Construction","Custodial","Facilities","Logistics","Maintenance","Purchasing"];
-function deptOptions(){const m=new Map();[...DEPTS,...S.projects.map(p=>p.department)].forEach(x=>{x=String(x||"").trim();if(x&&!m.has(x.toLowerCase()))m.set(x.toLowerCase(),x)});return [...m.values()].sort((a,b)=>a.localeCompare(b))}
+const DEPTS=["Facilities Construction","Facilities Maintenance","Facilities Custodial","Production Prefab","Production Process","Production Paint","Production Electrical","Production Finish","Production House","Production Tank","Purchasing","P2 Engineering","Logistics","Safety","HR","Accounting"];
+function deptOptions(){return DEPTS}
 function deptField(v){v=String(v||"").trim();const opts=deptOptions(),hit=opts.find(x=>x.toLowerCase()===v.toLowerCase());
   return `<select id="fDept"><option value="">Choose a department</option>${opts.map(x=>`<option${x===hit?" selected":""}>${esc(x)}</option>`).join("")}<option value="__other"${v&&!hit?" selected":""}>Other…</option></select>
   <input type="text" id="fDeptOther" aria-label="Other department" placeholder="Type the department" maxlength="60" style="margin-top:6px" ${v&&!hit?`value="${esc(v)}"`:"hidden"}>`}
