@@ -750,7 +750,7 @@ const BUILDINGS=[["A","27157 470th Ave","Tea SD, 57064",4.2],["B","46999 Monty S
   ["E","1810 Monty St","Tea SD, 57064",4.2],["F","27157 470th Ave","Tea SD, 57064",4.2],["G","1815 Mindy St","Tea SD, 57064",6.2],["H","27157 470th Ave","Tea SD, 57064",4.2],
   ["I","1820 Mindy St","Tea SD, 57064",6.2],["J","1900 Mindy St","Tea SD, 57064",6.2],["K","1625 Mindy St","Tea SD, 57064",6.2],["L","1615 Mindy St","Tea SD, 57064",6.2],
   ["M","1626 Mindy St","Tea SD, 57064",6.2],["M1","1620 Mindy St","Tea SD, 57064",6.2],["X","125 S Sundowner Ave (470th Ave)","Tea SD, 57064",6.2],["Z","1501 E. 1st Street","Tea SD, 57064",6.2],
-  ["SFA","4401 E Producer Lane","Sioux Falls SD, 57064",6.2],["J1","1810 Mindy St (Ste 2)","Tea SD, 57064",6.2],["ARK","1701 Mindy St","Tea SD, 57065",6.2]]
+  ["SFA","4401 E Producer Lane","Sioux Falls SD, 57104",6.2],["J1","1810 Mindy St (Ste 2)","Tea SD, 57064",6.2],["ARK","1701 Mindy St","Tea SD, 57064",6.2]]
   .map(([name,street,city,tax])=>({name,street,city,tax,address:street+", "+city})).sort((a,b)=>a.name.localeCompare(b.name,undefined,{numeric:true}));
 const bldgOf=v=>{v=String(v||"").trim().toLowerCase().replace(/^(building|bldg\.?)\s*/,"");return v?BUILDINGS.find(b=>b.name.toLowerCase()===v):null};
 const locLabel=p=>[p.location,p.area].map(x=>String(x||"").trim()).filter(Boolean).join(" · ");
@@ -974,7 +974,7 @@ async function approveRequest(id,cat,auto){const r=S.requests.find(x=>x.id===id)
   if(!cat){const box=document.getElementById("rqno_"+id);if(box)box.innerHTML=`<div class="stack" style="gap:8px"><span class="meta">What kind of project is it?</span><div class="row">${Object.entries(CATS).map(([k,c])=>`<button class="btn small" data-rqcat="${k}" data-rqid="${esc(id)}">${esc(c.label)}</button>`).join("")}</div></div>`;return false}
   const num=Number(String(r.budget||"").replace(/[$,\s]/g,"")),bf=CATS[cat].fields.find(f=>f.k==="budget"||f.k==="cost"),useNum=bf&&isFinite(num)&&num>0;
   const who=[r.name,r.department].map(x=>String(x||"").trim()).filter(Boolean).join(", "),reach=[r.email,r.phone].filter(Boolean).join(", "),mem=requesterKey(r),t=now(),pid="req_"+id;
-  const rb=bldgOf(r.location);const body={name:r.title||"Untitled request",category:cat,location:rb?rb.name:r.location||"",address:rb?rb.address:"",taxRate:rb?rb.tax:null,priority:PRIORITIES.includes(r.priority)?r.priority:"Normal",startDate:"",dueDate:r.neededBy||"",
+  const [rl0,...rl1]=String(r.location||"").split(" · "),rb=bldgOf(rl0);const body={name:r.title||"Untitled request",category:cat,location:rb?rb.name:r.location||"",area:rb?rl1.join(" · "):"",address:rb?rb.address:"",taxRate:rb?rb.tax:null,priority:PRIORITIES.includes(r.priority)?r.priority:"Normal",startDate:"",dueDate:r.neededBy||"",
     description:r.description||"",members:mem?[mem]:[],groups:[],jobNumber:"",department:r.department||"",lead:S.people[S.me]?.name||"",phase:"",nextMilestone:"",milestoneDate:"",
     notes:["Requested by "+who+(reach?" ("+reach+")":"")+(r.at?" on "+dayOf(r.at):"")+".",r.budget&&!useNum?"Budget given: "+r.budget+".":"",auto&&!CATS[r.type]?"Kind of work wasn't given, so this was filed under Maintenance.":""].filter(Boolean).join(" "),
     details:useNum?{[bf.k]:String(num)}:{},schedule:{freq:"weekly",day:1},status:"Not started",updatedAt:t,percent:0,owner:S.me,memberInfo:{[S.me]:{addedAt:t}},createdAt:t,lastUpdateAt:t,lastCheckin:{[S.me]:t},requestId:id};

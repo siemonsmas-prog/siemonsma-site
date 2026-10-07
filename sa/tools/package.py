@@ -6,13 +6,17 @@
 Site layout: / is the home page, /tracker/ is the project tracker (public/), /request/ is the public request form.
 Run build.py and configure.py first so public/ is current.
 """
-import base64, pathlib, shutil, sys
+import base64, html, json, pathlib, re, shutil, sys
 
 HERE = pathlib.Path(__file__).resolve().parent.parent
 SRC = (HERE / "home" / "home.src.html").read_text()
 REQ = (HERE / "request" / "request.src.html").read_text()
 HARVARD = "data:image/png;base64," + base64.b64encode((HERE / "home/img/harvard.png").read_bytes()).decode()
 LOGO = "data:image/png;base64," + base64.b64encode((HERE / "home/img/logo.png").read_bytes()).decode()  # top-left logo (Clint's, 2026-10-04)
+# Building list lives in the tracker source (const BUILDINGS); the request form's dropdown is generated from it.
+_B = re.search(r"const BUILDINGS=(\[.*?\]\])\s*\n?\s*\.map", (HERE.parent / "project-tracker.html").read_text(), re.S)
+BUILDINGS = sorted(json.loads(_B.group(1)), key=lambda b: [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", b[0])])
+BLDG_OPTIONS = "".join(f'<option value="{html.escape(b[0])}">{html.escape(b[0])} · {html.escape(b[1])}</option>' for b in BUILDINGS)
 IMGS = ["hero", "projects", "equipment", "facilities", "documents", "tools"]
 PREVIEW_TRACKER = "https://claude.ai/artifact/MjokkX6mXjEaUNbPoZgq55"
 PREVIEW_HOME = "https://claude.ai/artifact/24NUMwDYFEptnUb7mGcMkC"
@@ -33,7 +37,7 @@ def fill_request(home, tracker, target, mode):
     s = REQ
     for k, v in {"__HOME_URL__": home, "__TRACKER_URL__": tracker, "__LINK_TARGET__": target, "__HARVARD__": HARVARD, "__LOGO__": LOGO, "__MODE__": mode,
                  "__CONFIG_TAG__": '<script src="../tracker/config.js"></script>' if mode == "live" else "",
-                 "__FB_MODULE__": "../tracker/vendor/firebase.js"}.items():
+                 "__FB_MODULE__": "../tracker/vendor/firebase.js", "__BLDG_OPTIONS__": BLDG_OPTIONS}.items():
         s = s.replace(k, v)
     return check(s)
 

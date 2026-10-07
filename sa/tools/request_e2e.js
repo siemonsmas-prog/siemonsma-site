@@ -5,7 +5,7 @@ const pings=[];const fakeNtfy=r=>{const u=new URL(r.request().url());pings.push(
  p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>{if(m.type()==='error'&&!/fonts/.test(m.text()))errs.push(m.text())});
  await p.goto('http://localhost:8790/request/');await p.waitForTimeout(500);
  console.log('preview note hidden:',await p.$eval('#previewNote',x=>x.hidden));
- await p.fill('#rName','Amy Lee');await p.fill('#rPhone','555-0202');await p.fill('#rTitle','Fix leaking sink');await p.fill('#rDesc','Break room sink drips.');await p.click('text=Maintenance or repair');await p.fill('#rNeed','2026-10-20');
+ await p.fill('#rName','Amy Lee');await p.fill('#rPhone','555-0202');await p.fill('#rTitle','Fix leaking sink');await p.fill('#rDesc','Break room sink drips.');await p.selectOption('#rBldg','K');await p.fill('#rArea','Break room');await p.click('text=Maintenance or repair');await p.fill('#rNeed','2026-10-20');
  await p.click('#rSend');await p.waitForTimeout(3000);console.log('page says:',(await p.textContent('#card')).replace(/\s+/g,' ').trim().slice(0,120));
  const {initializeApp}=require('firebase-admin/app');const {getFirestore}=require('firebase-admin/firestore');initializeApp({projectId:'demo-tracker'});
  const s=await getFirestore().collection('requests').get();console.log('requests in db:',s.size,JSON.stringify(s.docs.map(d=>d.data())));

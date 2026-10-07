@@ -51,7 +51,7 @@ legend{padding:0;margin-bottom:14px;font-family:var(--display);font-weight:800;f
 label,.lbl{font-weight:600;font-size:.95rem}
 .opt{color:var(--mist);font-weight:400}
 .hint{color:var(--mist);font-size:.85rem}
-input[type=text],input[type=email],input[type=tel],input[type=date],textarea{width:100%;font:inherit;color:var(--steel);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:11px 12px;min-height:46px}
+input[type=text],input[type=email],input[type=tel],input[type=date],select,textarea{width:100%;font:inherit;color:var(--steel);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:11px 12px;min-height:46px}
 textarea{min-height:130px;resize:vertical}
 input:focus,textarea:focus{outline:2px solid var(--signal);outline-offset:0;border-color:transparent}
 input[aria-invalid=true],textarea[aria-invalid=true]{border-color:var(--bad)}
@@ -159,7 +159,8 @@ footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;
               <label><input type="radio" name="rType" value="other" checked><span>Not sure</span></label>
             </div>
           </div>
-          <div class="field"><label for="rLoc">Building or area <span class="opt">(optional)</span></label><input type="text" id="rLoc" maxlength="150" placeholder="e.g. Building C, shipping office"></div>
+          <div class="field"><label for="rBldg">Building <span class="opt">(optional)</span></label><select id="rBldg"><option value="">Choose a building</option>__BLDG_OPTIONS__<option value="other">Other or not sure</option></select><input type="text" id="rLocOther" aria-label="Building or location" maxlength="70" placeholder="Type the building or location" hidden></div>
+          <div class="field"><label for="rArea">Area or room <span class="opt">(optional)</span></label><input type="text" id="rArea" maxlength="70" placeholder="e.g. shipping office, Room 114"></div>
           <div class="field"><label for="rDesc">Details</label><span class="hint">What needs to happen, and why. Anything you've already tried or quotes you have.</span><textarea id="rDesc" maxlength="4000" required></textarea></div>
           <div class="field"><span class="lbl" id="urgLbl">How urgent is it?</span>
             <div class="chips" role="radiogroup" aria-labelledby="urgLbl">
@@ -217,12 +218,14 @@ async function connect(){ // loads the database only when someone sends, so the 
   return send=d=>fb.addDoc(fb.collection(db,"requests"),d);
 }
 const v=id=>$(id).value.trim();
+$("rBldg").addEventListener("change",()=>{const o=$("rLocOther");o.hidden=$("rBldg").value!=="other";if(!o.hidden)o.focus()});
+const loc=()=>[$("rBldg").value==="other"?v("rLocOther"):v("rBldg"),v("rArea")].filter(Boolean).join(" · ");
 const radio=n=>form.querySelector(`input[name="${n}"]:checked`)?.value||"";
 function mark(id,bad){if(bad)$(id).setAttribute("aria-invalid","true")}
 form.addEventListener("submit",async e=>{
   e.preventDefault();$("eSend").textContent="";$("eContact").textContent="";form.querySelectorAll("[aria-invalid]").forEach(x=>x.removeAttribute("aria-invalid"));
   const d={name:v("rName"),department:v("rDept"),email:v("rEmail").toLowerCase(),phone:v("rPhone"),title:v("rTitle"),type:radio("rType"),
-    location:v("rLoc"),description:v("rDesc"),priority:radio("rUrg"),neededBy:v("rNeed"),budget:v("rBudget"),status:"new",at:new Date().toISOString(),via:"web"};
+    location:loc(),description:v("rDesc"),priority:radio("rUrg"),neededBy:v("rNeed"),budget:v("rBudget"),status:"new",at:new Date().toISOString(),via:"web"};
   const miss=[["rName",!d.name],["rTitle",!d.title],["rDesc",!d.description]];
   miss.forEach(([id,bad])=>mark(id,bad));
   const badEmail=d.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.email);mark("rEmail",badEmail);
