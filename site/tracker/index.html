@@ -1218,10 +1218,19 @@ const isImg=f=>!f.link&&String(f.contentType).startsWith("image/");
 const fmtSize=b=>!b?"":b<1048576?Math.round(b/1024)+" KB":(b/1048576).toFixed(1)+" MB";
 function fileTile(f,canDel){return `<div class="file"><a class="thumb" href="${esc(fileUrl(f))}" target="_blank" rel="noopener">${isImg(f)?`<img alt="${esc(f.name)}" src="${esc(fileUrl(f))}" loading="lazy">`:`<span class="doc">${esc(fileExt(f))}</span>`}</a>
   <div class="fmeta"><b>${esc(f.name)}</b><span class="meta">${esc(nameOf(f.author))} · ${ago(f.at)}${f.size?" · "+fmtSize(f.size):""}</span>${canDel?`<button class="btn small ghost" style="justify-self:start;padding-left:0" data-fdel="${f.id}">Remove</button>`:""}</div></div>`}
+// phone photos are 3-5 MB; shrink them to 2000px on the long side so the free storage lasts (Clint, 2026-10-07)
+async function shrinkPhoto(file){
+  const t=file.type,big=file.size>600*1024;
+  if(!big||!(/^image\/(jpeg|webp|heic|heif)$/.test(t)||t==="image/png"&&file.size>1.5*1024*1024))return file;
+  try{const bm=await createImageBitmap(file,{imageOrientation:"from-image"}),k=Math.min(1,2000/Math.max(bm.width,bm.height));
+    const c=document.createElement("canvas");c.width=Math.round(bm.width*k);c.height=Math.round(bm.height*k);const g=c.getContext("2d");g.fillStyle="#fff";g.fillRect(0,0,c.width,c.height);g.drawImage(bm,0,0,c.width,c.height);bm.close?.();
+    const blob=await new Promise(r=>c.toBlob(r,"image/jpeg",0.82));if(!blob||blob.size>=file.size)return file;
+    return new File([blob],file.name.replace(/\.[^.]+$/,"")+".jpg",{type:"image/jpeg"})}catch(e){return file}}
 async function uploadFiles(pid,list,updateId){
   const out=[],prog=document.getElementById("upProg")||document.getElementById("uProg");
-  for(const [i,file] of [...list].entries()){
+  for(let [i,file] of [...list].entries()){
     if(prog)prog.textContent=`Uploading ${i+1} of ${list.length}: ${file.name}`;
+    file=await shrinkPhoto(file);
     const ext=file.name.split(".").pop().toLowerCase();const clean=/^(image|video)\/|^application\/pdf$/.test(file.type);const type=clean?file.type:(EXT_TYPES[ext]||file.type);
     try{const a=await S.assets.upload(file,type?{type}:undefined);
       await S.db.collection("files").add({projectId:pid,updateId:updateId||"",assetId:a.id,url:a.url,name:file.name,contentType:a.contentType,size:a.sizeBytes,author:S.me,at:now()});out.push(file.name)}
