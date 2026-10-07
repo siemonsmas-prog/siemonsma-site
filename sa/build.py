@@ -52,7 +52,6 @@ rep('"Your access is view-only. Ask the facilities manager to share this app wit
 rep('fatal("Open this app from its claude.ai link while signed in.")', 'fatal("Couldn\'t start the app. Reload the page to try again.")')
 rep('fatal("Sign in to claude.ai to see your projects. If you\'re signed in, ask Clint to share this app with you.")', 'fatal("Couldn\'t connect. Check your connection and reload.")')
 rep("Sign in to claude.ai and reopen the link.", "Sign out and sign in again.")
-rep("Uploading isn't available in this view. Open the app from its claude.ai link to add files.", "File uploads aren't set up yet.")
 rep("They'll see them once they open the app (share it as an Editor from the Share menu) and enter the same name or email you have for them.",
     "Give a contact an email address and they can create an account and sign in. They'll see the projects and groups you give them.")
 rep("People who haven't signed in yet will see the project once they open the app and enter the same name or email you have for them.",

@@ -1059,10 +1059,10 @@ function renderSheet(){
   if(S.openTab==="checklist")body=checklistHTML(p,isLead);
   if(S.openTab==="files"){const fs=S.allFiles.filter(f=>f.projectId===p.id);
     body=`<div class="stack">
-      ${isLead&&S.assets?`<div class="drop"><div><b>Add files</b><div class="meta">Photos, PDFs, videos, or CSV and text files, up to 20 MB each. Save Word or Excel files as PDF first, or add a link to them below.</div></div>
-        <div class="row"><label class="btn primary" for="fileIn">Choose files</label><input type="file" id="fileIn" multiple accept="${ACCEPT}" hidden></div>
+      ${isLead?`<div class="drop">${S.assets?`<div><b>Add files</b><div class="meta">Photos, PDFs, videos, or CSV and text files, up to 20 MB each. Save Word or Excel files as PDF first, or add a link to them below.</div></div>
+        <div class="row"><label class="btn primary" for="fileIn">Choose files</label><input type="file" id="fileIn" multiple accept="${ACCEPT}" hidden></div>`:`<div><b>Add a link to a file</b><div class="meta">Photo and file uploads aren't turned on yet. Put the quote or picture in OneDrive, SharePoint or Google Drive, copy its share link, and paste it here.</div></div>`}
         <div class="row" style="width:100%"><input type="text" id="linkName" placeholder="Link name, e.g. Signed quote (SharePoint)" style="flex:1;min-width:160px"><input type="text" id="linkUrl" placeholder="https://…" style="flex:1;min-width:160px"><button class="btn" data-act="addLink">Add link</button></div>
-        <div id="upProg" class="meta"></div></div>`:isLead?`<div class="notice">Uploading isn't available in this view. Open the app from its claude.ai link to add files.</div>`:""}
+        <div id="upProg" class="meta"></div></div>`:""}
       ${fs.length?`<div class="files">${fs.map(f=>fileTile(f,isLead)).join("")}</div>`:`<div class="empty">No files yet.</div>`}
     </div>`}
   if(S.openTab==="updates")body=`<div class="stack">${isLead?`<div><button class="btn primary" data-update="${p.id}">Post an update</button></div>`:""}
