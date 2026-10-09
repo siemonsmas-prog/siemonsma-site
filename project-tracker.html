@@ -1071,7 +1071,7 @@ async function saveWizard(){
 }
 
 /* ---------- project detail ---------- */
-function openProject(id,tab){
+function openProject(id,tab){S.uEdit=null;
   S.unsubs.forEach(u=>u());S.unsubs=[];S.open=id;S.openTab=tab||"overview";S.updates=[];S.questions=[];S.aiText="";S.openPhases=null;
   const base=S.db.doc("projects/"+id);
   S.unsubs.push(base.collection("updates").orderBy("at","desc").limit(100).onSnapshot(s=>{S.updates=s.docs.map(d=>({id:d.id,...d.data()}));if(layer.dataset.view==="project")renderSheet()},e=>console.warn(e)));
@@ -1299,12 +1299,30 @@ async function addLink(){
   const name=document.getElementById("linkName").value.trim(),url=document.getElementById("linkUrl").value.trim();
   if(!/^https:\/\/\S+$/i.test(url))return toast("Paste a full link starting with https://");
   try{await S.db.collection("files").add({projectId:S.open,updateId:"",link:url,name:name||url,author:S.me,at:now()});toast("Link added")}catch(e){toast(friendly(e))}}
+const updSummary=u=>u.done||u.next||u.blockers||(u.answer?(u.question?u.question+" "+u.answer:u.answer):"");
+function updEditHTML(u){const ta=(id,l,v)=>`<div class="field"><label for="${id}">${esc(l)}</label><textarea id="${id}" rows="2">${esc(v||"")}</textarea></div>`;
+  return `<div class="entry">${whoHTML(u.author,u.at)}<div class="stack" style="gap:10px">${ta("ueDone","Done since last update",u.done)}${ta("ueNext","Next",u.next)}${ta("ueBlock","Blockers",u.blockers)}${u.question||u.answer?ta("ueAns",u.question||"Answer",u.answer):""}
+    <div class="row"><button class="btn small primary" data-usave="${esc(u.id)}">Save changes</button><button class="btn small ghost" data-ucancel="1">Cancel</button></div></div></div>`}
 function updateHTML(u){
+  if(S.isOwner&&S.uEdit===u.id)return updEditHTML(u);
   const part=(l,t)=>t?`<div><div class="lbl">${esc(l)}</div><p>${esc(t)}</p></div>`:"";
-  return `<div class="entry">${whoHTML(u.author,u.at)}
+  return `<div class="entry">${whoHTML(u.author,u.at)}${u.editedAt?` <span class="meta">(edited)</span>`:""}
     <div class="row">${u.phase?phasePill(u):""}${u.status?`<span class="pill ${STATUS_CLS[u.status]||"s-idle"}">${esc(u.status)}</span>`:""}${u.percent!=null?`<span class="meta">${u.percent}% complete</span>`:""}</div>
     ${part("Done since last update",u.done)}${part("Next",u.next)}${part("Blockers",u.blockers)}${u.nextMilestone?part("Next milestone",u.nextMilestone+(u.milestoneDate?" · "+fmtDate(u.milestoneDate):"")):""}${part(u.question||"",u.answer)}
-    ${(()=>{const fs=S.allFiles.filter(f=>f.updateId&&f.updateId===u.id);return fs.length?`<div class="minithumbs">${fs.map(f=>`<a href="${esc(fileUrl(f))}" target="_blank" rel="noopener" title="${esc(f.name)}">${isImg(f)?`<img alt="${esc(f.name)}" src="${esc(fileUrl(f))}" loading="lazy">`:esc(fileExt(f))}</a>`).join("")}</div>`:""})()}</div>`}
+    ${(()=>{const fs=S.allFiles.filter(f=>f.updateId&&f.updateId===u.id);return fs.length?`<div class="minithumbs">${fs.map(f=>`<a href="${esc(fileUrl(f))}" target="_blank" rel="noopener" title="${esc(f.name)}">${isImg(f)?`<img alt="${esc(f.name)}" src="${esc(fileUrl(f))}" loading="lazy">`:esc(fileExt(f))}</a>`).join("")}</div>`:""})()}
+    ${S.isOwner?`<div class="row"><button class="btn small ghost" data-uedit="${esc(u.id)}">Edit</button><button class="btn small ghost" data-udel="${esc(u.id)}">Delete</button></div>`:""}</div>`}
+/* the owner can fix or remove a posted update; the project's "latest update" line follows the newest one left */
+async function syncLatest(pid,list){const p=S.projects.find(x=>x.id===pid);if(!p)return;const top=list[0];
+  const patch=top?{lastUpdateAt:top.at,lastUpdateBy:top.author||S.me,lastSummary:updSummary(top).slice(0,280)}:{lastUpdateAt:p.createdAt||"",lastSummary:""};
+  await S.db.doc("projects/"+pid).update(patch)}
+async function saveUpdEdit(uid){const pid=S.open,u=S.updates.find(x=>x.id===uid);if(!pid||!u)return;const g=id=>document.getElementById(id);
+  const patch={done:g("ueDone").value.trim(),next:g("ueNext").value.trim(),blockers:g("ueBlock").value.trim(),editedAt:now()};if(g("ueAns"))patch.answer=g("ueAns").value.trim();
+  try{await S.db.doc("projects/"+pid+"/updates/"+uid).update(patch);S.uEdit=null;
+    if(S.updates[0]?.id===uid)await syncLatest(pid,[{...u,...patch}]);toast("Update saved")}catch(e){toast(friendly(e))}
+  renderSheet()}
+async function deleteUpd(uid){const pid=S.open;if(!pid)return;
+  try{await S.db.doc("projects/"+pid+"/updates/"+uid).delete();
+    if(S.updates[0]?.id===uid)await syncLatest(pid,S.updates.filter(x=>x.id!==uid));toast("Update deleted")}catch(e){toast(friendly(e))}}
 function qHTML(q){return `<div class="entry">${whoHTML(q.author,q.at)}<p style="font-weight:600">${esc(q.text)}</p>
   <div class="answers">${(q.answers||[]).map(a=>`<div>${whoHTML(a.author,a.at)}<p>${esc(a.text)}</p></div>`).join("")}
   <div class="row"><input type="text" id="ans_${q.id}" placeholder="Write an answer" aria-label="Answer" style="flex:1;min-width:160px"><button class="btn small" data-answer="${q.id}">Answer</button></div></div></div>`}
@@ -1335,7 +1353,7 @@ async function postUpdate(pid,u){
   const p=S.projects.find(x=>x.id===pid);if(!p)return false;const t=now();
   try{
     const uref=S.db.collection("projects/"+pid+"/updates").doc();await uref.set({...u,author:S.me,at:t});
-    const summary=u.done||u.next||u.blockers||(u.answer?(u.question?u.question+" "+u.answer:u.answer):"");
+    const summary=updSummary(u);
     const patch={lastUpdateAt:t,lastUpdateBy:S.me,lastCheckin:{[S.me]:t},lastSummary:summary.slice(0,280)};
     if(u.status)patch.status=u.status;if(u.phase)patch.phase=u.phase;if(u.nextMilestone!=null)patch.nextMilestone=u.nextMilestone;if(u.milestoneDate!=null)patch.milestoneDate=u.milestoneDate;if(u.percent!=null)patch.percent=u.percent;
     await S.db.doc("projects/"+pid).update(patch);return uref.id
@@ -1525,6 +1543,12 @@ document.addEventListener("click",async e=>{
     return decideNote(d.noteok||d.noteno,!!d.noteok)}
   const kn=t.closest("[data-knockin],[data-knockno]");
   if(kn){if(kn.dataset.knockin)return letIn(kn.dataset.knockin);try{await S.db.doc("knock/"+kn.dataset.knockno).update({ignored:true});toast("Ignored")}catch(err){toast(friendly(err))}return}
+  const ue=t.closest("[data-uedit],[data-udel],[data-usave],[data-ucancel]");
+  if(ue){const d=ue.dataset;
+    if(d.uedit){S.uEdit=d.uedit;return renderSheet()}
+    if(d.ucancel){S.uEdit=null;return renderSheet()}
+    if(d.usave)return saveUpdEdit(d.usave);
+    if(d.udel){if(!d.armed){d.armed="1";ue.textContent="Tap again to delete";return}return deleteUpd(d.udel)}}
   const vo=t.closest("[data-vtab],[data-vdone],[data-vnew],[data-vdel]");
   if(vo){const d=vo.dataset;
     if(d.vtab){S.vTab=d.vtab;return renderVoice()}
