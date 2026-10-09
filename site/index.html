@@ -48,6 +48,8 @@ nav a[aria-current]{color:var(--steel);box-shadow:inset 0 -2px 0 var(--signal);b
 nav a[aria-current] svg{color:var(--signal)}
 nav .soon{opacity:.55;cursor:default}
 nav svg{width:18px;height:18px;flex:none}
+nav a.topsecret{margin-left:6px;color:#fff;font-weight:700;letter-spacing:.1em;text-transform:uppercase;font-size:.82rem;background:radial-gradient(circle at 30% 25%,#ff7a7a,var(--red) 50%,#a71d1d);box-shadow:0 0 0 3px color-mix(in srgb,var(--red) 22%,transparent)}
+nav a.topsecret:hover{color:#fff;background:radial-gradient(circle at 30% 25%,#ff9a9a,#e02424 50%,#7d1010)}
 
 /* hero */
 .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);background:var(--night)}
@@ -103,6 +105,7 @@ footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;
 @media (max-width:1000px){.cards{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media (max-width:760px){
   nav .soon{display:none}
+  nav a.topsecret{margin-left:0}
   .hero .photo{width:100%;opacity:.45}
   .hero .photo::after{background:linear-gradient(0deg,var(--night),color-mix(in srgb,var(--night) 40%,transparent))}
   .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -123,6 +126,7 @@ footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;
   <symbol id="i-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
   <symbol id="i-req" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></symbol>
   <symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1" fill="currentColor"/><circle cx="4.5" cy="12" r="1" fill="currentColor"/><circle cx="4.5" cy="18" r="1" fill="currentColor"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
 </svg>
 
@@ -136,7 +140,7 @@ footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;
       <span class="soon" title="Coming soon"><svg><use href="#i-wrench"/></svg>Equipment</span>
       <span class="soon" title="Coming soon"><svg><use href="#i-bldg"/></svg>Facilities</span>
       <span class="soon" title="Coming soon"><svg><use href="#i-doc"/></svg>Documents</span>
-      <span class="soon" title="Coming soon"><svg><use href="#i-gear"/></svg>Tools</span>
+      <a class="topsecret" href="voice/"><svg><use href="#i-mic"/></svg>Top secret</a>
     </nav>
   </div>
 </header>
