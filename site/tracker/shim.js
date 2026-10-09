@@ -41,7 +41,8 @@ const assets=st&&{
     const id="uploads/"+Date.now().toString(36)+Math.random().toString(36).slice(2,7)+"-"+String(file.name||"file").replace(/[^\w.\-]+/g,"_").slice(-80);
     try{const r=sref(st,id);await uploadBytes(r,file,{contentType:type});return{id,url:await getDownloadURL(r),sizeBytes:file.size,contentType:type}}
     catch(e){throw{code:e?.code==="storage/quota-exceeded"?"quota_or_state":"unavailable",message:e?.message}}},
-  async delete(id){try{await deleteObject(sref(st,id))}catch(e){}return{deleted:true}}};
+  async delete(id){try{await deleteObject(sref(st,id))}catch(e){}return{deleted:true}},
+  url:id=>getDownloadURL(sref(st,id))};
 const downloads={async save({filename,data}){const blob=data instanceof Blob?data:new Blob([data]);const url=URL.createObjectURL(blob);
   const a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);return{status:"saved"}}};
 

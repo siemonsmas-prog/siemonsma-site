@@ -11,6 +11,7 @@ import base64, html, json, pathlib, re, shutil, sys
 HERE = pathlib.Path(__file__).resolve().parent.parent
 SRC = (HERE / "home" / "home.src.html").read_text()
 REQ = (HERE / "request" / "request.src.html").read_text()
+VOICE = (HERE / "voice" / "voice.src.html").read_text()  # operators' voice reports (unlisted page)
 HARVARD = "data:image/png;base64," + base64.b64encode((HERE / "home/img/harvard.png").read_bytes()).decode()
 LOGO = "data:image/png;base64," + base64.b64encode((HERE / "home/img/logo.png").read_bytes()).decode()  # top-left logo (Clint's, 2026-10-04)
 # Building list lives in the tracker source (const BUILDINGS); the request form's dropdown is generated from it.
@@ -27,14 +28,14 @@ def check(s):
     assert "__" not in s.replace("__proto__", ""), "unfilled placeholder"
     return s
 
-def fill(img, tracker, target, request):
-    s = SRC.replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request).replace("__LOGO__", LOGO)
+def fill(img, tracker, target, request, voice="voice/"):
+    s = SRC.replace("__VOICE_URL__", voice).replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request).replace("__LOGO__", LOGO)
     for k in IMGS:
         s = s.replace(f"__IMG_{k}__", img(k))
     return check(s)
 
-def fill_request(home, tracker, target, mode):
-    s = REQ
+def fill_request(home, tracker, target, mode, src=REQ):
+    s = src
     for k, v in {"__HOME_URL__": home, "__TRACKER_URL__": tracker, "__LINK_TARGET__": target, "__HARVARD__": HARVARD, "__LOGO__": LOGO, "__MODE__": mode,
                  "__CONFIG_TAG__": '<script src="../tracker/config.js"></script>' if mode == "live" else "",
                  "__FB_MODULE__": "../tracker/vendor/firebase.js", "__BLDG_OPTIONS__": BLDG_OPTIONS}.items():
@@ -44,10 +45,13 @@ def fill_request(home, tracker, target, mode):
 if "--preview" in sys.argv:
     data = lambda k: "data:image/jpeg;base64," + base64.b64encode((HERE / "home/img" / f"{k}.jpg").read_bytes()).decode()
     out = HERE / "home" / "preview.html"
-    out.write_text(fill(data, PREVIEW_TRACKER, NEW_TAB, PREVIEW_REQUEST))
+    out.write_text(fill(data, PREVIEW_TRACKER, NEW_TAB, PREVIEW_REQUEST, "https://siemonsma.org/voice/"))
     print("wrote", out)
     out = HERE / "request" / "preview.html"
     out.write_text(fill_request(PREVIEW_HOME, PREVIEW_TRACKER, NEW_TAB, "preview"))
+    print("wrote", out)
+    out = HERE / "voice" / "preview.html"
+    out.write_text(fill_request(PREVIEW_HOME, PREVIEW_TRACKER, NEW_TAB, "preview", VOICE))
     print("wrote", out)
     sys.exit()
 
@@ -67,6 +71,10 @@ req = fill_request("../", "../tracker/", "", "live")
 (site / "request" / "index.html").write_text(
     HEAD + '<link rel="icon" type="image/png" href="../assets/icon-192.png">\n'
     + req.replace('<svg width="0"', '</head><body>\n<svg width="0"', 1) + "\n</body></html>\n")
+(site / "voice").mkdir()
+(site / "voice" / "index.html").write_text(
+    HEAD + '<link rel="icon" type="image/png" href="../assets/icon-192.png">\n<link rel="apple-touch-icon" href="../assets/icon-180.png">\n'
+    + fill_request("../", "../tracker/", "", "live", VOICE).replace('<svg width="0"', '</head><body>\n<svg width="0"', 1) + "\n</body></html>\n")
 (site / "index.html").write_text(
     '<!doctype html>\n<html lang="en"><head>\n<meta charset="utf-8">\n'
     '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'

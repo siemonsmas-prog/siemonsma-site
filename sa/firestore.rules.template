@@ -11,7 +11,7 @@ service cloud.firestore {
 
     // project requests are for the owner's eyes only; everything else is readable by people on the list
     match /{coll}/{rest=**} {
-      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock', 'notes']));
+      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock', 'notes', 'voice']));
       allow write: if isOwner();
     }
     // anyone can send a project request from the public request page, without an account
@@ -34,6 +34,20 @@ service cloud.firestore {
     }
     match /requests/{rid} {
       allow create: if validRequest(request.resource.data);
+    }
+    // operators send voice reports from the unlisted /voice/ page, without an account; only the owner reads them
+    function validVoice(d) {
+      return d.keys().hasOnly(['name','building','machine','note','audio','type','size','secs','status','at','via'])
+        && d.keys().hasAll(['name','status','at'])
+        && d.status == 'new' && d.name is string && d.name.size() > 0
+        && text(d,'name',100) && text(d,'building',100) && text(d,'machine',150) && text(d,'note',2000)
+        && text(d,'type',60) && text(d,'at',40) && text(d,'via',10)
+        && (!('audio' in d) || (d.audio is string && d.audio.matches('voice/[A-Za-z0-9_.-]{1,80}')))
+        && (!('size' in d) || d.size is int) && (!('secs' in d) || d.secs is int)
+        && ('audio' in d || ('note' in d && d.note.size() > 0));
+    }
+    match /voice/{vid} {
+      allow create: if validVoice(request.resource.data);
     }
     // each person keeps their own profile (name, role, what they've read)
     match /people/{uid} {
