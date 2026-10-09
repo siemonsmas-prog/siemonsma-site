@@ -12,6 +12,12 @@ HERE = pathlib.Path(__file__).resolve().parent.parent
 SRC = (HERE / "home" / "home.src.html").read_text()
 REQ = (HERE / "request" / "request.src.html").read_text()
 VOICE = (HERE / "voice" / "voice.src.html").read_text()  # operators' voice reports (unlisted page)
+# Clint turned the voice reports off for now (2026-10-09). True brings back /voice/ and its home page button and strip.
+VOICE_ON = False
+def voice_blocks(s):
+    keep, drop = ("voice", "novoice") if VOICE_ON else ("novoice", "voice")
+    s = re.sub(r"<!--%s-->.*?<!--/%s-->" % (drop, drop), "", s, flags=re.S)
+    return s.replace("<!--%s-->" % keep, "").replace("<!--/%s-->" % keep, "")
 HARVARD = "data:image/png;base64," + base64.b64encode((HERE / "home/img/harvard.png").read_bytes()).decode()
 LOGO = "data:image/png;base64," + base64.b64encode((HERE / "home/img/logo.png").read_bytes()).decode()  # top-left logo (Clint's, 2026-10-04)
 # Building list lives in the tracker source (const BUILDINGS); the request form's dropdown is generated from it.
@@ -29,7 +35,7 @@ def check(s):
     return s
 
 def fill(img, tracker, target, request, voice="voice/"):
-    s = SRC.replace("__VOICE_URL__", voice).replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request).replace("__LOGO__", LOGO)
+    s = voice_blocks(SRC).replace("__VOICE_URL__", voice).replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request).replace("__LOGO__", LOGO)
     for k in IMGS:
         s = s.replace(f"__IMG_{k}__", img(k))
     return check(s)
@@ -71,8 +77,9 @@ req = fill_request("../", "../tracker/", "", "live")
 (site / "request" / "index.html").write_text(
     HEAD + '<link rel="icon" type="image/png" href="../assets/icon-192.png">\n'
     + req.replace('<svg width="0"', '</head><body>\n<svg width="0"', 1) + "\n</body></html>\n")
-(site / "voice").mkdir()
-(site / "voice" / "index.html").write_text(
+if VOICE_ON:
+  (site / "voice").mkdir()
+  (site / "voice" / "index.html").write_text(
     HEAD + '<link rel="icon" type="image/png" href="../assets/icon-192.png">\n<link rel="apple-touch-icon" href="../assets/icon-180.png">\n'
     + fill_request("../", "../tracker/", "", "live", VOICE).replace('<svg width="0"', '</head><body>\n<svg width="0"', 1) + "\n</body></html>\n")
 (site / "index.html").write_text(
