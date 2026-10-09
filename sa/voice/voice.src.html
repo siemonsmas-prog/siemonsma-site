@@ -1,0 +1,217 @@
+<title>Top Secret Machine Report · Siemonsma.org</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&family=Special+Elite&display=swap">
+<style>
+/* Operators' voice report. Same night look as the rest of the site, with a "classified file" twist:
+   red stamps and typewriter labels. Not linked from the home or request pages; Clint shares the link. */
+:root{
+  --night:#0b111b;--panel:#121a27;--sunk:#1a2436;--line:#26344c;
+  --steel:#e9eef6;--mist:#9aa9be;--signal:#3d8bff;--red:#ff4d4d;--red-ink:#fff;--bad:#ff6b6b;--ok:#4cc38a;--manila:#d9c08a;
+  --display:"Archivo","Arial Black","Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --type:"Special Elite","Courier New",Courier,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--night);color:var(--steel);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:4px}
+.wrap{max-width:720px;margin:0 auto;padding-inline:16px}
+
+.top{border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:12px;min-height:60px;padding-block:8px}
+.lockup{display:block;text-decoration:none}
+.lockup .logo{height:32px;width:auto;display:block}
+.top .tag{margin-left:auto;font-family:var(--type);font-size:.8rem;color:var(--red);letter-spacing:.12em;white-space:nowrap}
+
+.head{border-bottom:1px solid var(--line);background:
+  repeating-linear-gradient(135deg,transparent 0 22px,color-mix(in srgb,var(--red) 5%,transparent) 22px 24px),
+  radial-gradient(120% 140% at 100% 0,color-mix(in srgb,var(--red) 16%,transparent),transparent 60%)}
+.head .wrap{padding-block:26px 30px;position:relative}
+.eyebrow{margin:0;font-family:var(--type);font-size:.88rem;letter-spacing:.18em;text-transform:uppercase;color:var(--mist)}
+.big{margin:.25em 0 0;font-family:var(--display);font-weight:900;font-stretch:125%;font-size:clamp(1.9rem,8vw,3.2rem);line-height:1;text-transform:uppercase}
+.big span{color:var(--red)}
+.lede{margin:16px 0 0;max-width:46ch;font-size:1.05rem}
+.stamp{display:inline-block;font-family:var(--type);text-transform:uppercase;color:var(--red);border:3px solid var(--red);border-radius:6px;padding:2px 10px;letter-spacing:.14em;
+  transform:rotate(-6deg);opacity:.9;mask-image:radial-gradient(circle at 30% 40%,#000 60%,rgba(0,0,0,.75) 100%)}
+.head .stamp{font-size:1rem;margin:0 0 14px 4px}
+@media (min-width:640px){.head .stamp{position:absolute;right:16px;top:26px;margin:0;font-size:1.2rem}}
+
+main .wrap{padding-block:22px 40px}
+.banner{margin-bottom:16px;padding:10px 14px;border-radius:8px;border:1px dashed var(--line);color:var(--mist);font-size:.9rem}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:18px;display:grid;gap:18px;position:relative}
+.card::before{content:"CASE FILE";position:absolute;top:-11px;left:16px;padding:0 8px;background:var(--manila);color:#2a2213;font-family:var(--type);font-size:.75rem;letter-spacing:.2em;border-radius:3px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.field{display:grid;gap:6px;min-width:0}
+label,.lbl{font-family:var(--type);font-size:.95rem;letter-spacing:.04em}
+.opt{color:var(--mist)}
+input[type=text],select,textarea{width:100%;font:inherit;font-size:16px;color:var(--steel);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:11px 12px;min-height:46px}
+textarea{min-height:90px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--signal);outline-offset:0;border-color:transparent}
+input[aria-invalid=true]{border-color:var(--bad)}
+.err{color:var(--bad);font-size:.9rem;min-height:1.2em;margin:0}
+
+/* the big button */
+.rec{display:grid;justify-items:center;gap:12px;padding:8px 0 2px;text-align:center}
+.mic{position:relative;width:190px;height:190px;border-radius:50%;border:0;cursor:pointer;color:var(--red-ink);font:inherit;
+  background:radial-gradient(circle at 35% 30%,#ff7a7a,var(--red) 45%,#a71d1d);box-shadow:0 0 0 8px color-mix(in srgb,var(--red) 18%,transparent),0 18px 40px -12px #000;
+  display:grid;place-items:center;align-content:center;gap:4px;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.mic svg{width:54px;height:54px}
+.mic b{font-family:var(--display);font-weight:900;font-stretch:115%;letter-spacing:.08em;font-size:1rem;line-height:1.1;text-transform:uppercase}
+.mic small{font-family:var(--type);font-size:.78rem;opacity:.9}
+.mic:active{transform:scale(.97)}
+.mic.on{animation:pulse 1.3s ease-out infinite;background:radial-gradient(circle at 35% 30%,#ff9a9a,#e02424 45%,#7d1010)}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--red) 60%,transparent),0 18px 40px -12px #000}100%{box-shadow:0 0 0 26px transparent,0 18px 40px -12px #000}}
+@media (prefers-reduced-motion:reduce){.mic.on{animation:none;box-shadow:0 0 0 10px color-mix(in srgb,var(--red) 40%,transparent)}}
+.mic:disabled{opacity:.5;cursor:not-allowed}
+.timer{font-family:var(--type);font-size:1.4rem;letter-spacing:.1em;font-variant-numeric:tabular-nums}
+.hint{color:var(--mist);font-size:.9rem;margin:0;max-width:40ch}
+.take{display:grid;gap:10px;width:100%;justify-items:center}
+.take audio{width:100%;max-width:420px}
+
+.btn2{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:10px 18px;border:1px solid var(--line);border-radius:6px;background:var(--sunk);color:var(--steel);font:inherit;font-weight:600;text-decoration:none;cursor:pointer}
+.send{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:16px 22px;border:0;border-radius:6px;background:var(--steel);color:var(--night);font:inherit;font-weight:800;font-stretch:115%;letter-spacing:.14em;text-transform:uppercase;cursor:pointer}
+.send:disabled{opacity:.45;cursor:not-allowed}
+.send svg{width:22px;height:22px}
+.trap{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+.safety{margin:18px 0 0;padding:12px 14px;border-left:3px solid var(--manila);background:color-mix(in srgb,var(--manila) 8%,transparent);color:var(--steel);font-size:.92rem;border-radius:0 6px 6px 0}
+
+.done{display:grid;gap:14px;justify-items:center;text-align:center;padding:16px 0}
+.done .stamp{font-size:1.8rem;color:var(--ok);border-color:var(--ok)}
+.done h2{margin:0;font-family:var(--display);font-weight:800;font-stretch:110%;font-size:1.5rem}
+.done p{margin:0;max-width:40ch}
+
+footer{border-top:1px solid var(--line);padding-block:20px 28px;text-align:center;color:var(--mist);font-family:var(--type);font-size:.78rem;letter-spacing:.2em;text-transform:uppercase}
+@media (max-width:480px){.two{grid-template-columns:1fr}}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-mic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></symbol>
+  <symbol id="i-stop" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="lockup" href="__HOME_URL__"__LINK_TARGET__><img class="logo" src="__LOGO__" alt="Siemonsma.org, powered by Harvard Integrations" width="781" height="138"></a>
+    <span class="tag">// EYES ONLY</span>
+  </div>
+</header>
+
+<section class="head">
+  <div class="wrap">
+    <span class="stamp" aria-hidden="true">Top secret</span>
+    <p class="eyebrow">Classified · Operators only</p>
+    <h1 class="big">Strange <span>machine</span> report</h1>
+    <p class="lede">Machine acting weird? Odd noise, strange smell, something that doesn't fit a work order? Tap the red button and tell HQ what you saw.</p>
+  </div>
+</section>
+
+<main>
+  <div class="wrap">
+    <div class="banner" id="previewNote" hidden>This is the test copy. You can record and play it back, but reports sent here aren't saved and no alert goes out.</div>
+    <div class="card" id="card">
+      <div class="rec" id="rec">
+        <button class="mic" type="button" id="mic" aria-describedby="recHint"><svg><use href="#i-mic"/></svg><b>Tap to transmit</b><small>Top secret</small></button>
+        <div class="timer" id="timer" hidden>0:00</div>
+        <p class="hint" id="recHint">Tap once to start talking, tap again to stop. Up to 2 minutes. Say which machine and what it's doing.</p>
+        <div class="take" id="take" hidden>
+          <audio id="play" controls preload="metadata"></audio>
+          <button class="btn2" type="button" id="redo">Record it again</button>
+        </div>
+        <p class="err" id="eRec" role="alert"></p>
+      </div>
+
+      <div class="two">
+        <div class="field"><label for="vName">Agent name</label><input type="text" id="vName" autocomplete="name" maxlength="100" placeholder="Your name"></div>
+        <div class="field"><label for="vBldg">Building <span class="opt">(optional)</span></label><select id="vBldg"><option value="">Choose a building</option>__BLDG_OPTIONS__<option value="other">Other or not sure</option></select></div>
+      </div>
+      <div class="field"><label for="vMach">Which machine? <span class="opt">(optional)</span></label><input type="text" id="vMach" maxlength="150" placeholder="e.g. Press 4, paint booth fan"></div>
+      <div class="field"><label for="vNote">Anything to add in writing? <span class="opt">(optional)</span></label><textarea id="vNote" maxlength="2000" placeholder="Or type the whole report here if you can't talk right now"></textarea></div>
+      <div class="trap" aria-hidden="true"><label for="vWebsite">Leave this empty</label><input type="text" id="vWebsite" tabindex="-1" autocomplete="off"></div>
+
+      <button class="send" type="button" id="vSend" disabled>Send to HQ<svg><use href="#i-send"/></svg></button>
+      <p class="err" id="eSend" role="alert"></p>
+    </div>
+    <p class="safety"><b>Not for emergencies.</b> If something is unsafe, stop the machine and tell your supervisor right away.</p>
+  </div>
+</main>
+
+<footer>Siemonsma.org · Facilities HQ</footer>
+
+__CONFIG_TAG__
+<script type="module">
+const MODE="__MODE__",MAX_SECS=120;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+if(MODE==="preview")$("previewNote").hidden=false;
+try{$("vName").value=localStorage.getItem("agentName")||""}catch(e){}
+
+/* ---------- recording ---------- */
+let rec=null,chunks=[],clip=null,clipType="",secs=0,tick=null,stream=null;
+const pickType=()=>{if(!window.MediaRecorder)return null;
+  for(const t of ["audio/webm;codecs=opus","audio/mp4","audio/ogg;codecs=opus","audio/webm"])if(MediaRecorder.isTypeSupported?.(t))return t;return ""};
+const fmt=s=>Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+function setMic(on){const m=$("mic");m.classList.toggle("on",on);m.innerHTML=on?`<svg><use href="#i-stop"/></svg><b>Recording</b><small>Tap to stop</small>`:`<svg><use href="#i-mic"/></svg><b>Tap to transmit</b><small>Top secret</small>`;
+  m.setAttribute("aria-label",on?"Stop recording":"Start recording")}
+async function start(){$("eRec").textContent="";
+  const type=pickType();
+  if(type===null||!navigator.mediaDevices?.getUserMedia){$("eRec").textContent="This browser can't record. Type your report in the box below instead.";return}
+  try{stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true}})}
+  catch(e){$("eRec").textContent=e?.name==="NotAllowedError"?"Your phone blocked the microphone. Allow it for this site in your browser settings and try again, or type your report below.":"Couldn't find a microphone. Type your report below instead.";return}
+  chunks=[];rec=new MediaRecorder(stream,type?{mimeType:type,audioBitsPerSecond:48000}:{audioBitsPerSecond:48000});
+  rec.ondataavailable=e=>{if(e.data?.size)chunks.push(e.data)};
+  rec.onstop=()=>{clipType=(rec.mimeType||type||"audio/webm").split(";")[0];clip=new Blob(chunks,{type:clipType});stream.getTracks().forEach(t=>t.stop());
+    $("play").src=URL.createObjectURL(clip);$("take").hidden=false;$("rec").querySelector(".mic").hidden=true;$("timer").hidden=true;
+    $("recHint").textContent=`Got it: ${fmt(secs)} recorded. Play it back if you like, then send it to HQ.`;ready()};
+  rec.start(1000);secs=0;$("timer").textContent="0:00 / 2:00";$("timer").hidden=false;setMic(true);
+  tick=setInterval(()=>{secs++;$("timer").textContent=fmt(secs)+" / 2:00";if(secs>=MAX_SECS)stop()},1000)}
+function stop(){clearInterval(tick);setMic(false);if(rec&&rec.state!=="inactive")rec.stop()}
+$("mic").addEventListener("click",()=>rec&&rec.state==="recording"?stop():start());
+$("redo").addEventListener("click",()=>{clip=null;$("take").hidden=true;$("mic").hidden=false;$("play").removeAttribute("src");
+  $("recHint").textContent="Tap once to start talking, tap again to stop. Up to 2 minutes.";ready();start()});
+
+/* ---------- sending ---------- */
+const v=id=>$(id).value.trim();
+function ready(){$("vSend").disabled=!(clip||v("vNote"))||!!(rec&&rec.state==="recording")}
+$("vNote").addEventListener("input",ready);
+let fbx=null;
+async function connect(){ // loads Firebase only when someone sends, so the page opens fast
+  if(fbx)return fbx;
+  const fb=await import("__FB_MODULE__");
+  const app=fb.initializeApp(window.APP_CONFIG.firebase,"voice");
+  const db=fb.initializeFirestore(app,{}),st=fb.getStorage(app);
+  if(window.APP_CONFIG.useEmulators&&["localhost","127.0.0.1"].includes(location.hostname)){fb.connectFirestoreEmulator(db,"127.0.0.1",8080);fb.connectStorageEmulator(st,"127.0.0.1",9199)}
+  return fbx={fb,db,st}}
+$("vSend").addEventListener("click",async()=>{
+  $("eSend").textContent="";$("vName").removeAttribute("aria-invalid");
+  const name=v("vName");if(!name){$("vName").setAttribute("aria-invalid","true");$("eSend").textContent="Add your agent name so HQ knows who to ask.";$("vName").focus();return}
+  try{localStorage.setItem("agentName",name)}catch(e){}
+  const d={name,building:$("vBldg").value==="other"?"Other":v("vBldg"),machine:v("vMach"),note:v("vNote"),status:"new",at:new Date().toISOString(),via:"web"};
+  const btn=$("vSend");btn.disabled=true;btn.firstChild.textContent="Transmitting… ";
+  try{
+    if($("vWebsite").value){/* filled by a bot: act as if it went through */}
+    else if(MODE==="preview")await new Promise(r=>setTimeout(r,700));
+    else{const {fb,db,st}=await connect();
+      if(clip){const ext={"audio/webm":"webm","audio/mp4":"m4a","audio/ogg":"ogg","audio/mpeg":"mp3","audio/aac":"aac"}[clipType]||"audio";
+        const path="voice/"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,8)+"."+ext;
+        await fb.uploadBytes(fb.ref(st,path),clip,{contentType:clipType});Object.assign(d,{audio:path,type:clipType,size:clip.size,secs})}
+      for(const k of Object.keys(d))if(d[k]==="")delete d[k];
+      await fb.addDoc(fb.collection(db,"voice"),d);ping()}
+    done(name);
+  }catch(err){console.warn(err);$("eSend").textContent="That didn't go through. Check your signal and try again.";btn.disabled=false;btn.firstChild.textContent="Send to HQ"}
+});
+function ping(){const t=window.APP_CONFIG?.notifyTopic;if(!t)return; // phone alert to Facilities; no names, anyone can read a topic
+  const q=new URLSearchParams({title:"Top secret voice report",click:new URL("../tracker/",location.href).href,tags:"microphone,rotating_light"});
+  fetch("https://ntfy.sh/"+encodeURIComponent(t)+"?"+q,{method:"POST",body:"An operator reported a strange machine issue. Open your tracker to listen.",keepalive:true}).catch(()=>{})}
+function done(name){
+  $("card").innerHTML=`<div class="done" role="status"><span class="stamp">Received</span>
+    <h2>Transmission received, Agent ${esc(name.replace(/^agent\s+/i,"").split(" ")[0])}.</h2>
+    <p>HQ has your report and will look into it. This message will not self-destruct.</p>
+    <button class="btn2" type="button" id="again">Send another report</button></div>`;
+  $("again").onclick=()=>location.reload();window.scrollTo({top:0,behavior:"smooth"})}
+</script>

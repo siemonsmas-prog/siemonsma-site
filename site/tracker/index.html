@@ -359,6 +359,7 @@ details.cols .pop input{width:18px;height:18px;accent-color:var(--accent);margin
 /* ---------- reference data ---------- */
 const IC={
   notes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg>',
+  mic:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>',
   inbox:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13h5l1.5 3h5l1.5-3h5"/><path d="M5.5 5h13L21 13v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-6z"/></svg>',
   req:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 11v6M9 14h6"/></svg>',
   plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
@@ -437,7 +438,7 @@ const CATS={
 
 /* ---------- state ---------- */
 const S={db:null,user:null,sample:null,me:null,meDoc:null,isOwner:false,people:{},profiles:{},projects:[],
-  filter:"all",allQs:[],contacts:{},allFiles:[],allProjects:[],groups:{},layout:(()=>{try{return localStorage.getItem("layout")||"table"}catch(e){return"table"}})(),open:null,openTab:"overview",updates:[],questions:[],unsubs:[],nudge:null,loaded:false,peopleLoaded:false,requests:[],reqTab:"new",reqOpen:new Set(),reqSettings:null,reqSettingsLoaded:false,autoDone:new Set(),knocks:[],knockSeen:null};
+  filter:"all",allQs:[],contacts:{},allFiles:[],allProjects:[],groups:{},layout:(()=>{try{return localStorage.getItem("layout")||"table"}catch(e){return"table"}})(),open:null,openTab:"overview",updates:[],questions:[],unsubs:[],nudge:null,loaded:false,peopleLoaded:false,requests:[],reqTab:"new",reqOpen:new Set(),voice:[],vTab:"new",vUrls:{},reqSettings:null,reqSettingsLoaded:false,autoDone:new Set(),knocks:[],knockSeen:null};
 const app=document.getElementById("app"),layer=document.getElementById("layer");
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const now=()=>new Date().toISOString();
@@ -594,6 +595,7 @@ async function boot(){
   S.db.collection("groups").onSnapshot(snap=>{S.groups={};snap.docs.forEach(d=>S.groups[d.id]=d.data());refreshVisible();render();if(layer.dataset.view==="groups")renderGroups()},e=>console.warn(e));
   S.db.collection("files").orderBy("at","desc").limit(1000).onSnapshot(s=>{S.allFiles=s.docs.map(d=>({id:d.id,...d.data()}));if(layer.dataset.view==="project")renderSheet()},e=>console.warn(e));
   subscribeProjects();
+  if(S.isOwner)S.db.collection("voice").orderBy("at","desc").limit(300).onSnapshot(s=>{S.voice=s.docs.map(d=>({id:d.id,...d.data()}));render();if(layer.dataset.view==="voice")renderVoice()},e=>console.warn(e));
   if(S.isOwner)S.db.collection("requests").orderBy("at","desc").limit(500).onSnapshot(s=>{S.requests=s.docs.map(d=>({id:d.id,...d.data()}));runAutoApprove();render();if(layer.dataset.view==="requests")renderRequests()},e=>console.warn(e));
   if(S.isOwner)S.db.collection("knock").onSnapshot(s=>{const ks=s.docs.map(d=>({id:d.id,...d.data()})).filter(k=>!k.ignored);
     if(S.knockSeen)ks.filter(k=>!S.knockSeen.has(k.id)).forEach(k=>toast((k.name||k.email)+" is trying to sign in"));S.knockSeen=new Set(ks.map(k=>k.id));
@@ -640,12 +642,12 @@ function render(){
     <div class="actbar">
       ${S.isOwner?`<button class="btn primary desk-only" data-act="new">${IC.plus}New project</button>`:""}
       ${mine.length?`<label class="search"><span hidden>Search projects</span>${IC.search}<input type="text" id="pSearch" placeholder="Search projects…" value="${esc(S.q||"")}" autocomplete="off"></label>`:""}
-      ${S.isOwner?`<button class="btn" data-act="groups">${IC.people}People &amp; groups</button><button class="btn" data-act="requests">${IC.inbox}Requests${newReqs().length?` <span class="badge">${newReqs().length}</span>`:""}</button><button class="btn" data-act="apply">${IC.notes}Apply updates</button>`:`<button class="btn" data-act="reqForm">${IC.req}Request a project</button>`}
+      ${S.isOwner?`<button class="btn" data-act="groups">${IC.people}People &amp; groups</button><button class="btn" data-act="requests">${IC.inbox}Requests${newReqs().length?` <span class="badge">${newReqs().length}</span>`:""}</button><button class="btn" data-act="voice">${IC.mic}Voice reports${newVoice().length?` <span class="badge">${newVoice().length}</span>`:""}</button><button class="btn" data-act="apply">${IC.notes}Apply updates</button>`:`<button class="btn" data-act="reqForm">${IC.req}Request a project</button>`}
       ${mine.length?`<button class="btn" data-act="report">${IC.report}Report</button>`:""}
       ${mine.length&&S.isOwner?`<div class="seg" role="group" aria-label="View"><button type="button" data-layout="table" aria-pressed="${S.layout==="table"}">${IC.table} Table</button><button type="button" data-layout="cards" aria-pressed="${S.layout==="cards"}">${IC.cards} Cards</button></div>`:""}
     </div>
     ${mine.length?dashHTML(mine):""}
-    ${S.isOwner?knockBarHTML()+reqBarHTML():""}
+    ${S.isOwner?knockBarHTML()+reqBarHTML()+voiceBarHTML():""}
   </section>
   ${S.isOwner?"":whatsNewHTML(mine)}
   <section class="section">
@@ -901,6 +903,32 @@ async function letIn(id){const k=S.knocks.find(x=>x.id===id);if(!k)return;const 
     await S.db.doc("access/"+email).set({contact:cid,name:k.name||"",at:now()});
     await S.db.doc("knock/"+id).delete();
     toast((k.name||email)+" can sign in now. Pick what they can see.");openContact("c:"+cid)}catch(e){toast(friendly(e))}}
+
+/* ---------- operators' voice reports (from the unlisted /voice/ page) ---------- */
+const VOICE_URL=new URL("../voice/",location.href).href;
+const newVoice=()=>S.voice.filter(v=>!v.status||v.status==="new");
+const voiceWhere=v=>[v.building,v.machine].filter(Boolean).join(" · ");
+function voiceBarHTML(){const n=newVoice();if(!n.length)return"";const v=n[0];
+  return `<button type="button" class="reqbar" data-act="voice"><span class="ti" style="background:var(--bad)">${IC.mic}</span><span class="tt"><b>${n.length} top secret voice report${n.length>1?"s":""} from operators</b><span>Newest: ${esc(v.name||"")}${voiceWhere(v)?" · "+esc(voiceWhere(v)):""} · ${ago(v.at)}</span></span><span class="go">Listen</span></button>`}
+function renderVoice(){
+  const tab=S.vTab||"new",by={new:[],handled:[]};S.voice.forEach(v=>(v.status==="handled"?by.handled:by.new).push(v));
+  const keep=layer.dataset.view==="voice"?layer.querySelector(".sheet")?.scrollTop||0:0;
+  const row=v=>{const id=esc(v.id),len=v.secs?` · ${Math.floor(v.secs/60)}:${String(v.secs%60).padStart(2,"0")}`:"";
+    return `<div class="pg" style="padding:12px 14px;display:grid;gap:10px">
+      <div><b>${esc(v.name||"Unknown agent")}</b><div class="meta">${voiceWhere(v)?esc(voiceWhere(v))+" · ":""}${ago(v.at)}${v.at?` (${esc(new Date(v.at).toLocaleString())})`:""}</div></div>
+      ${v.audio?(S.assets?.url?`<audio controls preload="none" data-vpath="${esc(v.audio)}" style="width:100%"></audio><span class="meta">Voice note${len}</span>`:`<span class="meta">Voice note${len}. Open the tracker on siemonsma.org to listen.</span>`):""}
+      ${v.note?`<div class="rq"><div class="desc">${esc(v.note)}</div></div>`:""}
+      <div class="row">${v.status==="handled"?`<button class="btn small" data-vnew="${id}">Move back to New</button>`:`<button class="btn small primary" data-vdone="${id}">Mark handled</button>`}<button class="btn small ghost" data-vdel="${id}">Delete</button></div></div>`};
+  openSheet("voice",`<div class="sheet-head"><h2>Voice reports</h2><button class="btn small" data-act="close">Close</button></div>
+  <div class="reqlink"><span class="meta">Operators record these on the top secret page. It isn't linked anywhere, so share it with them: <a href="${esc(VOICE_URL)}" target="_blank" rel="noopener">${esc(VOICE_URL.replace(/^https?:\/\//,""))}</a></span><button class="btn small" data-copy="${esc(VOICE_URL)}">Copy link</button></div>
+  <div class="tabs" role="tablist">${[["new","New"],["handled","Handled"]].map(([k,l])=>`<button class="tab" role="tab" data-vtab="${k}" aria-selected="${tab===k}">${l} (${by[k].length})</button>`).join("")}</div>
+  <div class="stack" style="margin-top:14px"><div class="pglist">${by[tab].map(row).join("")||`<div class="empty">${tab==="new"?"No new reports. When an operator sends one, your phone gets an alert and it shows up here.":"Nothing here yet."}</div>`}</div></div>`);
+  if(keep)layer.querySelector(".sheet").scrollTop=keep;
+  layer.querySelectorAll("audio[data-vpath]").forEach(async a=>{const pth=a.dataset.vpath;
+    try{const u=S.vUrls[pth]||(S.vUrls[pth]=await S.assets.url(pth));a.src=u}catch(e){a.replaceWith(Object.assign(document.createElement("span"),{className:"meta",textContent:"Couldn't load the recording."}))}})}
+async function setVoice(id,patch,msg){try{await S.db.doc("voice/"+id).update(patch);toast(msg)}catch(e){toast(friendly(e))}}
+async function deleteVoice(id){const v=S.voice.find(x=>x.id===id);if(!v)return;
+  try{if(v.audio&&S.assets)await S.assets.delete(v.audio).catch(()=>{});await S.db.doc("voice/"+id).delete();toast("Report deleted")}catch(e){toast(friendly(e))}}
 
 /* ---------- project requests ---------- */
 const REQ_URL=new URL("../request/",location.href).href;
@@ -1524,6 +1552,12 @@ document.addEventListener("click",async e=>{
     return decideNote(d.noteok||d.noteno,!!d.noteok)}
   const kn=t.closest("[data-knockin],[data-knockno]");
   if(kn){if(kn.dataset.knockin)return letIn(kn.dataset.knockin);try{await S.db.doc("knock/"+kn.dataset.knockno).update({ignored:true});toast("Ignored")}catch(err){toast(friendly(err))}return}
+  const vo=t.closest("[data-vtab],[data-vdone],[data-vnew],[data-vdel]");
+  if(vo){const d=vo.dataset;
+    if(d.vtab){S.vTab=d.vtab;return renderVoice()}
+    if(d.vdone)return setVoice(d.vdone,{status:"handled",handledAt:now()},"Marked handled");
+    if(d.vnew)return setVoice(d.vnew,{status:"new",handledAt:""},"Moved back to New");
+    if(d.vdel){if(!d.armed){d.armed="1";vo.textContent="Tap again to delete";return}return deleteVoice(d.vdel)}}
   const rq=t.closest("[data-rqtab],[data-rqcat],[data-autodel],[data-rqok],[data-rqno],[data-rqnoyes],[data-rqnocancel],[data-rqdel],[data-rqreopen]");
   if(rq){const d=rq.dataset;
     if(d.rqtab){S.reqTab=d.rqtab;return renderRequests()}
@@ -1557,6 +1591,7 @@ document.addEventListener("click",async e=>{
   switch(a){
     case"new":return startWizard();
     case"requests":return renderRequests();
+    case"voice":return renderVoice();
     case"apply":S.applyPlan=null;return renderApply();
     case"ruCancel":S.ruOpen=null;return renderSheet();
     case"noteCancel":S.noteOpen=null;return renderSheet();

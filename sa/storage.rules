@@ -7,5 +7,12 @@ service firebase.storage {
                    && request.auth.token.email.lower() == 'csiemonsma@harvardintegrations.com'
                    && (request.resource == null || request.resource.size < 20 * 1024 * 1024);
     }
+    // voice reports from the operators' page: anyone can add a new recording (audio only, under 10 MB);
+    // only the owner can listen to or delete them, and nobody can overwrite one
+    match /voice/{file} {
+      allow create: if resource == null && request.resource.size < 10 * 1024 * 1024 && request.resource.contentType.matches('audio/.*');
+      allow read, delete: if request.auth != null && request.auth.token.email_verified == true
+                   && request.auth.token.email.lower() == 'csiemonsma@harvardintegrations.com';
+    }
   }
 }

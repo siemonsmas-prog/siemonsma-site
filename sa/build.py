@@ -45,6 +45,7 @@ rep('href="https://claude.ai/artifact/24NUMwDYFEptnUb7mGcMkC" target="_blank" re
 # ...and so is the public request page
 rep('href="https://claude.ai/artifact/2AWcuouVSpUqVngmJNKV5X" target="_blank" rel="noopener"', 'href="../request/"')
 rep('const REQ_URL="https://claude.ai/artifact/2AWcuouVSpUqVngmJNKV5X";', 'const REQ_URL=new URL("../request/",location.href).href;')
+rep('const VOICE_URL="https://siemonsma.org/voice/";', 'const VOICE_URL=new URL("../voice/",location.href).href;')
 
 # wording that only made sense inside claude.ai
 rep('"Your access is view-only. Ask the facilities manager to share this app with you as an Editor so you can ask questions."',
