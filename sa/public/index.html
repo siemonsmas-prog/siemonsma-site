@@ -581,6 +581,33 @@ function autoPct(p,phase=p.phase,cl=p.checklist||{}){ // finished phases count i
   return Math.round(i<0?frac*100:(i+frac)/ws.length*100)}
 
 /* ---------- boot ---------- */
+/* ---------- new project from a Claude link ----------
+   https://siemonsma.org/tracker/#new=<base64url JSON> opens the New project form already filled in.
+   JSON keys: category, name, jobNumber, department, lead, building, address, area, priority, phase, startDate, dueDate,
+   nextMilestone, milestoneDate, description, notes, details:{<category field>:value}, groups:[names], people:[names].
+   Nothing is saved until Clint checks the steps and taps Create project. */
+const NEW_LINK=(location.hash.match(/^#new=([\w-]+)/)||[])[1]||"";
+if(NEW_LINK)history.replaceState(null,"",location.pathname+location.search);
+function prefillFromLink(code){
+  if(!S.isOwner)return;
+  let j;try{const b=atob(code.replace(/-/g,"+").replace(/_/g,"/"));j=JSON.parse(new TextDecoder().decode(Uint8Array.from(b,c=>c.charCodeAt(0))))}catch(e){j=null}
+  if(!j||typeof j!=="object")return toast("That link didn't open. Ask Claude for a new one.");
+  startWizard();const d=W.d,s=(v,n)=>typeof v==="string"||typeof v==="number"?String(v).trim().slice(0,n):"";
+  const cat=Object.keys(CATS).find(k=>low(k)===low(j.category)||low(CATS[k].label)===low(j.category));if(cat)d.category=cat;
+  for(const [k,n] of [["name",120],["jobNumber",40],["department",60],["lead",80],["area",80],["nextMilestone",200],["description",2000],["notes",2000]])if(s(j[k],n))d[k]=s(j[k],n);
+  const b=bldgOf(j.building);if(b)Object.assign(d,{location:b.name,address:b.address,taxRate:b.tax});
+  else if(s(j.building,60))Object.assign(d,{location:s(j.building,60),address:s(j.address,200),taxRate:null});
+  d.priority=pick(PRIORITIES,j.priority)||d.priority;
+  if(cat)d.phase=pick(phasesFor(cat),j.phase)||"";
+  for(const k of ["startDate","dueDate","milestoneDate"])if(isDay(j[k]))d[k]=j[k];
+  if(cat&&j.details&&typeof j.details==="object")CATS[cat].fields.forEach(f=>{const v=j.details[f.k];if(v==null||v==="")return;
+    if(f.type==="seg"){const o=pick(f.options,v);if(o)d.details[f.k]=o}
+    else if(f.type==="number"){const n=Number(String(v).replace(/[$,\s]/g,""));if(isFinite(n))d.details[f.k]=String(n)}
+    else if(s(v,2000))d.details[f.k]=s(v,2000)});
+  const nm=x=>low(x).replace(/['’]/g,"").replace(/^all /,"").replace(/s$/,""),names=v=>Array.isArray(v)?v.map(nm).filter(Boolean):[];
+  const gs=names(j.groups);if(gs.length)d.groups=[...ROLES.map(r=>"role:"+r),...Object.keys(S.groups)].filter(g=>gs.includes(nm(groupLabel(g))));
+  const ps=names(j.people);if(ps.length)d.members=pickable().filter(id=>{const n=nm(nameOf(id)),first=nm(n.split(" ")[0]);return ps.some(x=>x===n||!x.includes(" ")&&x===first)});
+  W.fromLink=true;W.step=cat?1:0;renderWizard()}
 async function boot(){
   if(!window.claude){return fatal("Couldn't start the app. Reload the page to try again.")}
   const [db,user,sample,assets,downloads]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("sample"),claude.use("assets"),claude.use("downloads")]);
@@ -604,6 +631,7 @@ async function boot(){
   subscribeNotes();
   S.db.collection("questions").orderBy("at","desc").limit(500).onSnapshot(s=>{const all=s.docs.map(d=>({id:d.id,...d.data()}));S.allQs=all.filter(q=>q.kind!=="update");S.updReqs=all.filter(q=>q.kind==="update");render();if(layer.dataset.view==="project")renderSheet()},e=>console.warn(e));
   // random check-ins turned off (Clint, 2026-10-05): updates are asked for at milestones or on request
+  if(NEW_LINK){let n=0;const go=()=>S.peopleLoaded&&S.loaded||++n>40?prefillFromLink(NEW_LINK):setTimeout(go,150);go()}
 }
 function fatal(msg){app.innerHTML=`<div class="section"><div class="notice">${esc(msg)}</div></div>`}
 let projUnsub=null;
@@ -1068,7 +1096,7 @@ function renderWizard(){
   const total=4,first=W.edit?1:0,shown=W.step>3?W.step:W.step+1;
   openSheet("wizard",`<div class="sheet-head"><h2>${W.edit?"Edit project":"New project"}</h2><button class="btn small" data-act="close">Close</button></div>
     <div class="steps">${[0,1,2,4].map(i=>`<i class="${i<=W.step?"on":""}"></i>`).join("")}</div>
-    <div class="stack"><div class="eyebrow">Step ${shown} of ${total}</div><h3 style="font-size:1.4rem">${esc(titles[W.step])}</h3>${body}</div>
+    <div class="stack"><div class="eyebrow">Step ${shown} of ${total}</div><h3 style="font-size:1.4rem">${esc(titles[W.step])}</h3>${W.fromLink?`<div class="notice">Filled in from your talk with Claude. Check each step, then tap Create project.</div>`:""}${body}</div>
     <div class="actions">${W.step>first?`<button class="btn" data-act="wBack">Back</button>`:""}
     ${W.step<4?`<button class="btn primary" data-act="wNext" ${W.step===0&&!d.category?"disabled":""}>Next</button>`:`<button class="btn primary" data-act="wSave">${W.edit?"Save changes":"Create project"}</button>`}</div>`);
   const ff=document.getElementById("fFreq");if(ff)ff.onchange=()=>document.getElementById("dayWrap").hidden=ff.value!=="weekly";
