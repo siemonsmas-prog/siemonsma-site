@@ -977,7 +977,7 @@ function renderRequests(){
     <div class="rqb">
       <div class="row">${r.priority&&r.priority!=="Normal"?`<span class="tag urg-${esc(r.priority)}">${esc(REQ_URG[r.priority]||r.priority)}</span>`:""}<span class="tag">${esc(reqType(r.type))}</span>${r.auto?`<span class="tag" style="background:var(--accent);color:#fff">Approved automatically</span>`:""}${r.via==="app"?`<span class="meta">Added in the tracker</span>`:""}</div>
       ${r.description?`<div class="desc">${esc(r.description)}</div>`:""}
-      <dl class="kv">${kv("From",esc(r.name)+(r.department?` <span class="meta">· ${esc(r.department)}</span>`:""))}${kv("Email",r.email?`<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`:"")}${kv("Phone",r.phone?`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`:"")}${kv("Building / area",esc(r.location))}${kv("Needed by",r.neededBy?esc(dayOf(r.neededBy)):"")}${kv("Budget",esc(r.budget))}${kv("Sent",r.at?esc(new Date(r.at).toLocaleString()):"")}${r.status==="declined"?kv("Declined",esc(r.declineNote||"No reason given")):""}</dl>
+      <dl class="kv">${kv("From",esc(r.name)+(r.department?` <span class="meta">· ${esc(r.department)}</span>`:""))}${kv("Email",r.email?`<a href="mailto:${esc(r.email)}">${esc(r.email)}</a>`:"")}${kv("Phone",r.phone?`<a href="tel:${esc(r.phone)}">${esc(r.phone)}</a>`:"")}${kv("Contractor / vendor",vendorHTML(r.vendor))}${kv("Building / area",esc(r.location))}${kv("Needed by",r.neededBy?esc(dayOf(r.neededBy)):"")}${kv("Budget",esc(r.budget))}${kv("Sent",r.at?esc(new Date(r.at).toLocaleString()):"")}${r.status==="declined"?kv("Declined",esc(r.declineNote||"No reason given")):""}</dl>
       ${r.status==="accepted"?`<div class="row">${p?`<button class="btn small primary" data-open="${esc(p.id)}">Open project</button>`:`<span class="meta">The project made from this request was deleted.</span>`}</div>`:
        r.status==="declined"?`<div class="row"><button class="btn small" data-rqreopen="${id}">Move back to New</button><button class="btn small ghost" data-rqdel="${id}">Delete</button></div>`:
        `<div class="row"><button class="btn small primary" data-rqok="${id}">Approve</button><button class="btn small" data-rqno="${id}">Decline</button><button class="btn small ghost" data-rqdel="${id}">Delete</button></div><div id="rqno_${id}"></div>`}
@@ -1005,8 +1005,17 @@ function openReqForm(){const own=S.isOwner,me=own?{}:{...(S.meDoc||{}),email:S.m
     <div class="field"><label>How urgent</label>${segHTML("qUrg",["Low","Normal","High","Urgent"],"Normal")}</div>
     <div class="row" style="align-items:start"><div class="field" style="flex:1;min-width:140px"><label for="qNeed">Needed by</label><input type="date" id="qNeed"></div>
     <div class="field" style="flex:1;min-width:140px"><label for="qBudget">Budget</label><input type="text" id="qBudget" maxlength="60" inputmode="decimal"></div></div>
+    ${own?`<div class="stack" style="gap:10px"><div class="lbl" style="margin-top:6px">Contractor or vendor <span class="meta">(optional)</span></div>
+    <div class="row" style="align-items:start"><div class="field" style="flex:1;min-width:160px"><label for="qVName">Company</label><input type="text" id="qVName" maxlength="100" placeholder="e.g. DeWitt HVAC"></div>
+    <div class="field" style="flex:1;min-width:140px"><label for="qVContact">Contact person</label><input type="text" id="qVContact" maxlength="100"></div></div>
+    <div class="row" style="align-items:start"><div class="field" style="flex:1;min-width:140px"><label for="qVPhone">Phone</label><input type="text" inputmode="tel" id="qVPhone" maxlength="40"></div>
+    <div class="field" style="flex:1;min-width:160px"><label for="qVEmail">Email</label><input type="text" inputmode="email" autocapitalize="off" id="qVEmail" maxlength="200"></div></div></div>`:""}
   </div>
   <div class="actions"><button class="btn primary" data-act="reqSend">${own?"Add request":"Send request"}</button></div>`)}
+/* contractor or vendor on a request Clint logs himself; it carries over to the project when he approves it */
+function vendorOf(v){if(!v||typeof v!=="object")return null;const o={};for(const k of ["company","contact","phone","email"]){const x=String(v[k]||"").trim();if(x)o[k]=x}return Object.keys(o).length?o:null}
+function vendorHTML(v){v=vendorOf(v);if(!v)return "";
+  return [v.company?`<b>${esc(v.company)}</b>`:"",v.contact?esc(v.contact):"",v.phone?`<a href="tel:${esc(v.phone)}">${esc(v.phone)}</a>`:"",v.email?`<a href="mailto:${esc(v.email)}">${esc(v.email)}</a>`:""].filter(Boolean).join(" · ")}
 async function sendReq(){const g=id=>document.getElementById(id).value.trim();
   const d={name:g("qName"),email:low(g("qEmail")),phone:g("qPhone"),department:g("qDept"),title:g("qTitle"),type:g("qType"),location:g("qLoc"),description:g("qDesc"),
     priority:segVal(document.getElementById("qUrg"))||"Normal",neededBy:g("qNeed"),budget:g("qBudget"),status:"new",at:now(),via:"app",by:S.me};
@@ -1014,6 +1023,8 @@ async function sendReq(){const g=id=>document.getElementById(id).value.trim();
   if(!d.title)return toast("Say what's needed.");
   if(!d.description)return toast("Add a few details.");
   for(const k of Object.keys(d))if(d[k]==="")delete d[k];
+  if(S.isOwner){const ven=vendorOf({company:g("qVName"),contact:g("qVContact"),phone:g("qVPhone"),email:low(g("qVEmail"))});
+    if(ven?.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ven.email))return toast("Check the contractor's email address.");if(ven)d.vendor=ven}
   try{await S.db.collection("requests").add(d);if(!S.isOwner)window.pingOwner?.("New project request","Open your tracker to approve or decline it.");toast(S.isOwner?"Request added":"Request sent");if(S.isOwner){S.reqTab="new";return renderRequests()}closeSheet()}catch(e){toast(friendly(e))}}
 async function decideReq(id,patch,msg){try{await S.db.doc("requests/"+id).update(patch);toast(msg)}catch(e){toast(friendly(e))}}
 const AUTO_DEFAULT=["Adam Aasen"]; // Clint, 2026-10-04: Adam's requests skip approval
@@ -1033,7 +1044,8 @@ async function approveRequest(id,cat,auto){const r=S.requests.find(x=>x.id===id)
   const [rl0,...rl1]=String(r.location||"").split(" · "),rb=bldgOf(rl0);const body={name:r.title||"Untitled request",category:cat,location:rb?rb.name:r.location||"",area:rb?rl1.join(" · "):"",address:rb?rb.address:"",taxRate:rb?rb.tax:null,priority:PRIORITIES.includes(r.priority)?r.priority:"Normal",startDate:"",dueDate:r.neededBy||"",
     description:r.description||"",members:mem?[mem]:[],groups:[],jobNumber:"",department:r.department||"",lead:S.people[S.me]?.name||"",phase:"",nextMilestone:"",milestoneDate:"",
     notes:["Requested by "+who+(reach?" ("+reach+")":"")+(r.at?" on "+dayOf(r.at):"")+".",r.budget&&!useNum?"Budget given: "+r.budget+".":"",auto&&!CATS[r.type]?"Kind of work wasn't given, so this was filed under Maintenance.":""].filter(Boolean).join(" "),
-    details:useNum?{[bf.k]:String(num)}:{},schedule:{freq:"weekly",day:1},status:"Not started",updatedAt:t,percent:0,owner:S.me,memberInfo:{[S.me]:{addedAt:t}},createdAt:t,lastUpdateAt:t,lastCheckin:{[S.me]:t},requestId:id};
+    details:{...(useNum?{[bf.k]:String(num)}:{}),...(vendorOf(r.vendor)?.company&&{construction:"contractor",purchasing:"vendor"}[cat]?{[{construction:"contractor",purchasing:"vendor"}[cat]]:r.vendor.company}:{})},
+    ...(vendorOf(r.vendor)?{vendor:vendorOf(r.vendor)}:{}),schedule:{freq:"weekly",day:1},status:"Not started",updatedAt:t,percent:0,owner:S.me,memberInfo:{[S.me]:{addedAt:t}},createdAt:t,lastUpdateAt:t,lastCheckin:{[S.me]:t},requestId:id};
   try{const ex=await S.db.doc("projects/"+pid).get();if(!ex.exists)await S.db.doc("projects/"+pid).set(body); // fixed id: two open tabs can't make it twice
     await S.db.doc("requests/"+id).update({status:"accepted",projectId:pid,decidedAt:t,...(auto?{auto:true}:{})});
     if(!auto)toast("Approved. It's on your project list.");return true}catch(e){if(!auto)toast(friendly(e));else S.autoDone.delete(id);return false}}
@@ -1145,6 +1157,7 @@ function renderSheet(){
         ${fact(IC.flag,"Priority",prioPill(p.priority))}
         ${fact(IC.cal,"Target date",fmtDate(p.dueDate))}
         ${fact(IC.user,"Project lead",esc(p.lead))}
+        ${S.isOwner?fact(IC.user,"Contractor / vendor",vendorHTML(p.vendor)):""}
         ${fact(IC.pct,"Complete",(p.percent||0)+"%")}
         ${fact(IC.hash,"Job number or FA#",esc(p.jobNumber))}
       </div>
