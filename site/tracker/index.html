@@ -218,7 +218,7 @@ details.ph .cnt.all{color:var(--ok)}
 .report>*{min-width:0}
 .report{--ink:#13223a;--muted:#536179;--line:#d4e0ee;--blue:#1769d1;--surface:#fff;--sunk:#e8f1fb;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px;display:grid;gap:16px;font-size:.92rem;min-width:0}
 .report .rhead{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;border-bottom:3px solid var(--blue);padding-bottom:10px}
-.report .rhead img{height:46px;width:auto}
+.report .rtitle{margin:0;font-size:1.6rem;font-weight:800;letter-spacing:.04em;color:var(--blue)}
 .report h3{font-size:1.15rem;color:#0b2a6b;text-transform:uppercase;letter-spacing:.03em}
 .report .tw{overflow-x:auto}
 .report table{color:inherit;font-size:.85rem}
@@ -335,6 +335,11 @@ details.cols .pop input{width:18px;height:18px;accent-color:var(--accent);margin
 .reqlink{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin-top:12px}
 .reqlink .meta{flex:1;min-width:180px;overflow-wrap:anywhere}
 @media (prefers-reduced-motion:no-preference){.sheet{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+/* printing while the status report is open prints just the report */
+@media print{body:has(#layer[data-view="report"]) > :not(#layer){display:none!important}
+  #layer[data-view="report"] .scrim{position:static;background:none;display:block}
+  #layer[data-view="report"] .sheet{width:100%;height:auto;overflow:visible;box-shadow:none;padding:0;animation:none}
+  #layer[data-view="report"] .sheet > :not(.stack),#layer[data-view="report"] .stack > :not(.report){display:none!important}}
 </style>
 
 </head><body>
@@ -1262,7 +1267,6 @@ async function openReport(days){
   S.repDays=days||S.repDays||7;
   openSheet("report",`<div class="sheet-head"><h2>Status report</h2><button class="btn small" data-act="close">Close</button></div><div class="stack"><div class="empty">Gathering this week's updates…</div></div>`);
   const R=await reportData(S.repDays);if(layer.dataset.view!=="report")return;S.rep=R;
-  const logo=document.querySelector(".logo-img")?.src||"";
   const tr=(cells)=>`<tr>${cells.map(c=>`<td>${c}</td>`).join("")}</tr>`;
   const withUps=R.list.filter(p=>R.ups[p.id]?.length);
   layer.querySelector(".sheet").innerHTML=`<div class="sheet-head"><h2>Status report</h2><button class="btn small" data-act="close">Close</button></div>
@@ -1271,7 +1275,7 @@ async function openReport(days){
     <div class="row"><button class="btn primary" data-act="pdf">Download PDF</button><button class="btn" data-act="copyReport">Copy text for email</button></div>
     <div id="copyBox"></div>
     <div class="report">
-      <div class="rhead">${logo?`<img alt="Facilities Maintenance" src="${logo}">`:""}<div style="text-align:right"><h2 style="font-size:1.5rem">Facilities Project Status</h2><div class="meta">${esc(R.range)} · ${esc(preparedBy())}</div></div></div>
+      <div class="rhead"><h2 class="rtitle">FACILITIES WEEKLY UPDATES</h2><div class="meta" style="text-align:right">${esc(R.range)} · ${esc(preparedBy())}</div></div>
       <div style="font-weight:600">${esc(summaryLine(R))}</div>
       ${R.attn.length?`<div><h3>Needs attention</h3><ul>${R.attn.map(p=>`<li><b>${esc(p.name)}</b>: ${esc(attnOf(p).map(x=>x.t).join(", "))}</li>`).join("")}</ul></div>`:""}
       ${R.week.length?`<div><h3>Milestones in the next 7 days</h3><ul>${R.week.map(p=>`<li>${fmtDate(p.milestoneDate)}: <b>${esc(p.nextMilestone||"Milestone")}</b> (${esc(p.name)})</li>`).join("")}</ul></div>`:""}
@@ -1281,7 +1285,7 @@ async function openReport(days){
     </div>
   </div>`}
 function reportText(R){
-  const L=["FACILITIES PROJECT STATUS","Covering "+R.range+" · "+preparedBy(),"",summaryLine(R),""];
+  const L=["FACILITIES WEEKLY UPDATES","Covering "+R.range+" · "+preparedBy(),"",summaryLine(R),""];
   if(R.attn.length){L.push("NEEDS ATTENTION");R.attn.forEach(p=>L.push("- "+p.name+": "+attnOf(p).map(x=>x.t).join(", ")));L.push("")}
   if(R.week.length){L.push("MILESTONES IN THE NEXT 7 DAYS");R.week.forEach(p=>L.push("- "+fmtDate(p.milestoneDate)+": "+(p.nextMilestone||"Milestone")+" ("+p.name+")"));L.push("")}
   L.push("ALL PROJECTS");R.list.forEach(p=>{L.push("- ["+(p.priority||"Normal")+"] "+p.name+(p.jobNumber?" ("+p.jobNumber+")":"")+": "+[p.phase,p.status,(p.percent||0)+"%"].filter(Boolean).join(" · "));
@@ -1297,9 +1301,8 @@ const PDF_PRIO={Critical:[122,0,18],Urgent:[198,40,40],High:[255,138,31]};
 async function buildPDF(R){
   const J=await getPDF(),doc=new J({orientation:"landscape",unit:"pt",format:"letter"}),W=doc.internal.pageSize.getWidth(),M=36;let y=M;
   const clean=t=>String(t??"").replace(/[^\x20-\x7E\u00A0-\u00FF\u2013\u2014\u2018\u2019\u201C\u201D\u2022\u2026\n]/g,"");
-  try{const img=document.querySelector(".logo-img"),c=document.createElement("canvas");c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext("2d").drawImage(img,0,0);const h=46;doc.addImage(c.toDataURL("image/png"),"PNG",M,y,h*img.naturalWidth/img.naturalHeight,h)}catch(e){}
-  doc.setFont("helvetica","bold");doc.setFontSize(18);doc.setTextColor(11,42,107);doc.text("Facilities Project Status",W-M,y+18,{align:"right"});
-  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(83,97,121);doc.text(clean(R.range+" \u00B7 "+preparedBy()),W-M,y+34,{align:"right"});
+  doc.setFont("helvetica","bold");doc.setFontSize(24);doc.setTextColor(11,42,107);doc.text("FACILITIES WEEKLY UPDATES",M,y+30);
+  doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(83,97,121);doc.text(clean(R.range+" \u00B7 "+preparedBy()),W-M,y+30,{align:"right"});
   y+=56;doc.setDrawColor(23,105,209);doc.setLineWidth(2);doc.line(M,y,W-M,y);y+=18;
   doc.setFont("helvetica","bold");doc.setFontSize(11);doc.setTextColor(19,34,58);doc.text(clean(summaryLine(R)),M,y);y+=8;
   const base={margin:{left:M,right:M},styles:{fontSize:8.5,cellPadding:4,textColor:[19,34,58],overflow:"linebreak"},headStyles:{fillColor:[23,105,209],textColor:255,fontStyle:"bold"},alternateRowStyles:{fillColor:[244,248,253]}};
@@ -1319,7 +1322,7 @@ async function downloadPDF(){
   let blob=null;try{blob=await buildPDF(R)}catch(e){console.warn(e)}
   if(btn){btn.disabled=false;btn.textContent="Download PDF"}
   if(!blob)return toast("Couldn't build the PDF. Use Copy text for email instead.");
-  try{await dl.save({filename:"Facilities status "+ymd(new Date())+".pdf",data:blob});toast("PDF saved")}catch(e){if(e?.code!=="declined")toast("Couldn't save the PDF. Try again.")}}
+  try{await dl.save({filename:"Facilities weekly updates "+ymd(new Date())+".pdf",data:blob});toast("PDF saved")}catch(e){if(e?.code!=="declined")toast("Couldn't save the PDF. Try again.")}}
 function whoHTML(id,at){return `<div class="who">${avatarOf(id)?`<img alt="" src="${esc(avatarOf(id))}">`:""}<b>${esc(nameOf(id))}</b><span class="meta">${esc(S.people[id]?.role||"")} · ${ago(at)}</span></div>`}
 const ACCEPT="image/*,video/*,application/pdf,.pdf,.csv,.txt,.md,.json";
 const EXT_TYPES={csv:"text/csv",txt:"text/plain",md:"text/markdown",json:"application/json",pdf:"application/pdf",jpg:"image/jpeg",jpeg:"image/jpeg",png:"image/png",gif:"image/gif",webp:"image/webp",heic:"image/heic",mp4:"video/mp4",mov:"video/quicktime"};
