@@ -80,6 +80,12 @@ nav a.topsecret:hover{color:#fff;background:radial-gradient(circle at 30% 25%,#f
 a.card:hover{border-color:var(--signal);transform:translateY(-2px)}
 .card.later .go{color:var(--mist)}
 .card.later .pic{filter:brightness(.9)}
+.tlinks{list-style:none;margin:auto 0 0;padding:12px 0 0;display:grid;gap:8px}
+.tlinks a{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;color:var(--steel);text-decoration:none;font-weight:700;transition:border-color .15s}
+.tlinks a .t{flex:1;min-width:0;display:grid;gap:2px}
+.tlinks a small{font-weight:400;color:var(--mist);font-size:.82rem}
+.tlinks a svg{flex:none;width:20px;height:20px;color:var(--signal)}
+.tlinks a:hover{border-color:var(--signal)}
 
 /* operators' top secret voice report: set apart from the section cards */
 .secret{display:flex;align-items:center;gap:18px;margin:0 0 34px;padding:16px 20px;border:2px dashed color-mix(in srgb,var(--red) 70%,transparent);border-radius:8px;text-decoration:none;color:var(--steel);
@@ -140,7 +146,7 @@ footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;
       <span class="soon" title="Coming soon"><svg><use href="#i-wrench"/></svg>Equipment</span>
       <span class="soon" title="Coming soon"><svg><use href="#i-bldg"/></svg>Facilities</span>
       <span class="soon" title="Coming soon"><svg><use href="#i-doc"/></svg>Documents</span>
-      <span class="soon" title="Coming soon"><svg><use href="#i-gear"/></svg>Tools</span>
+      <a href="#tools"><svg><use href="#i-gear"/></svg>Tools</a>
     </nav>
   </div>
 </header>
@@ -176,9 +182,10 @@ footer small{display:block;margin-top:8px;font-size:.72rem;letter-spacing:.38em;
         <div class="pic" style="background-image:url(assets/documents.jpg)"></div>
         <div class="in"><svg class="ic"><use href="#i-doc"/></svg><h2>Documents</h2><p>Forms, PDFs, drawings, and reference material.</p><span class="go">Coming soon</span></div>
       </div>
-      <div class="card later">
+      <div class="card tools" id="tools">
         <div class="pic" style="background-image:url(assets/tools.jpg)"></div>
-        <div class="in"><svg class="ic"><use href="#i-gear"/></svg><h2>Tools</h2><p>Calculators, utilities, and other helpful tools.</p><span class="go">Coming soon</span></div>
+        <div class="in"><svg class="ic"><use href="#i-gear"/></svg><h2>Tools</h2><p>Calculators, utilities, and other helpful tools.</p>
+          <ul class="tlinks"><li><a href="https://limble.com" target="_blank" rel="noopener"><span class="t"><b>Limble</b><small>Maintenance work orders</small></span><svg><use href="#i-arrow"/></svg></a></li></ul></div>
       </div>
     </div>
 
