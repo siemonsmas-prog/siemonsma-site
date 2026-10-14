@@ -18,7 +18,6 @@ def voice_blocks(s):
     keep, drop = ("voice", "novoice") if VOICE_ON else ("novoice", "voice")
     s = re.sub(r"<!--%s-->.*?<!--/%s-->" % (drop, drop), "", s, flags=re.S)
     return s.replace("<!--%s-->" % keep, "").replace("<!--/%s-->" % keep, "")
-HARVARD = "data:image/png;base64," + base64.b64encode((HERE / "home/img/harvard.png").read_bytes()).decode()
 LOGO = "data:image/png;base64," + base64.b64encode((HERE / "home/img/logo.png").read_bytes()).decode()  # top-left logo (Clint's, 2026-10-04)
 # Building list lives in the tracker source (const BUILDINGS); the request form's dropdown is generated from it.
 _B = re.search(r"const BUILDINGS=(\[.*?\]\])\s*\n?\s*\.map", (HERE.parent / "project-tracker.html").read_text(), re.S)
@@ -42,7 +41,7 @@ def fill(img, tracker, target, request, voice="voice/"):
 
 def fill_request(home, tracker, target, mode, src=REQ):
     s = src
-    for k, v in {"__HOME_URL__": home, "__TRACKER_URL__": tracker, "__LINK_TARGET__": target, "__HARVARD__": HARVARD, "__LOGO__": LOGO, "__MODE__": mode,
+    for k, v in {"__HOME_URL__": home, "__TRACKER_URL__": tracker, "__LINK_TARGET__": target, "__LOGO__": LOGO, "__MODE__": mode,
                  "__CONFIG_TAG__": '<script src="../tracker/config.js"></script>' if mode == "live" else "",
                  "__FB_MODULE__": "../tracker/vendor/firebase.js", "__BLDG_OPTIONS__": BLDG_OPTIONS}.items():
         s = s.replace(k, v)
