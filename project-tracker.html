@@ -72,6 +72,15 @@ header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .code{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
 .prog{height:8px;background:var(--sunk);border-radius:99px;overflow:hidden}
 .prog i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),#3d8bf0)}
+.flist{display:grid;gap:10px;padding:12px}
+.frow{display:grid;grid-template-columns:1fr auto;gap:10px 16px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px}
+.frow.new{border-left:4px solid var(--blue)}
+.fmain{all:unset;display:grid;gap:6px;min-width:0;cursor:pointer}
+.fmain:focus-visible{outline:2px solid var(--blue);outline-offset:4px;border-radius:4px}
+.ftop{display:flex;flex-wrap:wrap;gap:8px;align-items:center}.ftop b{font-size:1.08rem}
+.fsum{font-size:.95rem;color:var(--ink)}
+.fask{min-width:0}.fask .notice{margin:0;font-size:.85rem;max-width:260px}
+@media (max-width:640px){.frow{grid-template-columns:1fr}.fask .notice{max-width:none}}
 .due{border-left:5px solid var(--accent)}
 .checks{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:6px}
 label.ck{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;min-width:0}
@@ -517,7 +526,7 @@ function whyDue(p){ // Clint, 2026-10-05: only at a milestone, or when someone f
   return""}
 function isDue(p){return checksMe(p)&&!!whyDue(p)}
 async function requestUpdate(pid){const p=S.projects.find(x=>x.id===pid);if(!p)return;const ask=(document.getElementById("ruText")?.value||"").trim().slice(0,500);
-  try{await S.db.collection("questions").add({projectId:pid,kind:"update",text:"Asked for an update",ask,author:S.me,at:now(),answers:[]});S.ruOpen=null;
+  try{await S.db.collection("questions").add({projectId:pid,kind:"update",text:"Asked for an update",ask,author:S.me,at:now(),answers:[]});S.ruOpen=null;if(layer.dataset.view!=="project")render();
     window.pingOwner?.("Update requested","Someone asked for a project update. Open your tracker to post it.");
     toast("Asked. You'll see the update here once it's posted.")}catch(e){toast(friendly(e))}}
 function reqUpdHTML(p){const mine=pendingReqs(p).find(r=>r.author===S.me);
@@ -690,7 +699,7 @@ function render(){
   app.innerHTML=`
   <section class="hero">
     <h1>Project Tracker</h1>
-    <p>${S.isOwner?"Project planning, status, cost and schedule management.":"Updates on the facilities projects you follow."}</p>
+    <p>${S.isOwner?"Project planning, status, cost and schedule management.":`Hi ${esc(String(nameOf(S.me)).split(" ")[0])}. Here are the projects you follow. Tap one to see every update, or ask for a new one.`}</p>
     <div class="actbar">
       ${S.isOwner?`<button class="btn primary desk-only" data-act="new">${IC.plus}New project</button>`:""}
       ${mine.length?`<label class="search"><span hidden>Search projects</span>${IC.search}<input type="text" id="pSearch" placeholder="Search projects…" value="${esc(S.q||"")}" autocomplete="off"></label>`:""}
@@ -698,7 +707,7 @@ function render(){
       ${mine.length?`<button class="btn" data-act="report">${IC.report}Report</button>`:""}
       ${mine.length&&S.isOwner?`<div class="seg" role="group" aria-label="View"><button type="button" data-layout="table" aria-pressed="${S.layout==="table"}">${IC.table} Table</button><button type="button" data-layout="cards" aria-pressed="${S.layout==="cards"}">${IC.cards} Cards</button></div>`:""}
     </div>
-    ${mine.length?dashHTML(mine):""}
+    ${mine.length&&S.isOwner?dashHTML(mine):""}
     ${S.isOwner?knockBarHTML()+reqBarHTML()+voiceBarHTML():""}
   </section>
   ${S.isOwner?"":whatsNewHTML(mine)}
@@ -710,11 +719,11 @@ function render(){
         <span class="sp"></span>
         ${S.isOwner&&S.layout==="table"&&shown.length?colsMenuHTML():""}
       </div>
-      ${shown.length?(S.isOwner&&S.layout==="table"?tableHTML(shown):`<div class="grid">${shown.map(cardHTML).join("")}</div>`):
+      ${shown.length?(S.isOwner&&S.layout==="table"?tableHTML(shown):S.isOwner?`<div class="grid">${shown.map(cardHTML).join("")}</div>`:`<div class="flist">${shown.map(followRowHTML).join("")}</div>`):
       `<div class="empty">${S.q&&list.length?"No projects match that search.":mine.length?"Nothing in this view.":S.isOwner?"No projects yet. Start one with <b>New project</b>.":"You haven't been added to any projects yet. The facilities manager will add you, and they'll show up here."}</div>`}
     </div>
   </section>
-  ${attnHTML(mine)}
+  ${S.isOwner?attnHTML(mine):""}
   ${S.isOwner&&pendingNotes().length?`<section class="section"><div class="section-head"><h2>Notes to approve</h2><span class="meta">${pendingNotes().length} waiting</span></div>
     <div class="grid">${pendingNotes().slice(0,12).map(n=>{const p=S.projects.find(x=>x.id===n.projectId);return p?`<div class="card due"><div class="eyebrow">${esc(p.name)}</div><div style="white-space:pre-wrap">${esc(n.text)}</div><div class="meta">${esc(nameOf(n.author))} · ${ago(n.at)}</div>
       <div class="row"><button class="btn small primary" data-noteok="${n.id}">Approve</button><button class="btn small ghost" data-noteno="${n.id}">Decline</button><button class="btn small" data-open="${p.id}">Open project</button></div></div>`:""}).join("")}</div></section>`:""}
@@ -819,6 +828,16 @@ function bldgVal(){const s=document.getElementById("fLoc");if(!s)return {};if(s.
 function colsMenuHTML(){const on=colsOn();return `<details class="cols" id="colsMenu" ${S.colsOpen?"open":""}><summary class="btn small">${IC.cols}Columns</summary><div class="pop">${COLS.filter(c=>c[0]!=="name").map(([k,l])=>`<label><input type="checkbox" data-col="${k}" ${on.has(k)?"checked":""}>${esc(l)}</label>`).join("")}</div></details>`}
 function tableHTML(list){const on=colsOn(),cols=COLS.filter(c=>c[0]==="name"||on.has(c[0]));return `<div class="tblwrap"><table class="list"><thead><tr>${cols.map(thHTML).join("")}</tr></thead><tbody>
   ${list.map((p,i)=>`<tr data-open="${p.id}" class="${S.open===p.id?"sel":""}">${cols.map(c=>c[3](p,i)).join("")}</tr>`).join("")}</tbody></table></div>`}
+/* followers: one plain row per project, with how fresh the last update is and an Ask for an update button right there */
+function followRowHTML(p){const days=(Date.now()-new Date(p.lastUpdateAt||p.createdAt||0))/864e5,stale=p.status!=="Complete"&&days>21;
+  return `<div class="frow${isNew(p)?" new":""}">
+    <button type="button" class="fmain" data-open="${p.id}">
+      <span class="ftop"><b>${esc(p.name)}</b>${statusPill(p.status)}${isNew(p)?`<span class="pill s-ok">New update</span>`:""}</span>
+      ${p.lastSummary?`<span class="fsum">${esc(p.lastSummary)}</span>`:""}
+      <span class="prog" aria-hidden="true"><i style="width:${Math.min(100,p.percent||0)}%"></i></span>
+      <span class="meta">${p.percent||0}% complete · <span${stale?' style="color:var(--warn);font-weight:600"':""}>${p.lastUpdateAt?(stale?"No update in "+Math.round(days)+" days":"Updated "+ago(p.lastUpdateAt)):"No updates yet"}</span>${p.nextMilestone?` · Next: <b>${esc(p.nextMilestone)}</b>${p.milestoneDate?" "+fmtDate(p.milestoneDate):""}`:""}</span>
+    </button>
+    <div class="fask">${reqUpdHTML(p)}</div></div>`}
 function cardHTML(p){
   const pct=p.percent||0;
   return `<div class="card" data-open="${p.id}" role="button" tabindex="0">
@@ -1613,7 +1632,7 @@ document.addEventListener("click",async e=>{
   const ck=t.closest("[data-ckdel],[data-ckadd],[data-cktpl]");if(ck){const d=ck.dataset;return d.ckdel?delItem(d.ckdel):d.ckadd?addItem(d.ckadd):addTpl(d.cktpl)}
   const vr=t.closest("[data-vprm]");if(vr&&W){W.d.members=(W.d.members||[]).filter(x=>x!==vr.dataset.vprm);wizardCollect();return renderWizard()}
   const ru=t.closest("[data-requpd]");if(ru){ru.disabled=true;return requestUpdate(ru.dataset.requpd)}
-  const ro=t.closest("[data-ruopen]");if(ro){S.ruOpen=ro.dataset.ruopen;renderSheet();return document.getElementById("ruText")?.focus()}
+  const ro=t.closest("[data-ruopen]");if(ro){S.ruOpen=ro.dataset.ruopen;layer.dataset.view==="project"?renderSheet():render();return document.getElementById("ruText")?.focus()}
   const no=t.closest("[data-noteopen],[data-noteadd],[data-noteok],[data-noteno]");if(no){const d=no.dataset;
     if(d.noteopen){S.noteOpen=d.noteopen;renderSheet();return document.getElementById("noteText")?.focus()}
     if(d.noteadd){no.disabled=true;return addNote(d.noteadd)}
@@ -1669,7 +1688,7 @@ document.addEventListener("click",async e=>{
     case"voice":return renderVoice();
     case"apply":S.applyPlan=null;return renderApply();
     case"updreqs":return renderUpdReqs();
-    case"ruCancel":S.ruOpen=null;return renderSheet();
+    case"ruCancel":S.ruOpen=null;return layer.dataset.view==="project"?renderSheet():render();
     case"noteCancel":S.noteOpen=null;return renderSheet();
     case"applyGo":return applyGo();
     case"knocks":return renderKnocks();
