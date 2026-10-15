@@ -26,9 +26,9 @@ HEAD = """<!doctype html>
 <meta name="apple-mobile-web-app-title" content="Projects">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="icon" type="image/png" href="icons/favicon-64.png">
 """
-rep("<title>Facilities Project Tracker</title>", HEAD + "<title>Facilities Project Tracker</title>")
+rep("<title>Projects · The Planning Pad</title>", HEAD + "<title>Projects · The Planning Pad</title>")
 rep('<header class="bar">', '</head><body>\n<header class="bar">')
 rep("\n<script>\n/* ---------- reference data ---------- */",
     '\n<script src="config.js"></script>\n'

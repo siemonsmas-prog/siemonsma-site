@@ -66,6 +66,7 @@ for k in IMGS:
     shutil.copy(HERE / "home/img" / f"{k}.jpg", site / "assets" / f"{k}.jpg")
 shutil.copy(HERE / "public/icons/icon-192.png", site / "assets/icon-192.png")
 shutil.copy(HERE / "public/icons/icon-180.png", site / "assets/icon-180.png")
+shutil.copy(HERE / "public/icons/favicon-64.png", site / "assets/favicon-64.png")
 body = fill(lambda k: f"assets/{k}.jpg", "tracker/", "", "request/")
 HEAD = ('<!doctype html>\n<html lang="en"><head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
@@ -73,18 +74,18 @@ HEAD = ('<!doctype html>\n<html lang="en"><head>\n<meta charset="utf-8">\n'
 (site / "request").mkdir()
 req = fill_request("../", "../tracker/", "", "live")
 (site / "request" / "index.html").write_text(
-    HEAD + '<link rel="icon" type="image/png" href="../assets/icon-192.png">\n'
+    HEAD + '<link rel="icon" type="image/png" href="../assets/favicon-64.png">\n'
     + req.replace('<svg width="0"', '</head><body>\n<svg width="0"', 1) + "\n</body></html>\n")
 if VOICE_ON:
   (site / "voice").mkdir()
   (site / "voice" / "index.html").write_text(
-    HEAD + '<link rel="icon" type="image/png" href="../assets/icon-192.png">\n<link rel="apple-touch-icon" href="../assets/icon-180.png">\n'
+    HEAD + '<link rel="icon" type="image/png" href="../assets/favicon-64.png">\n<link rel="apple-touch-icon" href="../assets/icon-180.png">\n'
     + fill_request("../", "../tracker/", "", "live", VOICE).replace('<svg width="0"', '</head><body>\n<svg width="0"', 1) + "\n</body></html>\n")
 (site / "index.html").write_text(
     '<!doctype html>\n<html lang="en"><head>\n<meta charset="utf-8">\n'
     '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'
     '<meta name="theme-color" content="#0b111b">\n'
-    '<link rel="icon" type="image/png" href="assets/icon-192.png">\n'
+    '<link rel="icon" type="image/png" href="assets/favicon-64.png">\n'
     '<link rel="apple-touch-icon" href="assets/icon-180.png">\n'
     + body.replace("<svg width=\"0\"", "</head><body>\n<svg width=\"0\"", 1)
     + "\n</body></html>\n")
