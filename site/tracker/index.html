@@ -602,6 +602,8 @@ function autoPct(p,phase=p.phase,cl=p.checklist||{}){ // finished phases count i
    JSON keys: category, name, jobNumber, department, lead, building, address, area, priority, phase, startDate, dueDate,
    nextMilestone, milestoneDate, description, notes, details:{<category field>:value}, groups:[names], people:[names].
    Nothing is saved until Clint checks the steps and taps Create project. */
+// Owner-only "Talk an update" button: opens Claude so Clint can say an update out loud.
+const TALK_URL="https://claude.ai/";
 const NEW_LINK=(location.hash.match(/^#new=([\w-]+)/)||[])[1]||"",UPD_LINK=(location.hash.match(/^#upd=([\w-]+)/)||[])[1]||"";
 if(NEW_LINK||UPD_LINK)history.replaceState(null,"",location.pathname+location.search);
 function decodeLink(code){try{const b=atob(code.replace(/-/g,"+").replace(/_/g,"/"));const j=JSON.parse(new TextDecoder().decode(Uint8Array.from(b,c=>c.charCodeAt(0))));return j&&typeof j==="object"?j:null}catch(e){return null}}
@@ -708,7 +710,7 @@ function render(){
     <div class="actbar">
       ${S.isOwner?`<button class="btn primary desk-only" data-act="new">${IC.plus}New project</button>`:""}
       ${mine.length?`<label class="search"><span hidden>Search projects</span>${IC.search}<input type="text" id="pSearch" placeholder="Search projects…" value="${esc(S.q||"")}" autocomplete="off"></label>`:""}
-      ${S.isOwner?`<button class="btn" data-act="groups">${IC.people}People &amp; groups</button><button class="btn" data-act="requests">${IC.inbox}Requests${newReqs().length?` <span class="badge">${newReqs().length}</span>`:""}</button><button class="btn" data-act="voice">${IC.mic}Voice reports${newVoice().length?` <span class="badge">${newVoice().length}</span>`:""}</button><button class="btn" data-act="updreqs">${IC.bell}Update requests${openUpdReqs().length?` <span class="badge">${openUpdReqs().length}</span>`:""}</button><button class="btn" data-act="apply">${IC.notes}Apply updates</button>`:`<button class="btn" data-act="reqForm">${IC.req}Request a project</button>`}
+      ${S.isOwner?`<a class="btn primary" href="${TALK_URL}" target="_blank" rel="noopener">${IC.mic}Talk an update</a><button class="btn" data-act="groups">${IC.people}People &amp; groups</button><button class="btn" data-act="requests">${IC.inbox}Requests${newReqs().length?` <span class="badge">${newReqs().length}</span>`:""}</button><button class="btn" data-act="voice">${IC.mic}Voice reports${newVoice().length?` <span class="badge">${newVoice().length}</span>`:""}</button><button class="btn" data-act="updreqs">${IC.bell}Update requests${openUpdReqs().length?` <span class="badge">${openUpdReqs().length}</span>`:""}</button><button class="btn" data-act="apply">${IC.notes}Apply updates</button>`:`<button class="btn" data-act="reqForm">${IC.req}Request a project</button>`}
       ${mine.length?`<button class="btn" data-act="report">${IC.report}Report</button>`:""}
       ${mine.length&&S.isOwner?`<div class="seg" role="group" aria-label="View"><button type="button" data-layout="table" aria-pressed="${S.layout==="table"}">${IC.table} Table</button><button type="button" data-layout="cards" aria-pressed="${S.layout==="cards"}">${IC.cards} Cards</button></div>`:""}
     </div>
