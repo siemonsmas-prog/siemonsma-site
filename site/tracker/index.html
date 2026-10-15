@@ -510,6 +510,19 @@ async function decideNote(id,ok){try{await S.db.doc("notes/"+id).update({status:
 const askOf=r=>String(r.ask||"").trim();
 function asksHTML(p){const rs=pendingReqs(p).filter(askOf);return rs.length?`<div class="stack" style="gap:4px">${rs.map(r=>`<div class="meta">“${esc(askOf(r))}” – ${esc(nameOf(r.author))}</div>`).join("")}</div>`:""}
 function pendingReqs(p){const last=new Date(p.lastUpdateAt||p.createdAt||0);return (S.updReqs||[]).filter(r=>r.projectId===p.id&&new Date(r.at)>last)}
+/* ---------- update requests (owner): who asked about what; a request clears once an update is posted after it ---------- */
+function openUpdReqs(){return S.isOwner?S.projects.filter(p=>p.status!=="Complete"&&pendingReqs(p).length):[]}
+function renderUpdReqs(){const open=openUpdReqs().sort((a,b)=>String(pendingReqs(a)[0]?.at).localeCompare(String(pendingReqs(b)[0]?.at)));
+  const cut=Date.now()-14*864e5,done=(S.updReqs||[]).filter(r=>{const p=S.projects.find(x=>x.id===r.projectId);return p&&new Date(r.at)>cut&&new Date(p.lastUpdateAt||0)>new Date(r.at)}).slice(0,20);
+  const card=p=>{const rs=pendingReqs(p);return `<div class="pg" style="padding:12px 14px;display:grid;gap:6px">
+    <div class="row" style="justify-content:space-between;align-items:baseline"><b style="font-size:1.05rem">${esc(p.name)}</b><span class="meta">asked ${ago(rs[rs.length-1].at)}</span></div>
+    ${rs.map(r=>`<div><b style="font-weight:600">${esc(nameOf(r.author))}</b>${askOf(r)?`: “${esc(askOf(r))}”`:` <span class="meta">asked for an update</span>`} <span class="meta">· ${ago(r.at)}</span></div>`).join("")}
+    <div class="row"><button class="btn small primary" data-update="${esc(p.id)}">Post update</button><button class="btn small" data-open="${esc(p.id)}">Open project</button></div></div>`};
+  openSheet("updreqs",`<div class="sheet-head"><h2>Update requests</h2><button class="btn small" data-act="close">Close</button></div>
+  <div class="stack" style="margin-top:14px"><p class="meta" style="margin:0">People following a project asked for these. Each one clears when you post an update on that project.</p>
+    <div class="pglist">${open.map(card).join("")||`<div class="empty">No one is waiting on an update right now.</div>`}</div>
+    ${done.length?`<details><summary class="meta" style="cursor:pointer">Answered in the last 2 weeks (${done.length})</summary><div class="stack" style="gap:6px;margin-top:8px">${done.map(r=>{const p=S.projects.find(x=>x.id===r.projectId);return `<div class="meta">${esc(nameOf(r.author))} asked about <b>${esc(p.name)}</b> ${ago(r.at)}. Updated ${ago(p.lastUpdateAt)}.</div>`}).join("")}</div></details>`:""}
+  </div>`)}
 function whyDue(p){ // Clint, 2026-10-05: only at a milestone, or when someone following the project asks
   if(p.status==="Complete"||p.status==="On hold")return"";
   const last=new Date(p.lastUpdateAt||p.createdAt||0),reqs=pendingReqs(p);
@@ -589,12 +602,12 @@ function autoPct(p,phase=p.phase,cl=p.checklist||{}){ // finished phases count i
    JSON keys: category, name, jobNumber, department, lead, building, address, area, priority, phase, startDate, dueDate,
    nextMilestone, milestoneDate, description, notes, details:{<category field>:value}, groups:[names], people:[names].
    Nothing is saved until Clint checks the steps and taps Create project. */
-const NEW_LINK=(location.hash.match(/^#new=([\w-]+)/)||[])[1]||"";
-if(NEW_LINK)history.replaceState(null,"",location.pathname+location.search);
+const NEW_LINK=(location.hash.match(/^#new=([\w-]+)/)||[])[1]||"",UPD_LINK=(location.hash.match(/^#upd=([\w-]+)/)||[])[1]||"";
+if(NEW_LINK||UPD_LINK)history.replaceState(null,"",location.pathname+location.search);
+function decodeLink(code){try{const b=atob(code.replace(/-/g,"+").replace(/_/g,"/"));const j=JSON.parse(new TextDecoder().decode(Uint8Array.from(b,c=>c.charCodeAt(0))));return j&&typeof j==="object"?j:null}catch(e){return null}}
 function prefillFromLink(code){
   if(!S.isOwner)return;
-  let j;try{const b=atob(code.replace(/-/g,"+").replace(/_/g,"/"));j=JSON.parse(new TextDecoder().decode(Uint8Array.from(b,c=>c.charCodeAt(0))))}catch(e){j=null}
-  if(!j||typeof j!=="object")return toast("That link didn't open. Ask Claude for a new one.");
+  const j=decodeLink(code);if(!j)return toast("That link didn't open. Ask Claude for a new one.");
   startWizard();const d=W.d,s=(v,n)=>typeof v==="string"||typeof v==="number"?String(v).trim().slice(0,n):"";
   const cat=Object.keys(CATS).find(k=>low(k)===low(j.category)||low(CATS[k].label)===low(j.category));if(cat)d.category=cat;
   for(const [k,n] of [["name",120],["jobNumber",40],["department",60],["lead",80],["area",80],["nextMilestone",200],["description",2000],["notes",2000]])if(s(j[k],n))d[k]=s(j[k],n);
@@ -611,6 +624,28 @@ function prefillFromLink(code){
   const gs=names(j.groups);if(gs.length)d.groups=[...ROLES.map(r=>"role:"+r),...Object.keys(S.groups)].filter(g=>gs.includes(nm(groupLabel(g))));
   const ps=names(j.people);if(ps.length)d.members=pickable().filter(id=>{const n=nm(nameOf(id)),first=nm(n.split(" ")[0]);return ps.some(x=>x===n||!x.includes(" ")&&x===first)});
   W.fromLink=true;W.step=cat?1:0;renderWizard()}
+/* ---------- update from a Claude link ----------
+   /tracker/#upd=<base64url JSON> opens the update form for one project already filled in (Clint talks the update to Claude, Claude writes it up).
+   JSON keys: projectId or project (name), status, percent, phase, nextMilestone, milestoneDate, done, next, blockers. Nothing posts until Clint taps Post update. */
+function projectMatches(name){const n=low(name);if(!n)return [];const words=n.split(/\W+/).filter(w=>w.length>1);
+  const score=p=>{const pn=low(p.name);if(pn===n)return 100;if(pn.includes(n)||n.includes(pn))return 50;return words.filter(w=>pn.includes(w)).length*10/Math.max(words.length,1)};
+  return S.projects.filter(p=>p.status!=="Complete").map(p=>[p,score(p)]).filter(x=>x[1]>0).sort((a,b)=>b[1]-a[1]).map(x=>x[0])}
+function prefillUpdate(code){if(!S.isOwner)return;const j=decodeLink(code);if(!j)return toast("That link didn't open. Ask Claude for a new one.");
+  S.updLink=j;const byId=S.projects.find(p=>p.id===j.projectId);
+  if(byId)return fillUpdateFor(byId.id);
+  const m=projectMatches(j.project);if(m.length&&low(m[0].name)===low(j.project))return fillUpdateFor(m[0].id);
+  const list=(m.length?m:S.projects.filter(p=>p.status!=="Complete")).slice(0,12);
+  openSheet("updpick",`<div class="sheet-head"><h2>Which project?</h2><button class="btn small" data-act="close">Close</button></div>
+    <div class="stack" style="margin-top:14px"><p class="meta" style="margin:0">Claude wrote up an update for “${esc(j.project||"a project")}”. Pick the project it goes with.</p>
+    <div class="pglist">${list.map(p=>`<button type="button" class="pg" data-updpick="${esc(p.id)}" style="text-align:left;padding:12px 14px;font-weight:600">${esc(p.name)}${p.jobNumber?` <span class="meta">· ${esc(p.jobNumber)}</span>`:""}</button>`).join("")}</div></div>`)}
+function fillUpdateFor(pid){const j=S.updLink;S.updLink=null;if(!j)return;const p=S.projects.find(x=>x.id===pid);if(!p)return;
+  openUpdate(pid);const g=id=>document.getElementById(id),s=(v,n)=>typeof v==="string"||typeof v==="number"?String(v).trim().slice(0,n):"";
+  const seg=(id,v)=>{const b=[...document.querySelectorAll("#"+id+" button")].find(x=>low(x.dataset.val)===low(v));if(b){document.querySelectorAll("#"+id+" button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))}};
+  if(j.status)seg("uStatus",pick(STATUSES,j.status)||"");if(j.phase)seg("uPhase",pick(phasesFor(p.category),j.phase)||"");
+  const pct=Math.round(Number(j.percent));if(j.percent!=null&&isFinite(pct)&&pct>=0&&pct<=100){g("uPct").value=pct;g("pctOut").textContent=g("uPct").value}
+  if(s(j.nextMilestone,200))g("uMs").value=s(j.nextMilestone,200);if(isDay(j.milestoneDate))g("uMsDate").value=j.milestoneDate;
+  for(const [k,id] of [["done","uDone"],["next","uNext"],["blockers","uBlock"]])if(s(j[k],1000))g(id).value=s(j[k],1000);
+  const st=document.querySelector(".sheet .stack");st?.insertAdjacentHTML("afterbegin",`<div class="notice">Written up from what you told Claude. Check it, then tap Post update.</div>`)}
 async function boot(){
   if(!window.claude){return fatal("Couldn't start the app. Reload the page to try again.")}
   const [db,user,sample,assets,downloads]=await Promise.all([claude.use("db"),claude.use("user"),claude.use("sample"),claude.use("assets"),claude.use("downloads")]);
@@ -632,9 +667,9 @@ async function boot(){
     S.knocks=ks.sort((a,b)=>String(b.at).localeCompare(String(a.at)));render();if(layer.dataset.view==="knocks")renderKnocks()},e=>console.warn(e));
   if(S.isOwner)S.db.doc("settings/requests").onSnapshot(s=>{S.reqSettings=s.exists?s.data():null;S.reqSettingsLoaded=true;runAutoApprove();if(layer.dataset.view==="requests")renderRequests()},e=>{console.warn(e);S.reqSettingsLoaded=true;runAutoApprove()});
   subscribeNotes();
-  S.db.collection("questions").orderBy("at","desc").limit(500).onSnapshot(s=>{const all=s.docs.map(d=>({id:d.id,...d.data()}));S.allQs=all.filter(q=>q.kind!=="update");S.updReqs=all.filter(q=>q.kind==="update");render();if(layer.dataset.view==="project")renderSheet()},e=>console.warn(e));
+  S.db.collection("questions").orderBy("at","desc").limit(500).onSnapshot(s=>{const all=s.docs.map(d=>({id:d.id,...d.data()}));S.allQs=all.filter(q=>q.kind!=="update");S.updReqs=all.filter(q=>q.kind==="update");render();if(layer.dataset.view==="updreqs")renderUpdReqs();if(layer.dataset.view==="project")renderSheet()},e=>console.warn(e));
   // random check-ins turned off (Clint, 2026-10-05): updates are asked for at milestones or on request
-  if(NEW_LINK){let n=0;const go=()=>S.peopleLoaded&&S.loaded||++n>40?prefillFromLink(NEW_LINK):setTimeout(go,150);go()}
+  if(NEW_LINK||UPD_LINK){let n=0;const go=()=>S.peopleLoaded&&S.loaded||++n>40?(NEW_LINK?prefillFromLink(NEW_LINK):prefillUpdate(UPD_LINK)):setTimeout(go,150);go()}
 }
 function fatal(msg){app.innerHTML=`<div class="section"><div class="notice">${esc(msg)}</div></div>`}
 let projUnsub=null;
@@ -673,7 +708,7 @@ function render(){
     <div class="actbar">
       ${S.isOwner?`<button class="btn primary desk-only" data-act="new">${IC.plus}New project</button>`:""}
       ${mine.length?`<label class="search"><span hidden>Search projects</span>${IC.search}<input type="text" id="pSearch" placeholder="Search projects…" value="${esc(S.q||"")}" autocomplete="off"></label>`:""}
-      ${S.isOwner?`<button class="btn" data-act="groups">${IC.people}People &amp; groups</button><button class="btn" data-act="requests">${IC.inbox}Requests${newReqs().length?` <span class="badge">${newReqs().length}</span>`:""}</button><button class="btn" data-act="voice">${IC.mic}Voice reports${newVoice().length?` <span class="badge">${newVoice().length}</span>`:""}</button><button class="btn" data-act="apply">${IC.notes}Apply updates</button>`:`<button class="btn" data-act="reqForm">${IC.req}Request a project</button>`}
+      ${S.isOwner?`<button class="btn" data-act="groups">${IC.people}People &amp; groups</button><button class="btn" data-act="requests">${IC.inbox}Requests${newReqs().length?` <span class="badge">${newReqs().length}</span>`:""}</button><button class="btn" data-act="voice">${IC.mic}Voice reports${newVoice().length?` <span class="badge">${newVoice().length}</span>`:""}</button><button class="btn" data-act="updreqs">${IC.bell}Update requests${openUpdReqs().length?` <span class="badge">${openUpdReqs().length}</span>`:""}</button><button class="btn" data-act="apply">${IC.notes}Apply updates</button>`:`<button class="btn" data-act="reqForm">${IC.req}Request a project</button>`}
       ${mine.length?`<button class="btn" data-act="report">${IC.report}Report</button>`:""}
       ${mine.length&&S.isOwner?`<div class="seg" role="group" aria-label="View"><button type="button" data-layout="table" aria-pressed="${S.layout==="table"}">${IC.table} Table</button><button type="button" data-layout="cards" aria-pressed="${S.layout==="cards"}">${IC.cards} Cards</button></div>`:""}
     </div>
@@ -1612,6 +1647,7 @@ document.addEventListener("click",async e=>{
     return decideNote(d.noteok||d.noteno,!!d.noteok)}
   const kn=t.closest("[data-knockin],[data-knockno]");
   if(kn){if(kn.dataset.knockin)return letIn(kn.dataset.knockin);try{await S.db.doc("knock/"+kn.dataset.knockno).update({ignored:true});toast("Ignored")}catch(err){toast(friendly(err))}return}
+  const up=t.closest("[data-updpick]");if(up)return fillUpdateFor(up.dataset.updpick);
   const ue=t.closest("[data-uedit],[data-udel],[data-usave],[data-ucancel]");
   if(ue){const d=ue.dataset;
     if(d.uedit){S.uEdit=d.uedit;return renderSheet()}
@@ -1659,6 +1695,7 @@ document.addEventListener("click",async e=>{
     case"requests":return renderRequests();
     case"voice":return renderVoice();
     case"apply":S.applyPlan=null;return renderApply();
+    case"updreqs":return renderUpdReqs();
     case"ruCancel":S.ruOpen=null;return renderSheet();
     case"noteCancel":S.noteOpen=null;return renderSheet();
     case"applyGo":return applyGo();
