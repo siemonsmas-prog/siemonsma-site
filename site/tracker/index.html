@@ -108,6 +108,7 @@ label.ck span{min-width:0;overflow-wrap:anywhere}
 .pr-critical{background:#b3001b;color:#fff;box-shadow:0 0 0 2px rgba(255,99,99,.45)} .pr-urgent{background:#d63434;color:#fff} .pr-high{background:#c4561a;color:#fff} .pr-normal{background:#8a6a14;color:#fff3cf} .pr-low{background:#2f6b3f;color:#d8ffe4}
 select.prio-sel{border:0;min-height:0;width:auto;padding:3px 22px 3px 10px;font:inherit;font-size:.8rem;font-weight:600;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 11px) 55%,calc(100% - 7px) 55%;background-size:4px 4px;background-repeat:no-repeat}
 select.prio-sel option{background:#fff;color:#13223a}
+select.prio-sel.st{background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 11px) 55%,calc(100% - 7px) 55%;background-size:4px 4px;background-repeat:no-repeat;font-size:.72rem;font-weight:700}
 .tblwrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
 table.list{border-collapse:collapse;width:100%;min-width:980px;font-size:.9rem}
 table.list thead th{background:var(--sunk)}
@@ -773,6 +774,7 @@ function visHTML(p){
   const all=[...g,...m];if(!all.length)return `<span class="meta">Only you</span>`;
   return `<div class="vlist">${all.slice(0,4).join("")}${all.length>4?`<span class="meta">+${all.length-4} more</span>`:""}</div>`}
 const STATUS_ST={"Not started":"s-idle","On track":"s-ok","At risk":"s-warn","Blocked":"s-bad","On hold":"s-warn","Complete":"s-done"};
+const statusSelect=p=>{const st=p.status||"Not started";return `<select class="st prio-sel ${STATUS_ST[st]||"s-idle"}" data-pstatus="${p.id}" aria-label="Status for ${esc(p.name)}">${STATUSES.map(x=>`<option ${x===st?"selected":""}>${x}</option>`).join("")}</select>`};
 const statusPill=st=>`<span class="st ${STATUS_ST[st]||"s-idle"}">${esc(st||"Not started")}</span>`;
 const COLS=[
   ["idx","#",1,(p,i)=>`<td class="idx">${i+1}</td>`],
@@ -1192,9 +1194,9 @@ function renderSheet(){
       <div class="facts">
         ${fact(IC.bldg,"Building",esc(locLabel(p)))}
         ${fact(IC.bldg,"Address",p.address?mapsLink(p.address)+(p.taxRate!=null&&p.taxRate!==""?` <small style="display:inline">· ${esc(p.taxRate)}% tax</small>`:""):"")}
-        ${fact(IC.target,"Status",statusPill(p.status))}
+        ${fact(IC.target,"Status",isLead?statusSelect(p):statusPill(p.status))}
         ${fact(IC.dollar,p.details?.cost&&!p.details?.budget?"Cost":"Budget",budgetOf(p)?money(budgetOf(p)):"")}
-        ${fact(IC.flag,"Priority",prioPill(p.priority))}
+        ${fact(IC.flag,"Priority",isLead?prioSelect(p):prioPill(p.priority))}
         ${fact(IC.cal,"Target date",fmtDate(p.dueDate))}
         ${fact(IC.user,"Project lead",esc(p.lead))}
         ${S.isOwner?fact(IC.user,"Contractor / vendor",vendorHTML(p.vendor)):""}
@@ -1747,7 +1749,7 @@ document.addEventListener("change",async e=>{
   if(e.target.id==="fLoc"){const o=document.getElementById("fLocOther"),sh=document.getElementById("fLocShow"),b=bldgOf(e.target.value);o.hidden=e.target.value!=="__other";sh.hidden=!b;sh.innerHTML=bldgAddrLine(b);if(!o.hidden)document.getElementById("fLocName").focus();return}
   if(e.target.id==="fDept"){const o=document.getElementById("fDeptOther");o.hidden=e.target.value!=="__other";if(!o.hidden)o.focus();return}
   if(e.target.dataset?.col){const on=colsOn();e.target.checked?on.add(e.target.dataset.col):on.delete(e.target.dataset.col);try{localStorage.setItem("cols",JSON.stringify([...on]))}catch(err){}S.colsOpen=true;render();S.colsOpen=false;return}
-  if(e.target.id==="vpAdd"&&e.target.value&&W){W.d.members=[...(W.d.members||[]),e.target.value];wizardCollect();renderWizard();setTimeout(()=>document.getElementById("vpAdd")?.focus(),0);return}if(e.target.dataset?.prio){const id=e.target.dataset.prio,v=e.target.value;try{await S.db.doc("projects/"+id).update({priority:v,updatedAt:now()});toast("Urgency set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.id==="importFile"&&e.target.files.length)return importOld(e.target.files[0]);if(e.target.id==="fileIn"&&e.target.files.length){const n=await uploadFiles(S.open,e.target.files,"");if(n.length)toast(n.length+" file"+(n.length>1?"s":"")+" added")}});
+  if(e.target.id==="vpAdd"&&e.target.value&&W){W.d.members=[...(W.d.members||[]),e.target.value];wizardCollect();renderWizard();setTimeout(()=>document.getElementById("vpAdd")?.focus(),0);return}if(e.target.dataset?.pstatus){const id=e.target.dataset.pstatus,v=e.target.value;try{await S.db.doc("projects/"+id).update({status:v,updatedAt:now()});toast("Status set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.dataset?.prio){const id=e.target.dataset.prio,v=e.target.value;try{await S.db.doc("projects/"+id).update({priority:v,updatedAt:now()});toast("Urgency set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.id==="importFile"&&e.target.files.length)return importOld(e.target.files[0]);if(e.target.id==="fileIn"&&e.target.files.length){const n=await uploadFiles(S.open,e.target.files,"");if(n.length)toast(n.length+" file"+(n.length>1?"s":"")+" added")}});
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&layer.dataset.view){W=null;closeSheet()}
   if(e.key==="Enter"&&e.target.classList?.contains("card"))e.target.click();
