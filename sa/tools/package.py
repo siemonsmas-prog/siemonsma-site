@@ -32,8 +32,8 @@ def check(s):
     assert "__" not in s.replace("__proto__", ""), "unfilled placeholder"
     return s
 
-def fill(img, tracker, target, request, voice="voice/", campus="map/"):
-    s = voice_blocks(SRC).replace("__MAP_URL__", campus).replace("__VOICE_URL__", voice).replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request)
+def fill(img, tracker, target, request, voice="voice/"):
+    s = voice_blocks(SRC).replace("__VOICE_URL__", voice).replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request)
     for k in IMGS:
         s = s.replace(f"__IMG_{k}__", img(k))
     return check(s)
@@ -49,7 +49,7 @@ def fill_request(home, tracker, target, mode, src=REQ):
 if "--preview" in sys.argv:
     data = lambda k: "data:image/jpeg;base64," + base64.b64encode((HERE / "home/img" / f"{k}.jpg").read_bytes()).decode()
     out = HERE / "home" / "preview.html"
-    out.write_text(fill(data, PREVIEW_TRACKER, NEW_TAB, PREVIEW_REQUEST, "https://siemonsma.org/voice/", "https://siemonsma.org/map/"))
+    out.write_text(fill(data, PREVIEW_TRACKER, NEW_TAB, PREVIEW_REQUEST, "https://siemonsma.org/voice/"))
     print("wrote", out)
     out = HERE / "request" / "preview.html"
     out.write_text(fill_request(PREVIEW_HOME, PREVIEW_TRACKER, NEW_TAB, "preview"))
@@ -67,8 +67,6 @@ for k in IMGS:
 shutil.copy(HERE / "public/icons/icon-192.png", site / "assets/icon-192.png")
 shutil.copy(HERE / "public/icons/icon-180.png", site / "assets/icon-180.png")
 shutil.copy(HERE / "public/icons/favicon-64.png", site / "assets/favicon-64.png")
-# campus map (Campus Response Guide); signs in through the tracker's shim
-shutil.copytree(HERE / "map", site / "map")
 body = fill(lambda k: f"assets/{k}.jpg", "tracker/", "", "request/")
 HEAD = ('<!doctype html>\n<html lang="en"><head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n'

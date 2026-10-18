@@ -120,7 +120,7 @@ async function gate(u){
   const meInfo=()=>({id:u.uid,name:auth.currentUser?.displayName||(()=>{try{return localStorage.getItem("pendingName")||""}catch(e){return""}})(),email:u.email,avatarUrl:"",isOwner});
   const user={id:async()=>u.uid,me:async()=>meInfo(),
     profiles:async ids=>Object.fromEntries([].concat(ids).map(i=>[i,i===u.uid?meInfo():{id:i,name:"",avatarUrl:""}])),
-    isOwner:()=>isOwner,canEdit:()=>isOwner,can:async()=>isOwner}; // other people's names come from people/{id}
+    isOwner:()=>isOwner,canEdit:()=>isOwner}; // other people's names come from people/{id}
   resolveReady({db,user,assets,downloads,sample:null});
 }
 let lastUid;
