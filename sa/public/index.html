@@ -191,6 +191,16 @@ details.pg .pgb{display:grid;gap:10px;padding:0 14px 14px}
 .attn-row:last-child{border-bottom:0} .attn-row:hover{background:var(--sunk)}
 .attn-row .nm{font-weight:600;min-width:0;overflow-wrap:anywhere}
 .why{display:flex;gap:6px;flex-wrap:wrap}
+/* needs-attention lights: a pulsing ring around the exact part that's flagged */
+.gw{display:inline-block;border-radius:8px}
+.glow{--gc:var(--warn);position:relative;border-radius:10px;box-shadow:0 0 0 2px var(--gc),0 0 10px 1px var(--gc)}
+.gw.glow{padding:1px 4px;margin:-1px -4px}
+.glow-bad{--gc:var(--bad)} .glow-warn{--gc:var(--warn)} .glow-idle{--gc:var(--idle)}
+@media (prefers-reduced-motion:no-preference){.glow{animation:attnPulse 1.6s ease-in-out infinite}
+  @keyframes attnPulse{0%,100%{box-shadow:0 0 0 2px var(--gc),0 0 12px 2px var(--gc)}50%{box-shadow:0 0 0 1px transparent,0 0 0 0 transparent}}}
+.attn-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle;background:var(--gc);--gc:var(--warn);box-shadow:0 0 6px 1px var(--gc)}
+@media (prefers-reduced-motion:no-preference){.attn-dot{animation:attnBlink 1.6s ease-in-out infinite}@keyframes attnBlink{50%{opacity:.25;box-shadow:none}}}
+.attn-box{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:var(--sunk)}
 .card.new{border-left:5px solid var(--accent)}
 td .why{margin-top:4px}
 /* checklist */
@@ -548,16 +558,24 @@ const STALE_DAYS=14;
 function attnOf(p){
   if(p.status==="Complete")return[];
   const r=[],dd=daysTo(p.dueDate),md=daysTo(p.milestoneDate),quiet=Math.floor((Date.now()-new Date(p.lastUpdateAt||p.createdAt||Date.now()))/864e5);
-  if(p.priority==="Critical")r.push({t:"Critical",cls:"pr-critical",w:5});
-  if(p.status==="Blocked")r.push({t:"Blocked",cls:"s-bad",w:5});
-  if(dd!=null&&dd<0)r.push({t:"Past finish date ("+fmtDate(p.dueDate)+")",cls:"s-bad",w:4});
-  if(md!=null&&md<0)r.push({t:"Milestone overdue"+(p.nextMilestone?": "+p.nextMilestone:""),cls:"s-bad",w:4});
-  if(p.status==="At risk")r.push({t:"At risk",cls:"s-warn",w:3});
-  if(md!=null&&md>=0&&md<=7)r.push({t:(p.nextMilestone||"Milestone")+" "+inDays(md),cls:"s-warn",w:2});
-  if(dd!=null&&dd>=0&&dd<=7)r.push({t:"Finish date "+inDays(dd),cls:"s-warn",w:2});
-  if(S.isOwner&&!["On hold","Not started"].includes(p.status)&&quiet>=STALE_DAYS)r.push({t:"No update in "+quiet+" days",cls:"s-idle",w:1});
+  // f = the part of the project the reason comes from, so that part can flash (glowAt)
+  if(p.priority==="Critical")r.push({t:"Critical",cls:"pr-critical",w:5,f:"prio"});
+  if(p.status==="Blocked")r.push({t:"Blocked",cls:"s-bad",w:5,f:"status"});
+  if(dd!=null&&dd<0)r.push({t:"Past finish date ("+fmtDate(p.dueDate)+")",cls:"s-bad",w:4,f:"due"});
+  if(md!=null&&md<0)r.push({t:"Milestone overdue"+(p.nextMilestone?": "+p.nextMilestone:""),cls:"s-bad",w:4,f:"mile"});
+  if(p.status==="At risk")r.push({t:"At risk",cls:"s-warn",w:3,f:"status"});
+  if(md!=null&&md>=0&&md<=7)r.push({t:(p.nextMilestone||"Milestone")+" "+inDays(md),cls:"s-warn",w:2,f:"mile"});
+  if(dd!=null&&dd>=0&&dd<=7)r.push({t:"Finish date "+inDays(dd),cls:"s-warn",w:2,f:"due"});
+  if(S.isOwner&&!["On hold","Not started"].includes(p.status)&&quiet>=STALE_DAYS)r.push({t:"No update in "+quiet+" days",cls:"s-idle",w:1,f:"upd"});
   return r.sort((a,b)=>b.w-a.w)}
 const attnScore=p=>attnOf(p).reduce((n,x)=>n+x.w,0);
+/* flashing light around the part of a project that's drawing attention */
+const GLOW_LVL=x=>x.w>=4?"bad":x.w>=2?"warn":"idle";
+// glowAt(p,"due") → ` class="glow glow-bad" title="Past finish date (…)"` or "" — drop it into any opening tag
+function glowAt(p,f,base=""){const hit=attnOf(p).filter(x=>x.f===f);
+  if(!hit.length)return base?` class="${base}"`:"";
+  return ` class="${base?base+" ":""}glow glow-${GLOW_LVL(hit[0])}" title="${esc(hit.map(x=>x.t).join(" · "))}"`}
+const attnDot=p=>{const a=attnOf(p);return a.length?`<span class="attn-dot glow-${GLOW_LVL(a[0])}" role="img" aria-label="Needs attention: ${esc(a.map(x=>x.t).join(", "))}" title="${esc(a.map(x=>x.t).join(" · "))}"></span>`:""};
 const whyHTML=(p,n=3)=>`<span class="why">${attnOf(p).slice(0,n).map(x=>`<span class="pill ${x.cls}">${esc(x.t)}</span>`).join("")}</span>`;
 const prioSort=(a,b)=>(PRIORITIES.indexOf(b.priority)-PRIORITIES.indexOf(a.priority))||String(a.dueDate||"9").localeCompare(String(b.dueDate||"9"));
 const FILTERS={all:p=>p.status!=="Complete",done:p=>p.status==="Complete",attn:p=>attnOf(p).length>0,hot:p=>p.status!=="Complete"&&["Critical","Urgent"].includes(p.priority),
@@ -778,23 +796,23 @@ const statusSelect=p=>{const st=p.status||"Not started";return `<select class="s
 const statusPill=st=>`<span class="st ${STATUS_ST[st]||"s-idle"}">${esc(st||"Not started")}</span>`;
 const COLS=[
   ["idx","#",1,(p,i)=>`<td class="idx">${i+1}</td>`],
-  ["name","Project",1,p=>`<td class="nm">${esc(p.name)}${isDue(p)?` <span class="pill" style="background:var(--accent);color:var(--accent-ink)">Update due</span>`:""}${S.filter==="attn"?whyHTML(p):""}</td>`],
+  ["name","Project",1,p=>`<td class="nm">${attnDot(p)}${esc(p.name)}${isDue(p)?` <span class="pill" style="background:var(--accent);color:var(--accent-ink)">Update due</span>`:""}${S.filter==="attn"?whyHTML(p):""}</td>`],
   ["job","Job # / FA#",1,p=>`<td>${esc(p.jobNumber)}</td>`],
   ["loc","Building",1,p=>`<td>${esc(locLabel(p))}</td>`],
   ["addr","Address",0,p=>`<td>${esc(p.address)}</td>`],
   ["dept","Department",0,p=>`<td>${esc(p.department)}</td>`],
-  ["status","Status",1,p=>`<td>${statusPill(p.status)}</td>`],
+  ["status","Status",1,p=>`<td><span${glowAt(p,"status","gw")}>${statusPill(p.status)}</span></td>`],
   ["phase","Phase",1,p=>`<td>${phasePill(p)}</td>`],
-  ["prio","Priority",1,p=>`<td>${S.isOwner?prioSelect(p):prioPill(p.priority)}</td>`],
+  ["prio","Priority",1,p=>`<td><span${glowAt(p,"prio","gw")}>${S.isOwner?prioSelect(p):prioPill(p.priority)}</span></td>`],
   ["budget","Budget",1,p=>`<td class="num">${budgetOf(p)?money(budgetOf(p)):""}</td>`],
   ["pct","% Complete",1,p=>`<td class="num">${p.percent||p.percent===0&&p.startDate?p.percent+"%":""}</td>`],
   ["start","Start",0,p=>`<td class="dt">${fmtDate(p.startDate)}</td>`],
-  ["due","Target date",1,p=>`<td class="dt">${fmtDate(p.dueDate)}</td>`],
+  ["due","Target date",1,p=>`<td class="dt"><span${glowAt(p,"due","gw")}>${fmtDate(p.dueDate)}</span></td>`],
   ["lead","Lead",1,p=>`<td>${esc(p.lead)}</td>`],
   ["vis","Who can see",1,p=>`<td class="vis" data-vis="${p.id}" title="Change who can see this">${visHTML(p)}</td>`],
-  ["next","Next milestone",0,p=>`<td>${esc(p.nextMilestone)}</td>`],
-  ["mdate","Milestone date",0,p=>`<td class="dt">${fmtDate(p.milestoneDate)}</td>`],
-  ["upd","Updated",1,p=>`<td class="dt">${fmtDate((p.lastUpdateAt||p.createdAt||"").slice(0,10))}</td>`],
+  ["next","Next milestone",0,p=>`<td><span${glowAt(p,"mile","gw")}>${esc(p.nextMilestone)}</span></td>`],
+  ["mdate","Milestone date",0,p=>`<td class="dt"><span${glowAt(p,"mile","gw")}>${fmtDate(p.milestoneDate)}</span></td>`],
+  ["upd","Updated",1,p=>`<td class="dt"><span${glowAt(p,"upd","gw")}>${fmtDate((p.lastUpdateAt||p.createdAt||"").slice(0,10))}</span></td>`],
   ["notes","Notes",0,p=>`<td>${esc(p.notes)}</td>`]];
 function colsOn(){let c=null;try{c=JSON.parse(localStorage.getItem("cols")||"null")}catch(e){}return new Set(Array.isArray(c)?c:COLS.filter(x=>x[2]).map(x=>x[0]))}
 const SORT_KEY={job:p=>p.jobNumber,loc:p=>locLabel(p),addr:p=>p.address,dept:p=>p.department,name:p=>p.name,lead:p=>p.lead,next:p=>p.nextMilestone,notes:p=>p.notes,
@@ -840,13 +858,13 @@ function tableHTML(list){const on=colsOn(),cols=COLS.filter(c=>c[0]==="name"||on
 function cardHTML(p){
   const pct=p.percent||0;
   return `<div class="card" data-open="${p.id}" role="button" tabindex="0">
-    <div class="row"><span class="tag cat-${esc(p.category)}">${esc(CATS[p.category]?.label)}</span>${phasePill(p)}<span class="pill ${STATUS_CLS[p.status]||"s-idle"}">${esc(p.status)}</span>${["High","Urgent","Critical"].includes(p.priority)?prioPill(p.priority):""}${isNew(p)?`<span class="pill" style="background:var(--accent);color:var(--accent-ink)">New update</span>`:""}</div>
-    <h3>${esc(p.name)}</h3>${S.filter==="attn"?whyHTML(p):""}
+    <div class="row"><span class="tag cat-${esc(p.category)}">${esc(CATS[p.category]?.label)}</span>${phasePill(p)}<span${glowAt(p,"status","gw")}><span class="pill ${STATUS_CLS[p.status]||"s-idle"}">${esc(p.status)}</span></span>${["High","Urgent","Critical"].includes(p.priority)?`<span${glowAt(p,"prio","gw")}>${prioPill(p.priority)}</span>`:""}${isNew(p)?`<span class="pill" style="background:var(--accent);color:var(--accent-ink)">New update</span>`:""}</div>
+    <h3>${attnDot(p)}${esc(p.name)}</h3>${S.filter==="attn"?whyHTML(p):""}
     ${p.lastSummary?`<div style="font-size:.95rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(p.lastSummary)}</div>`:""}
     ${p.location||p.jobNumber||p.department?`<div class="meta">${[p.jobNumber,p.department,locLabel(p)].filter(Boolean).map(esc).join(" · ")}</div>`:""}
-    ${p.nextMilestone?`<div class="meta">Next: <b style="color:var(--ink)">${esc(p.nextMilestone)}</b>${p.milestoneDate?" · "+fmtDate(p.milestoneDate):""}</div>`:""}
+    ${p.nextMilestone?`<div class="meta"><span${glowAt(p,"mile","gw")}>Next: <b style="color:var(--ink)">${esc(p.nextMilestone)}</b>${p.milestoneDate?" · "+fmtDate(p.milestoneDate):""}</span></div>`:""}
     <div class="prog" aria-label="${pct}% complete"><i style="width:${pct}%"></i></div>
-    <div class="row meta"><span>${pct}%</span>${(()=>{const it=p.phase?chkFor(p,p.phase):[];return it.length?`<span>· Checklist ${it.filter(x=>x.done).length}/${it.length}</span>`:""})()}${p.dueDate?`<span>· Due ${fmtDate(p.dueDate)}</span>`:""}<span>· Updated ${ago(p.lastUpdateAt)}</span>${S.isOwner?`<span>· ${(p.members||[]).filter(x=>x!==S.me).length} following</span>`:""}${openQs(p.id).length&&S.isOwner?`<span>· ${openQs(p.id).length} open question${openQs(p.id).length>1?"s":""}</span>`:""}</div>
+    <div class="row meta"><span>${pct}%</span>${(()=>{const it=p.phase?chkFor(p,p.phase):[];return it.length?`<span>· Checklist ${it.filter(x=>x.done).length}/${it.length}</span>`:""})()}${p.dueDate?`<span>· <span${glowAt(p,"due","gw")}>Due ${fmtDate(p.dueDate)}</span></span>`:""}<span>· <span${glowAt(p,"upd","gw")}>Updated ${ago(p.lastUpdateAt)}</span></span>${S.isOwner?`<span>· ${(p.members||[]).filter(x=>x!==S.me).length} following</span>`:""}${openQs(p.id).length&&S.isOwner?`<span>· ${openQs(p.id).length} open question${openQs(p.id).length>1?"s":""}</span>`:""}</div>
   </div>`}
 function nudgeHTML(){const {p,q}=S.nudge;return `<section class="section"><div class="nudge">
   <div class="eyebrow">Quick check-in · ${esc(p.name)}</div>
@@ -1187,24 +1205,26 @@ function renderSheet(){
     const det=c.fields.map(f=>{let v=p.details?.[f.k];if(v===""||v==null)return"";if(f.k==="budget"||f.k==="cost")v=money(v);return `<dt>${esc(f.label)}</dt><dd>${esc(v)}</dd>`}).join("");
     const last=S.updates[0];
     const phs=phasesFor(p.category).filter(x=>x!=="Warranty"||p.phase==="Warranty"),pi=phs.indexOf(p.phase),done=p.status==="Complete";
-    const fact=(ic,l,v)=>v?`<div class="fact">${ic}<div><small>${l}</small><b>${v}</b></div></div>`:"";
+    const fact=(ic,l,v,g)=>v?`<div${g?glowAt(p,g,"fact"):` class="fact"`}>${ic}<div><small>${l}</small><b>${v}</b></div></div>`:"";
     const nf=S.allFiles.filter(f=>f.projectId===p.id).length;
+    const att=attnOf(p);
     body=`<div class="stack">
+      ${att.length?`<div class="attn-box glow glow-${GLOW_LVL(att[0])}"><b>Needs attention</b><span class="why">${att.map(x=>`<span class="pill ${x.cls}">${esc(x.t)}</span>`).join("")}</span></div>`:""}
       ${phs.length?`<div class="stepper" aria-label="Phase">${phs.map((x,i)=>`<div class="stp ${done||i<pi?"done":i===pi?"cur":""}"><span class="dot"></span>${esc(x)}</div>`).join("")}</div>`:""}
       <div class="facts">
         ${fact(IC.bldg,"Building",esc(locLabel(p)))}
         ${fact(IC.bldg,"Address",p.address?mapsLink(p.address)+(p.taxRate!=null&&p.taxRate!==""?` <small style="display:inline">· ${esc(p.taxRate)}% tax</small>`:""):"")}
-        ${fact(IC.target,"Status",isLead?statusSelect(p):statusPill(p.status))}
+        ${fact(IC.target,"Status",isLead?statusSelect(p):statusPill(p.status),"status")}
         ${fact(IC.dollar,p.details?.cost&&!p.details?.budget?"Cost":"Budget",budgetOf(p)?money(budgetOf(p)):"")}
-        ${fact(IC.flag,"Priority",isLead?prioSelect(p):prioPill(p.priority))}
-        ${fact(IC.cal,"Target date",fmtDate(p.dueDate))}
+        ${fact(IC.flag,"Priority",isLead?prioSelect(p):prioPill(p.priority),"prio")}
+        ${fact(IC.cal,"Target date",fmtDate(p.dueDate)||(attnOf(p).some(x=>x.f==="due")?"—":""),"due")}
         ${fact(IC.user,"Project lead",esc(p.lead))}
         ${S.isOwner?fact(IC.user,"Contractor / vendor",vendorHTML(p.vendor)):""}
         ${fact(IC.pct,"Complete",(p.percent||0)+"%")}
         ${fact(IC.hash,"Job number or FA#",esc(p.jobNumber))}
       </div>
       <div class="prog" aria-label="${p.percent||0}% complete"><i style="width:${p.percent||0}%"></i></div>
-      ${!isLead?reqUpdHTML(p):isDue(p)?`<div class="notice">Update due. ${esc(whyDue(p))}. ${asksHTML(p)}<button class="btn primary small" data-update="${p.id}">Give update</button></div>`:`<div><button class="btn primary" data-update="${p.id}">${IC.pen}Post an update</button></div>`}
+      ${!isLead?reqUpdHTML(p):isDue(p)?`<div class="notice">Update due. ${esc(whyDue(p))}. ${asksHTML(p)}<button class="btn primary small" data-update="${p.id}">Give update</button></div>`:`<div><span${glowAt(p,"upd","gw")}><button class="btn primary" data-update="${p.id}">${IC.pen}Post an update</button></span></div>`}
       ${p.description?`<div class="sec-h">Description</div><p style="margin:0;white-space:pre-wrap">${esc(p.description)}</p>`:""}
       <div class="sec-h">Quick links</div>
       <div class="qlinks"><button data-tab="updates">${IC.list}Updates (${S.updates.length})</button><button data-tab="checklist">${IC.check}Checklist${(()=>{const it=p.phase?chkFor(p,p.phase):[];return it.length?` ${it.filter(x=>x.done).length}/${it.length}`:""})()}</button><button data-tab="files">${IC.clip}Files (${nf})</button><button data-tab="questions">${IC.chat}Questions (${S.questions.length})</button></div>
@@ -1214,7 +1234,7 @@ function renderSheet(){
       <dl class="kv">
         ${p.department?`<dt>Department</dt><dd>${esc(p.department)}</dd>`:""}
         ${p.phase?`<dt>Phase</dt><dd>${phasePill(p)}</dd>`:""}
-        ${p.nextMilestone?`<dt>Next milestone</dt><dd>${esc(p.nextMilestone)}${p.milestoneDate?" · "+fmtDate(p.milestoneDate):""}</dd>`:""}
+        ${p.nextMilestone||p.milestoneDate?`<dt>Next milestone</dt><dd><span${glowAt(p,"mile","gw")}>${esc(p.nextMilestone||"Milestone")}${p.milestoneDate?" · "+fmtDate(p.milestoneDate):""}</span></dd>`:""}
         ${p.startDate?`<dt>Start</dt><dd>${fmtDate(p.startDate)}</dd>`:""}
         ${isLead?`<dt>Update reminders</dt><dd>${esc(nextLabel(p))}</dd>`:""}
         ${det}
