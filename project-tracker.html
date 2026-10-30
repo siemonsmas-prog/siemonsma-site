@@ -542,7 +542,7 @@ function daysTo(s){if(!s)return null;return Math.round((new Date(s.slice(0,10)+"
 const inDays=n=>n===0?"today":n===1?"tomorrow":n<0?(-n)+" day"+(n===-1?"":"s")+" ago":"in "+n+" days";
 const STALE_DAYS=14;
 function attnOf(p){
-  if(p.status==="Complete")return[];
+  if(!S.isOwner||p.status==="Complete")return[]; // Clint, 2026-10-30: needs-attention is for Clint only
   const r=[],dd=daysTo(p.dueDate),md=daysTo(p.milestoneDate),quiet=Math.floor((Date.now()-new Date(p.lastUpdateAt||p.createdAt||Date.now()))/864e5);
   // f = the part of the project the reason comes from, so that part can flash (glowAt)
   if(p.priority==="Critical")r.push({t:"Critical",cls:"pr-critical",w:5,f:"prio"});
@@ -728,7 +728,7 @@ function render(){
     <div class="ptable">
       <div class="phead">
         <h2>${S.isOwner?"Projects":"Your projects"} (${shown.length})</h2>
-        <select id="pFilter" aria-label="Which projects">${[["all","All active"],...Object.entries(CATS).map(([k,c])=>[k,c.label+(counts[k]?" ("+counts[k]+")":"")]),["attn","Needs attention"],["plan","In planning"],["hold","On hold"],["hot","Critical & urgent"],["risk","At risk or blocked"],["week","Milestones next 7 days"],[S.isOwner?"q":"new",S.isOwner?"Open questions":"New updates for you"],["done","Completed"]].map(([k,l])=>`<option value="${k}" ${S.filter===k?"selected":""}>${esc(l)}</option>`).join("")}</select>
+        <select id="pFilter" aria-label="Which projects">${[["all","All active"],...Object.entries(CATS).map(([k,c])=>[k,c.label+(counts[k]?" ("+counts[k]+")":"")]),...(S.isOwner?[["attn","Needs attention"]]:[]),["plan","In planning"],["hold","On hold"],["hot","Critical & urgent"],["risk","At risk or blocked"],["week","Milestones next 7 days"],[S.isOwner?"q":"new",S.isOwner?"Open questions":"New updates for you"],["done","Completed"]].map(([k,l])=>`<option value="${k}" ${S.filter===k?"selected":""}>${esc(l)}</option>`).join("")}</select>
         <span class="sp"></span>
         ${S.isOwner&&S.layout==="table"&&shown.length?colsMenuHTML():""}
       </div>
@@ -754,7 +754,7 @@ function budgetOf(p){const d=p.details||{};const v=Number(d.budget||d.cost||0);r
 const shortMoney=v=>v>=1e6?"$"+(v/1e6).toFixed(v>=1e7?1:2).replace(/\.?0+$/,"")+"M":v>=1e3?"$"+Math.round(v/1e3)+"K":"$"+Math.round(v);
 function dashHTML(mine){
   const act=mine.filter(FILTERS.all),bud=act.reduce((t,p)=>t+budgetOf(p),0);
-  const tiles=[["all","Active projects",act.length,"t-blue",IC.doc],["attn","Need attention",mine.filter(FILTERS.attn).length,"t-bad",IC.alert],["plan","In planning",mine.filter(FILTERS.plan).length,"",IC.clock],
+  const tiles=[["all","Active projects",act.length,"t-blue",IC.doc],S.isOwner?["attn","Need attention",mine.filter(FILTERS.attn).length,"t-bad",IC.alert]:["risk","At risk or blocked",mine.filter(FILTERS.risk).length,"t-warn",IC.alert],["plan","In planning",mine.filter(FILTERS.plan).length,"",IC.clock],
     ["hold","On hold",mine.filter(FILTERS.hold).length,"t-warn",IC.pause],["done","Completed",mine.filter(FILTERS.done).length,"t-ok",IC.check],
     S.isOwner?["all","Total budget (active)",shortMoney(bud),"t-accent",IC.dollar]:["new","New updates for you",mine.filter(isNew).length,"t-accent",IC.bell]];
   return `<div class="dash" role="group" aria-label="Summary">${tiles.map(([k,l,n,c,ic],i)=>`<button class="tile ${n&&n!=="$0"?c:""}" data-filter="${k}" aria-pressed="${S.filter===k&&k!=="all"&&i<5}" ${i===5&&S.isOwner?'title="Sum of the budget or cost on active projects"':""}><span class="ti">${ic}</span><span class="tt"><b>${n}</b><span>${l}</span></span>${IC.chev}</button>`).join("")}</div>`}
