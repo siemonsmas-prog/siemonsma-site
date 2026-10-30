@@ -551,17 +551,18 @@ function attnOf(p){
   if(md!=null&&md<0)r.push({t:"Milestone overdue"+(p.nextMilestone?": "+p.nextMilestone:""),cls:"s-bad",w:4,f:"mile"});
   if(p.status==="At risk")r.push({t:"At risk",cls:"s-warn",w:3,f:"status"});
   // Clint, 2026-10-30: an upcoming milestone is not a problem; only flag it once it is past due
-  if(dd!=null&&dd>=0&&dd<=7)r.push({t:"Finish date "+inDays(dd),cls:"s-warn",w:2,f:"due"});
+  // Clint, 2026-10-30: an upcoming finish date is not a problem either; only past due flags
   if(S.isOwner&&!["On hold","Not started"].includes(p.status)&&quiet>=STALE_DAYS)r.push({t:"No update in "+quiet+" days",cls:"s-idle",w:1,f:"upd"});
   return r.sort((a,b)=>b.w-a.w)}
 const attnScore=p=>attnOf(p).reduce((n,x)=>n+x.w,0);
 /* flashing light around the part of a project that's drawing attention */
 const GLOW_LVL=x=>x.w>=4?"bad":x.w>=2?"warn":"idle";
 // glowAt(p,"due") → ` class="glow glow-bad" title="Past finish date (…)"` or "" — drop it into any opening tag
-function glowAt(p,f,base=""){const hit=attnOf(p).filter(x=>x.f===f);
+// Clint, 2026-10-30: only Clint (the owner) sees the flashing lights
+function glowAt(p,f,base=""){const hit=S.isOwner?attnOf(p).filter(x=>x.f===f):[];
   if(!hit.length)return base?` class="${base}"`:"";
   return ` class="${base?base+" ":""}glow glow-${GLOW_LVL(hit[0])}" title="${esc(hit.map(x=>x.t).join(" · "))}"`}
-const attnDot=p=>{const a=attnOf(p);return a.length?`<span class="attn-dot glow-${GLOW_LVL(a[0])}" role="img" aria-label="Needs attention: ${esc(a.map(x=>x.t).join(", "))}" title="${esc(a.map(x=>x.t).join(" · "))}"></span>`:""};
+const attnDot=p=>{const a=S.isOwner?attnOf(p):[];return a.length?`<span class="attn-dot glow-${GLOW_LVL(a[0])}" role="img" aria-label="Needs attention: ${esc(a.map(x=>x.t).join(", "))}" title="${esc(a.map(x=>x.t).join(" · "))}"></span>`:""};
 const whyHTML=(p,n=3)=>`<span class="why">${attnOf(p).slice(0,n).map(x=>`<span class="pill ${x.cls}">${esc(x.t)}</span>`).join("")}</span>`;
 const prioSort=(a,b)=>(PRIORITIES.indexOf(b.priority)-PRIORITIES.indexOf(a.priority))||String(a.dueDate||"9").localeCompare(String(b.dueDate||"9"));
 const FILTERS={all:p=>p.status!=="Complete",done:p=>p.status==="Complete",attn:p=>attnOf(p).length>0,hot:p=>p.status!=="Complete"&&["Critical","Urgent"].includes(p.priority),
@@ -1193,7 +1194,7 @@ function renderSheet(){
     const phs=phasesFor(p.category).filter(x=>x!=="Warranty"||p.phase==="Warranty"),pi=phs.indexOf(p.phase),done=p.status==="Complete";
     const fact=(ic,l,v,g)=>v?`<div${g?glowAt(p,g,"fact"):` class="fact"`}>${ic}<div><small>${l}</small><b>${v}</b></div></div>`:"";
     const nf=S.allFiles.filter(f=>f.projectId===p.id).length;
-    const att=attnOf(p);
+    const att=S.isOwner?attnOf(p):[];
     body=`<div class="stack">
       ${att.length?`<div class="attn-box glow glow-${GLOW_LVL(att[0])}"><b>Needs attention</b><span class="why">${att.map(x=>`<span class="pill ${x.cls}">${esc(x.t)}</span>`).join("")}</span></div>`:""}
       ${phs.length?`<div class="stepper" aria-label="Phase">${phs.map((x,i)=>`<div class="stp ${done||i<pi?"done":i===pi?"cur":""}"><span class="dot"></span>${esc(x)}</div>`).join("")}</div>`:""}
