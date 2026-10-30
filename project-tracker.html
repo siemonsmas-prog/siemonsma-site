@@ -187,8 +187,8 @@ details.pg .pgb{display:grid;gap:10px;padding:0 14px 14px}
 .glow-bad{--gc:var(--bad)} .glow-warn{--gc:var(--warn)} .glow-idle{--gc:var(--idle)}
 @media (prefers-reduced-motion:no-preference){.glow{animation:attnPulse 1.6s ease-in-out infinite}
   @keyframes attnPulse{0%,100%{box-shadow:0 0 0 2px var(--gc),0 0 12px 2px var(--gc)}50%{box-shadow:0 0 0 1px transparent,0 0 0 0 transparent}}}
-.attn-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle;background:var(--gc);--gc:var(--warn);box-shadow:0 0 6px 1px var(--gc)}
-@media (prefers-reduced-motion:no-preference){.attn-dot{animation:attnBlink 1.6s ease-in-out infinite}@keyframes attnBlink{50%{opacity:.25;box-shadow:none}}}
+.attn-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:8px;vertical-align:middle;background:var(--gc,var(--warn));box-shadow:0 0 6px 1px var(--gc,var(--warn))}
+@media (prefers-reduced-motion:no-preference){.attn-dot{animation:attnBlink 1.6s ease-in-out infinite}@keyframes attnBlink{50%{opacity:.4;box-shadow:none}}}
 .attn-box{display:flex;gap:8px 12px;align-items:center;flex-wrap:wrap;padding:10px 12px;background:var(--sunk)}
 .card.new{border-left:5px solid var(--accent)}
 td .why{margin-top:4px}
@@ -788,7 +788,7 @@ const COLS=[
   ["addr","Address",0,p=>`<td>${esc(p.address)}</td>`],
   ["dept","Department",0,p=>`<td>${esc(p.department)}</td>`],
   ["status","Status",1,p=>`<td><span${glowAt(p,"status","gw")}>${statusPill(p.status)}</span></td>`],
-  ["phase","Phase",1,p=>`<td>${phasePill(p)}</td>`],
+  ["phase","Phase",1,p=>{const on=colsOn();return `<td><span${on.has("next")||on.has("mdate")?` class="gw"`:glowAt(p,"mile","gw")}>${phasePill(p)||(attnOf(p).some(x=>x.f==="mile")&&!on.has("next")&&!on.has("mdate")?"Milestone":"")}</span></td>`}],
   ["prio","Priority",1,p=>`<td><span${glowAt(p,"prio","gw")}>${S.isOwner?prioSelect(p):prioPill(p.priority)}</span></td>`],
   ["budget","Budget",1,p=>`<td class="num">${budgetOf(p)?money(budgetOf(p)):""}</td>`],
   ["pct","% Complete",1,p=>`<td class="num">${p.percent||p.percent===0&&p.startDate?p.percent+"%":""}</td>`],
