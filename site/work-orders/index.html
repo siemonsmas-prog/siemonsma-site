@@ -91,7 +91,7 @@ input:focus{border-color:var(--signal);outline:none}
 
 <main class="wrap">
   <h1>My Work Orders</h1>
-  <p class="sub">Open work assigned to you and your Manager team in Limble.</p>
+  <p class="sub">Open work assigned to you, shared with you, or on your Manager team in Limble.</p>
   <hr class="rule">
 
   <form class="signin" id="signin" hidden>
@@ -156,7 +156,7 @@ function render() {
     row1.append(el("span", "num", "#" + r.taskID), el("h3", null, r.name), el("span", "pill", r.status));
     const meta = el("div", "meta");
     if (r.due) meta.append(el("span", "due" + (r.overdue ? " late" : ""), (r.overdue ? "Overdue · due " : "Due ") + fmt(r.due)));
-    if (r.assignedTo) meta.append(el("span", null, r.assignedTo === "You" ? "Assigned to you" : r.assignedTo));
+    if (r.assignedTo) meta.append(el("span", null, r.assignedTo === "You" ? "Assigned to you" : r.assignedTo === "Shared" ? (r.sharedWith ? "Shared with " + r.sharedWith : "Shared") : r.assignedTo));
     if (r.priority) meta.append(el("span", null, r.priority));
     meta.append(el("span", null, r.type));
     if (r.asset) meta.append(el("span", null, r.asset));
