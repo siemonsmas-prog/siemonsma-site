@@ -32,8 +32,8 @@ def check(s):
     assert "__" not in s.replace("__proto__", ""), "unfilled placeholder"
     return s
 
-def fill(img, tracker, target, request, voice="voice/", wo="work-orders/"):
-    s = voice_blocks(SRC).replace("__WO_URL__", wo).replace("__VOICE_URL__", voice).replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request)
+def fill(img, tracker, target, request, voice="voice/", wo="work-orders/", maint="maintenance/"):
+    s = voice_blocks(SRC).replace("__MAINT_URL__", maint).replace("__WO_URL__", wo).replace("__VOICE_URL__", voice).replace("__TRACKER_URL__", tracker).replace("__TRACKER_TARGET__", target).replace("__REQUEST_URL__", request)
     for k in IMGS:
         s = s.replace(f"__IMG_{k}__", img(k))
     return check(s)
@@ -49,7 +49,7 @@ def fill_request(home, tracker, target, mode, src=REQ):
 if "--preview" in sys.argv:
     data = lambda k: "data:image/jpeg;base64," + base64.b64encode((HERE / "home/img" / f"{k}.jpg").read_bytes()).decode()
     out = HERE / "home" / "preview.html"
-    out.write_text(fill(data, PREVIEW_TRACKER, NEW_TAB, PREVIEW_REQUEST, "https://siemonsma.org/voice/", "https://siemonsma.org/work-orders/"))
+    out.write_text(fill(data, PREVIEW_TRACKER, NEW_TAB, PREVIEW_REQUEST, "https://siemonsma.org/voice/", "https://siemonsma.org/work-orders/", "https://siemonsma.org/maintenance/"))
     print("wrote", out)
     out = HERE / "request" / "preview.html"
     out.write_text(fill_request(PREVIEW_HOME, PREVIEW_TRACKER, NEW_TAB, "preview"))
@@ -96,6 +96,9 @@ shutil.copytree(HERE / "public", site / "tracker", ignore=shutil.ignore_patterns
 # Clint's open Limble work orders; data comes from the Limble connector after a Firebase sign-in check
 (site / "work-orders").mkdir()
 shutil.copy(HERE / "work-orders/work-orders.src.html", site / "work-orders" / "index.html")
+# public maintenance request page: links into Limble's request forms, no sign-in
+(site / "maintenance").mkdir()
+shutil.copy(HERE / "maintenance/maintenance.src.html", site / "maintenance" / "index.html")
 zipbase = HERE.parent / "siemonsma-site"
 shutil.make_archive(str(zipbase), "zip", site)
 shutil.move(str(zipbase) + ".zip", site / "siemonsma-site.zip")

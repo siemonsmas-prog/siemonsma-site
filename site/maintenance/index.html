@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b111b">
+<title>Request Maintenance · The Planning Pad</title>
+<link rel="icon" type="image/png" href="../assets/favicon-64.png">
+<link rel="apple-touch-icon" href="../assets/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap">
+<style>
+/* Public page: one tap per building opens Limble's request form. No sign-in. Single dark look like the home page. */
+:root{
+  --night:#0b111b;--panel:#121a27;--line:#223047;--steel:#e9eef6;--mist:#9aa9be;--signal:#3d8bff;
+  --display:"Archivo","Arial Black","Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);color:var(--steel);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:4px}
+.wrap{max-width:900px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--night) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;min-height:60px;padding-block:8px}
+.brand{font-family:var(--display);font-weight:900;font-stretch:125%;font-size:1.3rem;letter-spacing:.01em;text-decoration:none;white-space:nowrap}
+.brand span{color:var(--signal)}
+.top .home{margin-left:auto;color:var(--mist);font-size:.9rem;text-decoration:none}
+.top .home:hover{color:var(--steel)}
+h1{margin:28px 0 4px;font-family:var(--display);font-weight:900;font-stretch:118%;font-size:clamp(1.7rem,6vw,2.6rem);line-height:1.05;letter-spacing:.01em;text-transform:uppercase}
+.sub{margin:0;color:var(--mist);max-width:56ch}
+.rule{width:64px;height:3px;background:var(--signal);margin:16px 0 8px;border:0}
+h2{margin:26px 0 10px;font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mist)}
+.grid{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.grid a{display:flex;align-items:center;gap:14px;min-height:64px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--panel);text-decoration:none;transition:border-color .15s}
+.grid a:hover{border-color:var(--signal)}
+.code{flex:none;display:grid;place-items:center;min-width:44px;height:44px;padding:0 6px;border-radius:6px;background:color-mix(in srgb,var(--signal) 16%,transparent);color:var(--signal);font-family:var(--display);font-weight:900;font-stretch:115%;font-size:1.1rem}
+.t{flex:1;min-width:0;display:grid}
+.t b{font-weight:700}
+.t small{color:var(--mist);font-size:.82rem}
+.go{flex:none;width:18px;height:18px;color:var(--mist)}
+.note{margin:28px 0 48px;padding:14px 16px;border:1px dashed var(--line);border-radius:8px;color:var(--mist);font-size:.92rem}
+.note b{color:var(--steel)}
+@media (prefers-reduced-motion:reduce){.grid a{transition:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol></svg>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../">THE PLANNING <span>PAD</span></a>
+  <a class="home" href="../">Home</a>
+</div></header>
+
+<main class="wrap">
+  <h1>Request Maintenance</h1>
+  <p class="sub">Tap the building that needs work. A short form opens in Limble, and no account or sign-in is needed.</p>
+  <hr class="rule">
+
+  <h2>Buildings</h2>
+  <ul class="grid" id="buildings"></ul>
+
+  <h2>Mobile equipment</h2>
+  <ul class="grid" id="mobile"></ul>
+
+  <h2>Something else</h2>
+  <ul class="grid" id="other"></ul>
+
+  <p class="note"><b>Emergency?</b> For fire, injury or anything unsafe, call 911 first, then let facilities know.</p>
+</main>
+
+<script>
+// Limble's public request links, one per location. Anyone can open them; requests land in Limble for facilities.
+const L = "https://app.limblecmms.com/loc-problem/x4svzs18232/";
+const GROUPS = {
+  buildings: [
+    ["A", "Building A", "", 92309], ["B", "Building B", "", 92310], ["C", "Building C", "", 92311],
+    ["D", "Building D", "", 92312], ["E", "Building E", "", 92313], ["F", "Building F", "", 92314],
+    ["G", "Building G", "", 92315], ["H", "Building H", "", 92316], ["I", "Building I", "", 92317],
+    ["J", "Building J", "", 92318], ["K", "Building K", "Frito", 102043], ["L", "Building L", "", 92320],
+    ["M", "Building M", "", 92321], ["X", "Building X", "Former Building K", 92319],
+    ["Z", "Building Z", "New building, South Campus", 95671], ["SFA", "SFA", "Sioux Falls", 95654]
+  ],
+  mobile: [
+    ["N", "Mobile equipment", "North Campus", 92322], ["S", "Mobile equipment", "South Campus", 92324]
+  ],
+  other: [
+    ["All", "Whole campus", "Not tied to one building", 60910],
+    ["?", "Not sure", "Pick the location in Limble", "https://app.limblecmms.com/global-problem/x4svzs18232"]
+  ]
+};
+for (const [id, items] of Object.entries(GROUPS)) {
+  document.getElementById(id).innerHTML = items.map(([code, name, note, to]) => {
+    const href = typeof to === "number" ? L + to : to;
+    return `<li><a href="${href}" rel="noopener"><span class="code">${code}</span><span class="t"><b>${name}</b>${note ? `<small>${note}</small>` : ""}</span><svg class="go"><use href="#i-arrow"/></svg></a></li>`;
+  }).join("");
+}
+</script>
+</body>
+</html>
