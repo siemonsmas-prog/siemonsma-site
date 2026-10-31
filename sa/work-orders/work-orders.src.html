@@ -91,7 +91,7 @@ input:focus{border-color:var(--signal);outline:none}
 
 <main class="wrap">
   <h1>My Work Orders</h1>
-  <p class="sub">Open work assigned to you in Limble.</p>
+  <p class="sub">Open work assigned to you and your Manager team in Limble.</p>
   <hr class="rule">
 
   <form class="signin" id="signin" hidden>
@@ -107,8 +107,7 @@ input:focus{border-color:var(--signal);outline:none}
   <section id="board" hidden>
     <div class="bar">
       <div class="chips" role="group" aria-label="Show">
-        <button class="chip" type="button" data-f="all" aria-pressed="true">All <span id="cAll"></span></button>
-        <button class="chip" type="button" data-f="late" aria-pressed="false">Overdue <span id="cLate"></span></button>
+<!-- filled from the data: All, one per assignee (Mine, Manager team), Overdue -->
       </div>
       <button class="btn small" type="button" id="refresh">Refresh</button>
       <span class="asof" id="asof"></span>
@@ -131,18 +130,33 @@ let rows = [], filter = "all";
 function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 const fmt = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"}) : "";
 
+const matches = (r) => filter === "all" || (filter === "late" ? r.overdue : r.assignedTo === filter);
+function renderChips() {
+  const box = document.querySelector(".chips"); box.replaceChildren();
+  const who = [...new Set(rows.map((r) => r.assignedTo).filter(Boolean))].sort((a, b) => (b === "You") - (a === "You"));
+  const opts = [["all", "All"], ...who.map((w) => [w, w === "You" ? "Mine" : w]), ["late", "Overdue"]];
+  if (!opts.some(([v]) => v === filter)) filter = "all";
+  for (const [value, label] of opts) {
+    const n = rows.filter((r) => value === "all" || (value === "late" ? r.overdue : r.assignedTo === value)).length;
+    const b = el("button", "chip", `${label} (${n})`);
+    b.type = "button"; b.setAttribute("aria-pressed", String(value === filter));
+    b.addEventListener("click", () => { filter = value; render(); });
+    box.append(b);
+  }
+}
+
 function render() {
   const list = $("list"); list.replaceChildren();
-  const late = rows.filter((r) => r.overdue).length;
-  $("cAll").textContent = `(${rows.length})`; $("cLate").textContent = `(${late})`;
-  const shown = filter === "late" ? rows.filter((r) => r.overdue) : rows;
-  if (!shown.length) { list.append(el("li", "empty", filter === "late" ? "Nothing overdue." : "No open work orders assigned to you.")); return; }
+  renderChips();
+  const shown = rows.filter(matches);
+  if (!shown.length) { list.append(el("li", "empty", filter === "late" ? "Nothing overdue." : "No open work orders here.")); return; }
   for (const r of shown) {
     const li = el("li", "wo" + (r.overdue ? " late" : ""));
     const row1 = el("div", "row1");
     row1.append(el("span", "num", "#" + r.taskID), el("h3", null, r.name), el("span", "pill", r.status));
     const meta = el("div", "meta");
     if (r.due) meta.append(el("span", "due" + (r.overdue ? " late" : ""), (r.overdue ? "Overdue · due " : "Due ") + fmt(r.due)));
+    if (r.assignedTo) meta.append(el("span", null, r.assignedTo === "You" ? "Assigned to you" : r.assignedTo));
     if (r.priority) meta.append(el("span", null, r.priority));
     meta.append(el("span", null, r.type));
     if (r.asset) meta.append(el("span", null, r.asset));
@@ -197,11 +211,6 @@ $("reset").addEventListener("click", async () => {
 });
 $("signOut").addEventListener("click", () => signOut(auth));
 $("refresh").addEventListener("click", load);
-document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
-  filter = c.dataset.f;
-  document.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
-  render();
-}));
 </script>
 </body>
 </html>
