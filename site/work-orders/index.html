@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>My Work Orders · siemonsma.org</title>
+<title>My Work Orders · The Planning Pad</title>
 <meta name="robots" content="noindex">
 <link rel="icon" type="image/png" href="../assets/favicon-64.png">
 <link rel="apple-touch-icon" href="../assets/icon-180.png">
@@ -85,7 +85,7 @@ input:focus{border-color:var(--signal);outline:none}
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <a class="brand" href="../">SIEMONSMA<span>.</span>ORG</a>
+  <a class="brand" href="../">THE PLANNING <span>PAD</span></a>
   <div class="who" id="who" hidden><span id="whoName"></span><button class="btn small" id="signOut" type="button">Sign out</button></div>
 </div></header>
 
@@ -102,6 +102,7 @@ input:focus{border-color:var(--signal);outline:none}
     <button class="btn primary" type="submit" id="signinBtn">Sign in</button>
     <button class="linkish" type="button" id="reset">Forgot password?</button>
     <div class="msg" id="signinMsg" role="status"></div>
+    <p>Looking for Limble? <a href="https://limble.com">Go to limble.com</a></p>
   </form>
 
   <section id="board" hidden>
@@ -122,6 +123,9 @@ import {initializeApp,getAuth,onAuthStateChanged,signInWithEmailAndPassword,send
 
 // The Limble connector checks the Firebase sign-in and returns this person's open work orders.
 const API = "https://limble-connector.siemonsmas.workers.dev/api/my-work-orders";
+// Only the facilities manager sees this page; anyone else who signs in goes straight on to Limble.
+const OWNER = String(window.APP_CONFIG.ownerEmail || "").trim().toLowerCase();
+const LIMBLE = "https://limble.com";
 
 const auth = getAuth(initializeApp(window.APP_CONFIG.firebase));
 const $ = (id) => document.getElementById(id);
@@ -191,6 +195,7 @@ async function load() {
 }
 
 onAuthStateChanged(auth, (user) => {
+  if (user && user.emailVerified && String(user.email).toLowerCase() !== OWNER) { location.replace(LIMBLE); return; }
   const inside = Boolean(user && user.emailVerified);
   $("signin").hidden = inside; $("board").hidden = !inside; $("who").hidden = !inside;
   if (user && !user.emailVerified) $("signinMsg").textContent = "Confirm your email first (check your inbox), then sign in.";
