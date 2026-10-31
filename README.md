@@ -7,6 +7,7 @@ The site Netlify serves at siemonsma.org: a home page, the facilities project tr
 | `site/` | The published site, ready to serve. Netlify publishes this folder on every push to `main`. |
 | `project-tracker.html` | The tracker's source. The claude.ai test copy runs this file directly. |
 | `sa/` | Turns the source into the live site: Firebase connection, home page, request page, database rules and tests. |
+| `sa/work-orders/` | The My Work Orders page (`/work-orders/`): Clint's open Limble work orders. After a Firebase sign-in, it asks the Limble connector (Cloudflare Worker `limble-connector`), which checks the sign-in and the allowed email before reading Limble. Edit `work-orders.src.html`; `package.py` copies it into `site/`. |
 | `fb-live.json` | The Firebase web settings. They're public by design; the database rules control access. |
 | `notify-topic.txt` | The ntfy.sh topic Clint's phone subscribes to. New requests and sign-in attempts ping it (no names, just what happened). Leave the file out to turn alerts off. |
 

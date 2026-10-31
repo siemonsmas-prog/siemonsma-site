@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>My Work Orders · siemonsma.org</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="../assets/favicon-64.png">
+<link rel="apple-touch-icon" href="../assets/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap">
+<style>
+:root{
+  --night:#0b111b;      /* page ground */
+  --panel:#121a27;      /* cards, header */
+  --line:#223047;       /* hairlines */
+  --steel:#e9eef6;      /* primary text */
+  --mist:#9aa9be;       /* secondary text */
+  --signal:#3d8bff;     /* the one accent */
+  --signal-ink:#ffffff;
+  --late:#ffb547;       /* overdue marker on this page */
+  --display:"Archivo","Arial Black","Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);color:var(--steel);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:4px}
+.wrap{max-width:900px;margin:0 auto;padding-inline:clamp(16px,3vw,28px)}
+[hidden]{display:none!important}
+
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--night) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;min-height:60px;padding-block:8px}
+.brand{font-family:var(--display);font-weight:900;font-stretch:125%;font-size:1.3rem;letter-spacing:.01em;text-decoration:none;color:var(--steel);white-space:nowrap}
+.brand span{color:var(--signal)}
+.top .who{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--mist);font-size:.88rem;min-width:0}
+.top .who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+h1{margin:28px 0 4px;font-family:var(--display);font-weight:900;font-stretch:118%;font-size:clamp(1.6rem,5vw,2.4rem);line-height:1.05;letter-spacing:.01em;text-transform:uppercase}
+.sub{margin:0;color:var(--mist)}
+.rule{width:64px;height:3px;background:var(--signal);margin:16px 0 20px;border:0}
+
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--steel);font:inherit;font-size:.92rem;font-weight:600;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--signal)}
+.btn.primary{background:var(--signal);border-color:var(--signal);color:var(--signal-ink)}
+.btn.small{padding:6px 10px;font-size:.82rem}
+.btn[disabled]{opacity:.6;cursor:default}
+
+/* sign-in */
+.signin{max-width:380px;margin:40px auto;padding:24px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;gap:12px}
+.signin h2{margin:0;font-family:var(--display);font-weight:800;font-stretch:110%;font-size:1.2rem;letter-spacing:.04em;text-transform:uppercase}
+.signin p{margin:0;color:var(--mist);font-size:.92rem}
+label{display:grid;gap:4px;font-size:.85rem;color:var(--mist)}
+input{font:inherit;color:var(--steel);background:var(--night);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+input:focus{border-color:var(--signal);outline:none}
+.linkish{background:none;border:0;padding:0;color:var(--mist);font:inherit;font-size:.85rem;text-decoration:underline;cursor:pointer;justify-self:start}
+.msg{font-size:.9rem;color:var(--late);min-height:1.2em}
+
+/* toolbar */
+.bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mist);font:inherit;font-size:.85rem;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--signal);color:var(--steel);background:color-mix(in srgb,var(--signal) 14%,transparent)}
+.bar .asof{margin-left:auto;color:var(--mist);font-size:.8rem}
+
+/* list */
+.list{list-style:none;margin:0 0 40px;padding:0;display:grid;gap:10px}
+.wo{border:1px solid var(--line);border-left:3px solid var(--line);border-radius:8px;background:var(--panel);padding:14px 16px;display:grid;gap:6px}
+.wo.late{border-left-color:var(--late)}
+.wo .row1{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.wo .num{font-weight:700;color:var(--signal);font-variant-numeric:tabular-nums}
+.wo h3{margin:0;font-size:1.05rem;font-weight:700;flex:1;min-width:12ch}
+.wo .meta{display:flex;gap:6px 14px;flex-wrap:wrap;color:var(--mist);font-size:.86rem}
+.wo .due.late{color:var(--late);font-weight:700}
+.wo .desc{margin:0;color:var(--mist);font-size:.9rem}
+.pill{display:inline-block;padding:1px 8px;border-radius:999px;border:1px solid var(--line);font-size:.78rem;color:var(--steel);white-space:nowrap}
+.wo .actions{display:flex;justify-content:flex-end}
+.empty,.state{padding:28px 18px;border:1px dashed var(--line);border-radius:8px;text-align:center;color:var(--mist)}
+.skeleton{height:92px;border-radius:8px;background:linear-gradient(90deg,var(--panel),color-mix(in srgb,var(--panel) 70%,var(--line)),var(--panel));background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.skeleton{animation:none}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../">SIEMONSMA<span>.</span>ORG</a>
+  <div class="who" id="who" hidden><span id="whoName"></span><button class="btn small" id="signOut" type="button">Sign out</button></div>
+</div></header>
+
+<main class="wrap">
+  <h1>My Work Orders</h1>
+  <p class="sub">Open work assigned to you in Limble.</p>
+  <hr class="rule">
+
+  <form class="signin" id="signin" hidden>
+    <h2>Sign in</h2>
+    <p>Use the same account as the project tracker.</p>
+    <label>Email <input id="email" type="email" autocomplete="username" required></label>
+    <label>Password <input id="password" type="password" autocomplete="current-password" required></label>
+    <button class="btn primary" type="submit" id="signinBtn">Sign in</button>
+    <button class="linkish" type="button" id="reset">Forgot password?</button>
+    <div class="msg" id="signinMsg" role="status"></div>
+  </form>
+
+  <section id="board" hidden>
+    <div class="bar">
+      <div class="chips" role="group" aria-label="Show">
+        <button class="chip" type="button" data-f="all" aria-pressed="true">All <span id="cAll"></span></button>
+        <button class="chip" type="button" data-f="late" aria-pressed="false">Overdue <span id="cLate"></span></button>
+      </div>
+      <button class="btn small" type="button" id="refresh">Refresh</button>
+      <span class="asof" id="asof"></span>
+    </div>
+    <ul class="list" id="list" aria-live="polite"></ul>
+  </section>
+</main>
+
+<script src="../tracker/config.js"></script>
+<script type="module">
+import {initializeApp,getAuth,onAuthStateChanged,signInWithEmailAndPassword,sendPasswordResetEmail,signOut} from "../tracker/vendor/firebase.js";
+
+// The Limble connector checks the Firebase sign-in and returns this person's open work orders.
+const API = "https://limble-connector.siemonsmas.workers.dev/api/my-work-orders";
+
+const auth = getAuth(initializeApp(window.APP_CONFIG.firebase));
+const $ = (id) => document.getElementById(id);
+let rows = [], filter = "all";
+
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+const fmt = (d) => d ? new Date(d + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"}) : "";
+
+function render() {
+  const list = $("list"); list.replaceChildren();
+  const late = rows.filter((r) => r.overdue).length;
+  $("cAll").textContent = `(${rows.length})`; $("cLate").textContent = `(${late})`;
+  const shown = filter === "late" ? rows.filter((r) => r.overdue) : rows;
+  if (!shown.length) { list.append(el("li", "empty", filter === "late" ? "Nothing overdue." : "No open work orders assigned to you.")); return; }
+  for (const r of shown) {
+    const li = el("li", "wo" + (r.overdue ? " late" : ""));
+    const row1 = el("div", "row1");
+    row1.append(el("span", "num", "#" + r.taskID), el("h3", null, r.name), el("span", "pill", r.status));
+    const meta = el("div", "meta");
+    if (r.due) meta.append(el("span", "due" + (r.overdue ? " late" : ""), (r.overdue ? "Overdue · due " : "Due ") + fmt(r.due)));
+    if (r.priority) meta.append(el("span", null, r.priority));
+    meta.append(el("span", null, r.type));
+    if (r.asset) meta.append(el("span", null, r.asset));
+    if (r.location) meta.append(el("span", null, r.location));
+    li.append(row1, meta);
+    if (r.description) li.append(el("p", "desc", r.description));
+    const actions = el("div", "actions");
+    const a = el("a", "btn small", "Open in Limble");
+    a.href = "https://app.limblecmms.com/taskList?taskID=" + encodeURIComponent(r.taskID);
+    a.target = "_blank"; a.rel = "noopener";
+    actions.append(a); li.append(actions);
+    list.append(li);
+  }
+}
+
+async function load() {
+  const list = $("list"); $("refresh").disabled = true;
+  if (!rows.length) list.replaceChildren(...[1, 2, 3].map(() => el("li", "skeleton")));
+  try {
+    const token = await auth.currentUser.getIdToken();
+    const res = await fetch(API, {headers: {Authorization: "Bearer " + token}});
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || "Couldn't load work orders.");
+    rows = data.workOrders || [];
+    $("asof").textContent = "Updated " + new Date(data.asOf || Date.now()).toLocaleTimeString([], {hour: "numeric", minute: "2-digit"});
+    render();
+  } catch (e) {
+    list.replaceChildren(el("li", "state", e.message));
+  } finally {
+    $("refresh").disabled = false;
+  }
+}
+
+onAuthStateChanged(auth, (user) => {
+  const inside = Boolean(user && user.emailVerified);
+  $("signin").hidden = inside; $("board").hidden = !inside; $("who").hidden = !inside;
+  if (user && !user.emailVerified) $("signinMsg").textContent = "Confirm your email first (check your inbox), then sign in.";
+  if (inside) { $("whoName").textContent = user.email; load(); }
+});
+
+$("signin").addEventListener("submit", async (e) => {
+  e.preventDefault(); $("signinMsg").textContent = ""; $("signinBtn").disabled = true;
+  try { await signInWithEmailAndPassword(auth, $("email").value.trim(), $("password").value); }
+  catch { $("signinMsg").textContent = "That email and password didn't work."; }
+  finally { $("signinBtn").disabled = false; }
+});
+$("reset").addEventListener("click", async () => {
+  const email = $("email").value.trim();
+  if (!email) { $("signinMsg").textContent = "Enter your email above first."; return; }
+  try { await sendPasswordResetEmail(auth, email); } catch {}
+  $("signinMsg").textContent = "If that account exists, a reset link is on its way.";
+});
+$("signOut").addEventListener("click", () => signOut(auth));
+$("refresh").addEventListener("click", load);
+document.querySelectorAll(".chip").forEach((c) => c.addEventListener("click", () => {
+  filter = c.dataset.f;
+  document.querySelectorAll(".chip").forEach((x) => x.setAttribute("aria-pressed", String(x === c)));
+  render();
+}));
+</script>
+</body>
+</html>

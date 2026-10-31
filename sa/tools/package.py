@@ -93,6 +93,9 @@ if VOICE_ON:
 (site / "sw.js").write_text("self.addEventListener('install',()=>self.skipWaiting());\n"
                             "self.addEventListener('activate',e=>e.waitUntil(self.registration.unregister()));\n")
 shutil.copytree(HERE / "public", site / "tracker", ignore=shutil.ignore_patterns("*.template"))
+# Clint's open Limble work orders; data comes from the Limble connector after a Firebase sign-in check
+(site / "work-orders").mkdir()
+shutil.copy(HERE / "work-orders/work-orders.src.html", site / "work-orders" / "index.html")
 zipbase = HERE.parent / "siemonsma-site"
 shutil.make_archive(str(zipbase), "zip", site)
 shutil.move(str(zipbase) + ".zip", site / "siemonsma-site.zip")
