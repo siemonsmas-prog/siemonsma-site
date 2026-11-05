@@ -66,13 +66,29 @@ service cloud.firestore {
         && request.resource.data.projectId is string && request.resource.data.text is string
         && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 2000 && text(request.resource.data,'at',40));
     }
-    // New building Path to Occupancy: only the owner and people on occTeam (added by the owner) read or write it
+    // New building Path to Occupancy: only the owner and people on occTeam read or write it
     function onOcc() { return isOwner() || (signedIn() && exists(/databases/$(database)/documents/occTeam/$(email()))); }
+    // anyone on the team can add a new person (not change or remove an existing one) and turn their own phone alerts on or off
     match /occTeam/{addr} {
       allow read: if onOcc() || (signedIn() && addr == email());
+      allow create: if onOcc() && addr.matches('[^@ /]+@[^@ /]+[.][^@ /]+') && addr == addr.lower()
+        && request.resource.data.keys().hasOnly(['name','role','photo','addedAt','addedBy'])
+        && request.resource.data.name is string && request.resource.data.name.size() > 0 && text(request.resource.data,'name',100)
+        && text(request.resource.data,'role',100) && text(request.resource.data,'addedAt',40) && text(request.resource.data,'addedBy',100)
+        && (!('photo' in request.resource.data) || (request.resource.data.photo is string && request.resource.data.photo.size() < 300000 && request.resource.data.photo.matches('data:image/.*')));
+      allow update: if onOcc() && addr == email() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['ntfy'])
+        && request.resource.data.ntfy is string && request.resource.data.ntfy.matches('([A-Za-z0-9_-]{16,64})?');
     }
+    // anyone on the team can import a checklist file's details; only the owner changes the occupancy date or whether it's confirmed
+    function sameMeta(k) { return (resource == null && !(k in request.resource.data)) || (resource != null && request.resource.data.get(k, null) == resource.data.get(k, null)); }
+    function list(d, k, max) { return !(k in d) || (d[k] is list && d[k].size() <= max); }
     match /occMeta/{id} {
       allow read: if onOcc();
+      allow create, update: if onOcc() && id == 'main'
+        && request.resource.data.keys().hasOnly(['target','targetConfirmed','project','baseline','milestones','decisions','weeks','later'])
+        && sameMeta('target') && sameMeta('targetConfirmed')
+        && text(request.resource.data,'project',120) && text(request.resource.data,'baseline',80)
+        && list(request.resource.data,'milestones',4) && list(request.resource.data,'decisions',6) && list(request.resource.data,'weeks',4) && list(request.resource.data,'later',10);
     }
     function validOccItem(d) {
       return d.keys().hasOnly(['title','cat','who','due','status','note','order','updatedAt','updatedBy','flag','short','tag'])

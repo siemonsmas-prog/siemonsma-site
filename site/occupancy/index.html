@@ -471,14 +471,18 @@ dialog .foot .left{margin-right:auto}
           <h2>Inspection coordination</h2>
           <p class="hint" style="margin-top:6px;font-size:.9rem">The general contractor schedules the final inspections with the city and state. Confirm who the assigned inspectors are, and who accepts the fire systems, before booking them.</p>
         </div>
-        <div class="card ownerOnly">
+        <div class="card" id="alertCard" style="display:grid;gap:8px">
+          <h2>Phone alerts</h2>
+          <div id="alertBody" style="display:grid;gap:8px"></div>
+        </div>
+        <div class="card">
           <form id="teamForm" style="display:grid;gap:10px">
             <h2>Add someone</h2>
             <label>Email <input id="tEmail" type="email" autocapitalize="off" required maxlength="200"></label>
             <div class="form2"><label>Name <input id="tName" maxlength="100" required></label>
               <label>Role <input id="tRole" maxlength="100" placeholder="Superintendent, Beck &amp; Hofer"></label></div>
             <label>Photo (optional) <input id="tPhoto" type="file" accept="image/*"></label>
-            <p class="hint">Then send them the page link. This page isn't linked anywhere on the site, so the link is the only way in. They tap Create account and use this same email.</p>
+            <p class="hint">Then send them the page link. This page isn't linked anywhere on the site, so the link is the only way in. They tap Create account and use this same email. Only Clint can change or remove someone.</p>
             <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Add to team</button><button class="btn" type="button" id="copyLink"><svg class="i"><use href="#i-link"/></svg>Copy the page link</button></div>
             <p class="hint" id="linkText" style="user-select:all"></p>
           </form>
@@ -491,7 +495,7 @@ dialog .foot .left{margin-right:auto}
             <div><button class="btn" type="submit">Save</button></div>
           </form>
         </div>
-        <div class="card ownerOnly" style="display:grid;gap:8px">
+        <div class="card" style="display:grid;gap:8px">
           <h2>Checklist file</h2>
           <p class="hint">Load a checklist file Claude made for you, for example from a new look-ahead. Items already on the list get the file's dates, owners and notes, and keep their status.</p>
           <div><button class="btn" type="button" data-import>Import a checklist file</button></div>
@@ -647,6 +651,7 @@ const authMsg = (e) => AUTH_ERR[e?.code] || "Something went wrong. Try again.";
 // phone alert to the facilities manager through ntfy.sh. Says only what happened, never who, since anyone can read a topic.
 function pingOwner(title, msg) {
   const t = CFG.notifyTopic; if (!t || me?.owner) return;
+  if (team.some((p) => p.email === OWNER && p.ntfy)) return; // Clint turned on team alerts, so he gets this through notifyTeam
   const q = new URLSearchParams({title, click: new URL("./", location.href).href, tags: "construction_site"});
   fetch("https://ntfy.sh/" + encodeURIComponent(t) + "?" + q, {method: "POST", body: msg, keepalive: true}).catch(() => {});
 }
@@ -731,7 +736,7 @@ const target = () => meta.target || DEFAULT_TARGET;
 function start() {
   $("gate").hidden = true; $("app").hidden = false;
   document.querySelectorAll(".ownerOnly").forEach((n) => (n.hidden = !me.owner));
-  $("cHint").textContent = me.owner ? "Posts here are for the whole team to see." : "Clint gets a phone alert for questions and delays.";
+  $("cHint").textContent = me.owner ? "Posts here are for the whole team to see." : "Everyone with phone alerts turned on gets an alert.";
   const err = () => { loadError = true; renderAll(); toast("Couldn't load the page. Reload it."); };
   unsubs.push(onSnapshot(collection(db, "occItems"), (s) => { items = s.docs.map((d) => ({id: d.id, ...d.data()})); loadedItems = true; renderAll(); }, err));
   unsubs.push(onSnapshot(query(collection(db, "occMsgs"), orderBy("at", "desc"), limit(400)), (s) => { msgs = s.docs.map((d) => ({id: d.id, ...d.data()})); renderAll(); }, err));
@@ -841,7 +846,7 @@ function statusChip(it) {
 }
 function renderOverview() {
   $("projLine").replaceChildren(...(meta.project ? meta.project.split("|").flatMap((p, i) => i ? [h("span", {style: "color:var(--faint);padding:0 10px"}, "|"), p.trim()] : [h("b", {}, p.trim())]) : [h("b", {}, "Harvard Integrations"), " · new building"]));
-  $("setup").hidden = !(me.owner && loadedItems && !items.length);
+  $("setup").hidden = !(loadedItems && !items.length);
   // tiles: the occupancy target, then milestones from the checklist file, then the schedule baseline
   const tiles = $("tiles"); tiles.replaceChildren();
   const days = Math.round((new Date(target() + "T12:00:00") - new Date(today() + "T12:00:00")) / 864e5);
@@ -903,7 +908,7 @@ function itemRow(it) {
 }
 function emptyState(box, text) {
   if (!loadedItems) { box.append(h("div", {class: "empty"}, loadError ? "Couldn't load the checklist. Reload the page, and if it keeps happening tell Clint." : "Loading…")); return true; }
-  if (!items.length) { box.append(h("div", {class: "empty"}, me.owner ? "No items yet. Set up the checklist from the Overview." : "Clint hasn't set up the checklist yet.")); return true; }
+  if (!items.length) { box.append(h("div", {class: "empty"}, "No items yet. Set up the checklist from the Overview.")); return true; }
   return false;
 }
 function chips(box, opts, cur, set) { for (const [v, label] of opts) box.append(h("button", {class: "fchip", type: "button", "aria-pressed": String(cur === v), onclick: () => { set(v); renderAll(); }}, label)); }
@@ -971,7 +976,7 @@ async function setStatus(it, status) {
   try {
     await setDoc(doc(db, "occItems", it.id), {status, ...stamp()}, {merge: true});
     post({kind: "change", itemId: it.id, text: `Marked "${nameOf(it)}" ${status === "Done" ? "done" : status.toLowerCase()}.`}, true);
-    if (status === "Blocked") pingOwner("An item was marked Blocked", "Open Path to Occupancy to see which one.");
+    if (status === "Blocked") alertAll("An item was marked Blocked", "Open Path to Occupancy to see which one.");
     toast(status === "Done" ? "Checked off" : "Status set to " + status);
   } catch { toast("Couldn't save that. Try again."); renderAll(); }
 }
@@ -1002,10 +1007,10 @@ $("importFile").addEventListener("change", async (e) => {
       added++; return setDoc(doc(db, "occItems", id), {...base, status: STATUSES.includes(x.status) ? x.status : "Not started"});
     }));
     const m = data.meta || {}, next = {};
-    if (isDay(data.target)) next.target = data.target;
+    if (me.owner && isDay(data.target)) next.target = data.target;
     if (typeof m.project === "string") next.project = clip(m.project, 120);
     if (typeof m.baseline === "string") next.baseline = clip(m.baseline, 80);
-    if (typeof m.targetConfirmed === "boolean") next.targetConfirmed = m.targetConfirmed;
+    if (me.owner && typeof m.targetConfirmed === "boolean") next.targetConfirmed = m.targetConfirmed;
     if (Array.isArray(m.milestones)) next.milestones = m.milestones.filter((x) => x && x.label).slice(0, 4).map((x) => ({label: clip(x.label, 40), date: isDay(x.date) ? x.date : ""}));
     if (Array.isArray(m.decisions)) next.decisions = m.decisions.filter((x) => x && x.title).slice(0, 6).map((x) => ({title: clip(x.title, 80), text: clip(x.text, 300)}));
     if (Array.isArray(m.weeks)) next.weeks = m.weeks.filter((x) => x && x.label).slice(0, 4).map((x) => ({label: clip(x.label, 30), dates: clip(x.dates, 40), work: (Array.isArray(x.work) ? x.work : []).slice(0, 10).map((t) => clip(t, 120))}));
@@ -1063,7 +1068,7 @@ $("itemForm").addEventListener("submit", async (e) => {
       if (data.status !== editing.status) changed.push("status to " + data.status);
       if (data.who !== (editing.who || "")) changed.push("owner to " + (data.who || "nobody"));
       if (changed.length) post({kind: "change", itemId: editing.id, text: `Changed "${data.short || data.title}": ${changed.join(", ")}.`}, true);
-      if (data.status === "Blocked" && editing.status !== "Blocked") pingOwner("An item was marked Blocked", "Open Path to Occupancy to see which one.");
+      if (data.status === "Blocked" && editing.status !== "Blocked") alertAll("An item was marked Blocked", "Open Path to Occupancy to see which one.");
     } else {
       const ref = await addDoc(collection(db, "occItems"), {...data, order: items.length + 1});
       post({kind: "change", itemId: ref.id, text: `Added "${data.title}".`}, true);
@@ -1074,10 +1079,24 @@ $("itemForm").addEventListener("submit", async (e) => {
 });
 
 /* ---------- messages ---------- */
+// phone alerts for people on the team who turned them on (Project team > Phone alerts); never names, the topics are private but on a public server
+let lastChangePing = 0;
+function notifyTeam(title, msg, force) {
+  if (!force && Date.now() - lastChangePing < 120000) return; // a run of check-offs sends one alert
+  lastChangePing = Date.now();
+  const click = new URL("./", location.href).href;
+  for (const p of team) {
+    if (!p.ntfy || p.email === me.email) continue;
+    const q = new URLSearchParams({title, click, tags: "construction_site"});
+    fetch("https://ntfy.sh/" + encodeURIComponent(p.ntfy) + "?" + q, {method: "POST", body: msg, keepalive: true}).catch(() => {});
+  }
+}
+function alertAll(title, msg) { pingOwner(title, msg); notifyTeam(title, msg, true); }
 async function post(m, quiet) {
   const data = {text: m.text.slice(0, 3000), kind: m.kind, author: me.uid, name: me.name.slice(0, 100), at: new Date().toISOString()};
   if (m.itemId) data.itemId = m.itemId;
-  try { await addDoc(collection(db, "occMsgs"), data); } catch { if (!quiet) throw new Error("save"); }
+  try { await addDoc(collection(db, "occMsgs"), data); } catch { if (!quiet) throw new Error("save"); return; }
+  if (m.kind === "change") notifyTeam("Path to Occupancy was updated", "Open the page to see what changed.");
 }
 document.querySelectorAll("[data-kind]").forEach((b) => b.addEventListener("click", () => {
   kind = b.dataset.kind; document.querySelectorAll("[data-kind]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
@@ -1089,9 +1108,9 @@ $("compose").addEventListener("submit", async (e) => {
   $("cPost").disabled = true;
   try {
     await post({kind, text, itemId: $("cAbout").value});
-    if (kind === "question") pingOwner("New question on Path to Occupancy", "Open the page to answer it.");
-    else if (kind === "delay") pingOwner("Delay reported on Path to Occupancy", "Open the page to read it.");
-    else pingOwner("New note on Path to Occupancy", "Open the page to read it.");
+    if (kind === "question") alertAll("New question on Path to Occupancy", "Open the page to answer it.");
+    else if (kind === "delay") alertAll("Delay reported on Path to Occupancy", "Open the page to read it.");
+    else alertAll("New note on Path to Occupancy", "Open the page to read it.");
     $("cText").value = ""; toast("Posted");
   } catch { toast("Couldn't post that. Try again."); }
   finally { $("cPost").disabled = false; }
@@ -1183,7 +1202,7 @@ function renderChecks() {
   const left = list.filter((i) => i.status !== "Done").length;
   $("chkBadge").hidden = !list.length; $("chkBadge").textContent = left ? `${left} to check` : "All checked"; $("chkBadge").className = "badge" + (left ? "" : " ok");
   if (!loadedItems) return $("checks").replaceChildren(h("li", {class: "hint"}, "Loading…"));
-  if (!list.length) return $("checks").replaceChildren(h("li", {}, me.owner ? h("button", {class: "btn", type: "button", onclick: seedChecks}, "Load the supporting checks") : h("span", {class: "hint"}, "Clint hasn't set these up yet.")));
+  if (!list.length) return $("checks").replaceChildren(h("li", {}, h("button", {class: "btn", type: "button", onclick: seedChecks}, "Load the supporting checks")));
   $("checks").replaceChildren(...list.map((it) => { const done = it.status === "Done";
     return h("li", {class: done ? "done" : null}, h("label", {}, h("input", {type: "checkbox", checked: done, onchange: (e) => setStatus(it, e.target.checked ? "Done" : "Not started")}), it.title)); }));
 }
@@ -1201,8 +1220,8 @@ function renderSignoffs() {
     ...counts.filter(([st, n]) => n && st !== "Approved" && st !== "Not applicable").map(([st, n]) => h("span", {}, h("b", {}, n), " " + st.toLowerCase()))] : []));
   if (!loadedSo) { box.append(h("div", {class: "empty"}, "Loading…")); return; }
   if (!signoffs.length) {
-    box.append(h("div", {class: "empty"}, me.owner ? h("div", {}, h("p", {style: "margin:0 0 10px"}, "No sign-offs yet. Start with the eight approvals a production building usually needs, then change who signs each one once the city confirms."),
-      h("button", {class: "btn primary", type: "button", onclick: seedSignoffs}, "Load the standard sign-offs")) : "Clint hasn't set up the sign-offs yet."));
+    box.append(h("div", {class: "empty"}, h("div", {}, h("p", {style: "margin:0 0 10px"}, "No sign-offs yet. Start with the eight approvals a production building usually needs, then change who signs each one once the city confirms."),
+      h("button", {class: "btn primary", type: "button", onclick: seedSignoffs}, "Load the standard sign-offs"))));
     return;
   }
   const rows = soShown();
@@ -1223,7 +1242,7 @@ async function setSoStatus(x, status) {
   try {
     await setDoc(doc(db, "occSignoffs", x.id), {status, ...stamp()}, {merge: true});
     post({kind: "change", text: `Set sign-off "${x.title}" to ${status.toLowerCase()}.`}, true);
-    if (status === "Corrections needed") pingOwner("Corrections needed on a sign-off", "Open Path to Occupancy to see which one.");
+    if (status === "Corrections needed") alertAll("Corrections needed on a sign-off", "Open Path to Occupancy to see which one.");
     toast("Status set to " + status);
   } catch { toast("Couldn't save that. Try again."); renderAll(); }
 }
@@ -1254,7 +1273,7 @@ $("soForm").addEventListener("submit", async (e) => {
       await setDoc(doc(db, "occSignoffs", soEditing.id), data, {merge: true});
       if (data.status !== (soEditing.status || "To verify")) {
         post({kind: "change", text: `Set sign-off "${data.title}" to ${data.status.toLowerCase()}.`}, true);
-        if (data.status === "Corrections needed") pingOwner("Corrections needed on a sign-off", "Open Path to Occupancy to see which one.");
+        if (data.status === "Corrections needed") alertAll("Corrections needed on a sign-off", "Open Path to Occupancy to see which one.");
       } else post({kind: "change", text: `Updated the details on sign-off "${data.title}".`}, true);
     } else {
       await addDoc(collection(db, "occSignoffs"), {...data, order: signoffs.length + 1});
@@ -1292,11 +1311,32 @@ $("docForm").addEventListener("submit", async (e) => {
   const url = $("dUrl").value.trim();
   if (!/^https:\/\//i.test(url)) return toast("Use a link that starts with https://");
   try { await addDoc(collection(db, "occDocs"), {title: $("dTitle").value.trim().slice(0, 120), url: url.slice(0, 1000), by: me.uid, name: me.name.slice(0, 100), at: new Date().toISOString()});
-    $("docForm").reset(); toast("Link added"); } catch { toast("Couldn't add that link."); }
+    $("docForm").reset(); toast("Link added"); alertAll("New link on Path to Occupancy", "Open Documents on the page to see it."); } catch { toast("Couldn't add that link."); }
 });
 
 /* ---------- team ---------- */
+function renderAlerts() {
+  const mine = team.find((p) => p.email === me.email), box = $("alertBody");
+  if (!mine) { box.replaceChildren(h("p", {class: "hint"}, "Phone alerts are for people on the team list.")); return; }
+  const topic = mine.ntfy || "";
+  if (topic) {
+    box.replaceChildren(h("p", {style: "margin:0"}, h("b", {}, "Alerts are on."), " You'll get one when someone else changes something or posts a message."),
+      h("p", {class: "hint"}, "If you haven't yet: install the free ntfy app, tap + and subscribe to this topic:"),
+      h("code", {style: "user-select:all;font-size:.95rem;padding:6px 10px;background:var(--bg);border-radius:6px;width:max-content;max-width:100%;overflow-wrap:anywhere"}, topic),
+      h("div", {style: "display:flex;gap:8px;flex-wrap:wrap"}, h("a", {class: "btn", href: "https://ntfy.sh/" + topic, target: "_blank", rel: "noopener"}, "Open the topic"),
+        h("button", {class: "btn ghost", type: "button", onclick: () => setAlerts("")}, "Turn alerts off")));
+  } else {
+    box.replaceChildren(h("p", {style: "margin:0"}, "Get a phone alert when someone changes the checklist or sign-offs, or posts a note, question or delay. Alerts don't say who or what, so open the page to see it."),
+      h("p", {class: "hint"}, me.owner ? "Turning this on replaces your current tracker alerts for this page, so you'll get every change here instead of just questions, delays and Blocked items." : "You'll need the free ntfy app from the App Store or Google Play."),
+      h("div", {}, h("button", {class: "btn primary", type: "button", onclick: () => { const b = new Uint8Array(12); crypto.getRandomValues(b); setAlerts("pto-" + [...b].map((x) => x.toString(16).padStart(2, "0")).join("")); }}, "Turn alerts on")));
+  }
+}
+async function setAlerts(topic) {
+  try { await setDoc(doc(db, "occTeam", me.email), {ntfy: topic}, {merge: true}); toast(topic ? "Alerts are on. Now subscribe in the ntfy app." : "Alerts are off"); }
+  catch { toast("Couldn't save that. Try again."); }
+}
 function renderTeam() {
+  renderAlerts();
   $("linkText").textContent = location.origin + location.pathname;
   if (document.activeElement !== $("tTarget")) $("tTarget").value = target();
   $("tConfirmed").value = meta.targetConfirmed ? "yes" : "no";
@@ -1333,12 +1373,16 @@ $("teamForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const email = $("tEmail").value.trim().toLowerCase();
   const prev = team.find((t) => t.email === email);
+  if (prev && !me.owner) return toast(`${prev.name || email} is already on the team. Clint can change their details.`);
   try {
     const entry = {name: $("tName").value.trim(), role: $("tRole").value.trim(), addedAt: prev?.addedAt || new Date().toISOString()};
+    if (!me.owner) entry.addedBy = me.name.slice(0, 100);
+    else if (prev?.addedBy) entry.addedBy = prev.addedBy;
+    if (prev?.ntfy) entry.ntfy = prev.ntfy;
     const f = $("tPhoto").files[0];
     if (f) entry.photo = await squarePhoto(f); else if (prev?.photo) entry.photo = prev.photo;
     await setDoc(doc(db, "occTeam", email), entry);
-    deleteDoc(doc(db, "occKnock", email)).catch(() => {});
+    if (me.owner) deleteDoc(doc(db, "occKnock", email)).catch(() => {});
     if (email === me.email) me.name = $("tName").value.trim() || me.name;
     $("teamForm").reset(); toast(prev ? "Saved" : "Added. Now send them the page link.");
   } catch { toast("Couldn't save that."); }

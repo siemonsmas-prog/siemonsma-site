@@ -27,8 +27,23 @@ await ok("Mike adds an item",addDoc(collection(mike.db,"occItems"),{title:"Dock 
 await ok("Mike uses a made-up status",updateDoc(doc(mike.db,"occItems/s01"),{status:"Whatever"}),false);
 await ok("Mike adds an extra field",updateDoc(doc(mike.db,"occItems/s01"),{admin:true}),false);
 await ok("Mike deletes an item",deleteDoc(doc(mike.db,"occItems/s01")),false);
-await ok("Mike adds himself to the team as someone else",setDoc(doc(mike.db,"occTeam/pal@example.com"),{name:"Pal"}),false);
+await ok("Mike adds a new person",setDoc(doc(mike.db,"occTeam/pal@example.com"),{name:"Pal",role:"Electrician",addedAt:"now",addedBy:"Mike"}));
+await ok("Mike overwrites Lance's entry",setDoc(doc(mike.db,"occTeam/lance@example.com"),{name:"Not Lance"}),false);
+await ok("Mike adds a person with an extra field",setDoc(doc(mike.db,"occTeam/pal2@example.com"),{name:"Pal",admin:true}),false);
+await ok("Mike adds a person with a bad email",setDoc(doc(mike.db,"occTeam/not-an-email"),{name:"Pal"}),false);
+await ok("Mike turns on his phone alerts",setDoc(doc(mike.db,"occTeam/mike@example.com"),{ntfy:"pto-abcdefghijklmnop1234"},{merge:true}));
+await ok("Mike turns off his phone alerts",setDoc(doc(mike.db,"occTeam/mike@example.com"),{ntfy:""},{merge:true}));
+await ok("Mike sets a bad alert topic",setDoc(doc(mike.db,"occTeam/mike@example.com"),{ntfy:"short"},{merge:true}),false);
+await ok("Mike changes his own role",setDoc(doc(mike.db,"occTeam/mike@example.com"),{role:"Boss"},{merge:true}),false);
+await ok("Mike sets Lance's alerts",setDoc(doc(mike.db,"occTeam/lance@example.com"),{ntfy:"pto-abcdefghijklmnop1234"},{merge:true}),false);
+await ok("Mike removes someone",deleteDoc(doc(mike.db,"occTeam/pal@example.com")),false);
 await ok("Mike changes the target",setDoc(doc(mike.db,"occMeta/main"),{target:"2027-01-01"}),false);
+await ok("Mike changes the target with merge",setDoc(doc(mike.db,"occMeta/main"),{target:"2027-01-01"},{merge:true}),false);
+await ok("Mike confirms the target",setDoc(doc(mike.db,"occMeta/main"),{targetConfirmed:true},{merge:true}),false);
+await ok("Mike imports checklist details",setDoc(doc(mike.db,"occMeta/main"),{project:"P | 25-116",baseline:"Oct 19",milestones:[{label:"Heat",date:"2026-11-15"}],decisions:[{title:"x",text:"y"}],weeks:[],later:[]},{merge:true}));
+await ok("Mike adds an unknown setting",setDoc(doc(mike.db,"occMeta/main"),{owner:"mike"},{merge:true}),false);
+await ok("Mike writes another meta doc",setDoc(doc(mike.db,"occMeta/other"),{project:"x"}),false);
+await ok("owner still changes the target",setDoc(doc(owner.db,"occMeta/main"),{target:"2026-12-21",targetConfirmed:true},{merge:true}));
 const m1=await addDoc(collection(mike.db,"occMsgs"),msg());console.log("PASS Mike posts a question");
 await ok("Mike posts as someone else",addDoc(collection(mike.db,"occMsgs"),msg({author:"someone"})),false);
 await ok("Mike posts an unknown kind",addDoc(collection(mike.db,"occMsgs"),msg({kind:"admin"})),false);
@@ -45,6 +60,8 @@ for(const [who,c] of [["tracker follower Jim",jim],["stranger Zed",zed],["unveri
   await ok(who+" reads messages",getDocs(collection(c.db,"occMsgs")),false);
   await ok(who+" lists the team",getDocs(collection(c.db,"occTeam")),false);
   await ok(who+" reads the target",getDoc(doc(c.db,"occMeta/main")),false);
+  await ok(who+" adds a person",setDoc(doc(c.db,"occTeam/x"+who.length+"@example.com"),{name:"X"}),false);
+  await ok(who+" writes the meta",setDoc(doc(c.db,"occMeta/main"),{project:"x"},{merge:true}),false);
   await ok(who+" adds an item",addDoc(collection(c.db,"occItems"),{title:"x",status:"Done"}),false);
   await ok(who+" posts a message",addDoc(collection(c.db,"occMsgs"),msg({author:c.au.currentUser.uid})),false);
 }
