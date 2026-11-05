@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Path to Occupancy · The Planning Pad</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b111b">
+<link rel="icon" type="image/png" href="../assets/favicon-64.png">
+<link rel="apple-touch-icon" href="../assets/icon-180.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap">
+<style>
+/* Private page for the new building team: what has to happen before the building can be used for production,
+   who owns each item, and one place to post questions and delays. Only people on the team list get in. */
+:root{
+  --night:#0b111b;--panel:#121a27;--panel2:#172133;--line:#223047;--steel:#e9eef6;--mist:#9aa9be;
+  --signal:#3d8bff;--signal-ink:#fff;--ok:#3ecf8e;--late:#ffb547;--bad:#ff6b6b;
+  --display:"Archivo","Arial Black","Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo","Helvetica Neue",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--night);color:var(--steel);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:4px}
+[hidden]{display:none!important}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--night) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;min-height:60px;padding-block:8px}
+.brand{font-family:var(--display);font-weight:900;font-stretch:125%;font-size:1.3rem;letter-spacing:.01em;text-decoration:none;white-space:nowrap}
+.brand span{color:var(--signal)}
+.who{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--mist);font-size:.88rem;min-width:0}
+.who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+h1{margin:26px 0 4px;font-family:var(--display);font-weight:900;font-stretch:118%;font-size:clamp(1.6rem,5.4vw,2.6rem);line-height:1.05;letter-spacing:.01em;text-transform:uppercase}
+h1 small{display:block;font-size:.42em;letter-spacing:.14em;color:var(--signal);margin-bottom:6px}
+.sub{margin:0;color:var(--mist);max-width:70ch}
+h2{margin:0;font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mist)}
+
+.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--steel);font:inherit;font-size:.9rem;font-weight:600;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--signal)}
+.btn.primary{background:var(--signal);border-color:var(--signal);color:var(--signal-ink)}
+.btn.small{min-height:32px;padding:4px 10px;font-size:.82rem}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--mist)}
+.btn.ghost:hover{color:var(--steel);border-color:var(--line)}
+.btn.danger{color:var(--bad)}
+.btn[disabled]{opacity:.55;cursor:default}
+.btn svg{width:16px;height:16px;flex:none}
+label{display:grid;gap:4px;font-size:.84rem;color:var(--mist)}
+input,select,textarea{font:inherit;font-size:.95rem;color:var(--steel);background:var(--night);border:1px solid var(--line);border-radius:6px;padding:9px 11px;min-width:0;width:100%}
+textarea{resize:vertical;min-height:84px}
+input:focus,select:focus,textarea:focus{border-color:var(--signal);outline:none}
+.linkish{background:none;border:0;padding:0;color:var(--mist);font:inherit;font-size:.86rem;text-decoration:underline;cursor:pointer}
+.linkish:hover{color:var(--steel)}
+
+/* sign-in and gate screens */
+.card{max-width:420px;margin:40px auto;padding:24px;border:1px solid var(--line);border-radius:10px;background:var(--panel);display:grid;gap:12px}
+.card h2{font-family:var(--display);font-weight:800;font-stretch:110%;font-size:1.25rem;letter-spacing:.04em;color:var(--steel)}
+.card p{margin:0;color:var(--mist);font-size:.93rem}
+.card .row{display:flex;gap:8px;flex-wrap:wrap}
+.note{font-size:.9rem;min-height:1.2em;color:var(--late)}
+.note.good{color:var(--ok)}
+
+/* summary tiles */
+.hero{display:flex;gap:16px 24px;align-items:flex-end;flex-wrap:wrap;justify-content:space-between}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0 18px}
+.tile{padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;gap:2px;text-align:left;font:inherit;color:inherit}
+button.tile{cursor:pointer}
+button.tile:hover{border-color:var(--signal)}
+.tile b{font-family:var(--display);font-weight:900;font-stretch:115%;font-size:1.9rem;line-height:1.05;font-variant-numeric:tabular-nums}
+.tile span{color:var(--mist);font-size:.84rem}
+.tile.warn b{color:var(--late)}
+.tile.bad b{color:var(--bad)}
+.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--ok);border-radius:99px}
+@media (max-width:720px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tile b{font-size:1.5rem}}
+
+/* two panes side by side on wide screens, tabs on narrow ones */
+.tabs{display:none;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;min-height:42px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--mist);font:inherit;font-weight:700;cursor:pointer}
+.tabs button[aria-selected="true"]{border-color:var(--signal);color:var(--steel);background:color-mix(in srgb,var(--signal) 14%,transparent)}
+.dot{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:6px;border-radius:99px;background:var(--signal);color:#fff;font-size:.72rem}
+.cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start;margin-bottom:48px}
+.pane{border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--panel) 60%,var(--night));padding:16px}
+.pane-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.pane-head h2{margin-right:auto}
+@media (max-width:1000px){.tabs{display:flex}.cols{grid-template-columns:1fr}.cols>[data-pane]:not(.on){display:none}}
+@media (min-width:1001px){#msgPane{position:sticky;top:76px;max-height:calc(100vh - 92px);overflow:auto}}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.chip{min-height:32px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mist);font:inherit;font-size:.84rem;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--signal);color:var(--steel);background:color-mix(in srgb,var(--signal) 14%,transparent)}
+.chips select{width:auto;min-height:32px;padding:3px 8px;font-size:.84rem;border-radius:999px}
+
+/* checklist */
+.group{margin:0 0 16px}
+.group h3{margin:0 0 8px;display:flex;justify-content:space-between;gap:10px;font-size:.92rem;font-weight:800;letter-spacing:.02em}
+.group h3 span{color:var(--mist);font-weight:600;font-size:.82rem}
+.items{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:8px;background:var(--panel)}
+.item.s-done{border-left-color:var(--ok)}
+.item.s-prog{border-left-color:var(--signal)}
+.item.s-block{border-left-color:var(--bad)}
+.item.late{border-left-color:var(--late)}
+.item.flash{animation:fl 1.6s ease-out}
+@keyframes fl{from{background:color-mix(in srgb,var(--signal) 30%,var(--panel))}}
+.check{width:26px;height:26px;margin-top:1px;border-radius:6px;border:2px solid var(--mist);background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--night);padding:0}
+.check svg{width:16px;height:16px;opacity:0}
+.s-done .check{background:var(--ok);border-color:var(--ok)}
+.s-done .check svg{opacity:1}
+.item .body{min-width:0}
+.item .title{background:none;border:0;padding:0;font:inherit;font-weight:650;color:var(--steel);text-align:left;cursor:pointer}
+.item .title:hover{text-decoration:underline}
+.s-done .title{color:var(--mist);text-decoration:line-through}
+.item .meta{display:flex;flex-wrap:wrap;gap:2px 12px;color:var(--mist);font-size:.82rem}
+.item .meta .lt{color:var(--late);font-weight:700}
+.item .itemnote{margin:4px 0 0;color:var(--mist);font-size:.86rem;white-space:pre-wrap}
+.item .side{display:grid;gap:6px;justify-items:end}
+.st{width:auto;min-height:30px;padding:2px 26px 2px 10px;font-size:.8rem;font-weight:700;border-radius:99px;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 13px) 50%,calc(100% - 9px) 50%;background-size:4px 4px;background-repeat:no-repeat;cursor:pointer}
+.st.s-idle{color:var(--mist)}
+.st.s-prog{color:var(--signal);border-color:color-mix(in srgb,var(--signal) 50%,var(--line))}
+.st.s-done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,var(--line))}
+.st.s-block{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
+.talk{background:none;border:0;padding:0;color:var(--mist);font:inherit;font-size:.8rem;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+.talk:hover{color:var(--steel)}
+.talk svg{width:14px;height:14px}
+@media (max-width:560px){.item{grid-template-columns:auto minmax(0,1fr)}.item .side{grid-column:2;justify-items:start;grid-auto-flow:column;align-items:center}}
+.empty{padding:24px 16px;border:1px dashed var(--line);border-radius:8px;text-align:center;color:var(--mist)}
+.empty .btn{margin-top:12px}
+
+/* messages */
+.compose{display:grid;gap:8px;margin-bottom:14px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.kinds{display:flex;gap:6px;flex-wrap:wrap}
+.kinds .chip{flex:1}
+.compose .row{display:flex;gap:8px;align-items:center}
+.compose .row select{flex:1}
+.about{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;border-radius:6px;background:color-mix(in srgb,var(--signal) 12%,transparent);font-size:.86rem}
+.about b{flex:1;min-width:0}
+.msgs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.m{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;gap:4px}
+.m.k-question{border-left:3px solid var(--signal)}
+.m.k-delay{border-left:3px solid var(--late)}
+.m.done{opacity:.72}
+.m .hd{display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline;font-size:.82rem;color:var(--mist)}
+.m .hd b{color:var(--steel);font-size:.9rem}
+.m .tag{padding:0 8px;border-radius:99px;border:1px solid var(--line);font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.k-question .tag{color:var(--signal);border-color:color-mix(in srgb,var(--signal) 50%,var(--line))}
+.k-delay .tag{color:var(--late);border-color:color-mix(in srgb,var(--late) 50%,var(--line))}
+.m .new{color:var(--signal);font-weight:700}
+.m p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+.m .ref{background:none;border:0;padding:0;font:inherit;font-size:.82rem;color:var(--mist);text-align:left;cursor:pointer;text-decoration:underline}
+.m .foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--mist)}
+.m .foot .ok{color:var(--ok);font-weight:700}
+.m.k-change{padding:6px 12px;background:transparent;border-style:dashed;font-size:.84rem;color:var(--mist)}
+.m.k-change p{color:var(--mist)}
+
+/* dialogs */
+dialog{width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);padding:0;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--steel)}
+dialog::backdrop{background:rgba(3,6,12,.7)}
+dialog form,dialog .dbody{padding:20px;display:grid;gap:12px}
+dialog h2{color:var(--steel);font-size:.95rem}
+dialog .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+dialog .foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding-top:4px}
+dialog .foot .left{margin-right:auto}
+@media (max-width:480px){dialog .row2{grid-template-columns:1fr}}
+.team{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.team li{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
+.team li div{flex:1;min-width:0;display:grid}
+.team small{color:var(--mist);overflow:hidden;text-overflow:ellipsis}
+.wait{border-color:color-mix(in srgb,var(--late) 50%,var(--line))!important}
+.hint{margin:0;color:var(--mist);font-size:.84rem}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;padding:10px 16px;border-radius:8px;background:var(--steel);color:var(--night);font-weight:600;font-size:.9rem;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+@media (prefers-reduced-motion:reduce){.item.flash{animation:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-team" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+<header class="top"><div class="wrap">
+  <a class="brand" href="../">THE PLANNING <span>PAD</span></a>
+  <div class="who" id="who" hidden><span id="whoName"></span><button class="btn small" id="signOut" type="button">Sign out</button></div>
+</div></header>
+
+<main class="wrap">
+  <section id="gate" aria-live="polite"></section>
+
+  <section id="app" hidden>
+    <div class="hero">
+      <div>
+        <h1><small>New building</small>Path to Occupancy</h1>
+        <p class="sub" id="subline">Everything that has to be done before the building can be used for production. Anyone on the team can check items off, change dates and post questions or delays.</p>
+      </div>
+      <div class="actions">
+        <a class="btn" id="procore" href="https://app.procore.com/webclients/host/companies/135756/tools/hubs/company-hub/views/portfolio" target="_blank" rel="noopener"><svg><use href="#i-out"/></svg>Procore schedule</a>
+        <button class="btn" type="button" id="teamBtn"><svg><use href="#i-team"/></svg>Team</button>
+      </div>
+    </div>
+
+    <div class="tiles">
+      <div class="tile" id="tDays"><b>–</b><span>days to occupancy</span></div>
+      <div class="tile" id="tDone"><b>–</b><span>items done</span><div class="bar"><i style="width:0"></i></div></div>
+      <button class="tile" type="button" id="tLate"><b>–</b><span>late or blocked</span></button>
+      <button class="tile" type="button" id="tOpen"><b>–</b><span>open questions and delays</span></button>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button type="button" role="tab" id="tabList" aria-selected="true" data-tab="listPane">Checklist</button>
+      <button type="button" role="tab" id="tabMsgs" aria-selected="false" data-tab="msgPane">Messages<span class="dot" id="newDot" hidden></span></button>
+    </div>
+
+    <div class="cols">
+      <section class="pane on" id="listPane" data-pane aria-labelledby="listH">
+        <div class="pane-head">
+          <h2 id="listH">Checklist</h2>
+          <button class="btn small" type="button" id="addItem"><svg><use href="#i-plus"/></svg>Add item</button>
+        </div>
+        <div class="chips" id="filters" role="group" aria-label="Show"></div>
+        <div id="groups"></div>
+      </section>
+
+      <section class="pane" id="msgPane" data-pane aria-labelledby="msgH">
+        <div class="pane-head"><h2 id="msgH">Messages</h2></div>
+        <form class="compose" id="compose">
+          <div class="kinds" role="group" aria-label="Kind of message">
+            <button class="chip" type="button" data-kind="note" aria-pressed="true">Note</button>
+            <button class="chip" type="button" data-kind="question" aria-pressed="false">Question</button>
+            <button class="chip" type="button" data-kind="delay" aria-pressed="false">Delay</button>
+          </div>
+          <label>About <select id="cAbout"><option value="">The whole project</option></select></label>
+          <textarea id="cText" maxlength="3000" placeholder="What's going on?" aria-label="Message" required></textarea>
+          <div class="row"><span class="hint" id="cHint">Clint gets a phone alert for questions and delays.</span><button class="btn primary" type="submit" id="cPost" style="margin-left:auto">Post</button></div>
+        </form>
+        <div class="about" id="aboutBar" hidden><span>Messages about</span><b id="aboutName"></b><button class="btn small ghost" type="button" id="aboutClear">Show all</button></div>
+        <div class="chips" id="mFilters" role="group" aria-label="Show messages">
+          <button class="chip" type="button" data-m="all" aria-pressed="true">All</button>
+          <button class="chip" type="button" data-m="open" aria-pressed="false">Open questions and delays</button>
+          <button class="chip" type="button" data-m="talk" aria-pressed="false">Hide check-offs</button>
+        </div>
+        <ul class="msgs" id="msgs" aria-live="polite"></ul>
+      </section>
+    </div>
+  </section>
+</main>
+
+<dialog id="itemDlg">
+  <form id="itemForm" method="dialog">
+    <h2 id="itemH">Edit item</h2>
+    <label>What has to happen <input id="fTitle" maxlength="200" required></label>
+    <div class="row2">
+      <label>Group <input id="fCat" maxlength="60" list="catList" placeholder="Fire and life safety"></label>
+      <label>Who owns it <input id="fWho" maxlength="80" list="whoList" placeholder="Beck &amp; Hofer"></label>
+    </div>
+    <div class="row2">
+      <label>Due <input id="fDue" type="date"></label>
+      <label>Status <select id="fStatus"></select></label>
+    </div>
+    <label>Notes <textarea id="fNote" maxlength="2000" placeholder="Inspector name, what's still missing, links…"></textarea></label>
+    <p class="hint" id="fStamp"></p>
+    <div class="foot">
+      <button class="btn danger ghost left" type="button" id="fDelete" hidden>Delete</button>
+      <button class="btn ghost" type="button" id="fAsk"><svg><use href="#i-chat"/></svg>Message about this</button>
+      <button class="btn" type="button" value="cancel" id="fCancel">Cancel</button>
+      <button class="btn primary" type="submit" id="fSave">Save</button>
+    </div>
+  </form>
+</dialog>
+<datalist id="catList"></datalist>
+<datalist id="whoList"><option>Harvard Integrations</option><option>Beck &amp; Hofer</option><option>City of Tea</option><option>Fire department</option><option>State inspector</option><option>Utility</option></datalist>
+
+<dialog id="teamDlg">
+  <div class="dbody">
+    <h2>Team</h2>
+    <p class="hint" id="teamHint">Everyone on this list can sign in to this page. Nobody else can.</p>
+    <ul class="team" id="waitList"></ul>
+    <ul class="team" id="teamList"></ul>
+    <form id="teamForm" class="ownerOnly" style="padding:0;display:grid;gap:10px">
+      <h2>Add someone</h2>
+      <label>Email <input id="tEmail" type="email" autocapitalize="off" required maxlength="200"></label>
+      <div class="row2">
+        <label>Name <input id="tName" maxlength="100" required></label>
+        <label>Role <input id="tRole" maxlength="100" placeholder="Superintendent, Beck &amp; Hofer"></label>
+      </div>
+      <p class="hint">Then tell them to go to <b id="tUrl">siemonsma.org/occupancy/</b>, tap Create account and use this same email.</p>
+      <div class="foot" style="justify-content:flex-start"><button class="btn primary" type="submit">Add to team</button></div>
+    </form>
+    <form id="targetForm" class="ownerOnly" style="padding:0;display:grid;gap:10px">
+      <h2>Occupancy target</h2>
+      <div class="row2"><label>Target date <input id="tTarget" type="date" required></label><div style="align-self:end"><button class="btn" type="submit">Save date</button></div></div>
+    </form>
+    <div class="foot"><button class="btn" type="button" id="teamClose">Close</button></div>
+  </div>
+</dialog>
+
+<script src="../tracker/config.js"></script>
+<script type="module">
+import {initializeApp,getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,signOut,updateProfile,connectAuthEmulator,
+  initializeFirestore,connectFirestoreEmulator,doc,collection,query,orderBy,limit,onSnapshot,getDoc,setDoc,deleteDoc,addDoc} from "../tracker/vendor/firebase.js";
+
+const CFG = window.APP_CONFIG;
+const OWNER = String(CFG.ownerEmail || "").trim().toLowerCase();
+const fbApp = initializeApp(CFG.firebase);
+const auth = getAuth(fbApp);
+const db = initializeFirestore(fbApp, {});
+if (CFG.useEmulators && ["localhost", "127.0.0.1"].includes(location.hostname)) {
+  connectAuthEmulator(auth, "http://127.0.0.1:9099", {disableWarnings: true});
+  connectFirestoreEmulator(db, "127.0.0.1", 8080);
+}
+
+const STATUSES = ["Not started", "In progress", "Blocked", "Done"];
+const ST_CLASS = {"Not started": "s-idle", "In progress": "s-prog", "Blocked": "s-block", "Done": "s-done"};
+const KIND = {note: "Note", question: "Question", delay: "Delay", change: "Update"};
+const DEFAULT_TARGET = "2026-12-21";
+const CATS = ["Permits and approvals", "Fire and life safety", "Building systems", "Site and access", "Final inspections", "Ready for production"];
+const HI = "Harvard Integrations", BH = "Beck & Hofer", CITY = "City of Tea";
+// A starting list for a production building. Dates are a first guess worked back from the target; change them to match the schedule.
+const STARTER = [
+  ["Permits and approvals", "Confirm with the Tea building official exactly what's needed for a certificate of occupancy (or a temporary one) and book the final inspections", HI, "2026-11-13"],
+  ["Permits and approvals", "Fire sprinkler and fire alarm plans approved by the fire marshal", BH, "2026-11-13"],
+  ["Permits and approvals", "Close out deferred submittals and any open permit conditions", BH, "2026-11-20"],
+  ["Permits and approvals", "Special inspection and testing reports turned in to the city (concrete, steel, soils)", BH, "2026-12-04"],
+  ["Fire and life safety", "Sprinkler system flushed, hydro tested and acceptance test witnessed", BH, "2026-12-04"],
+  ["Fire and life safety", "Fire alarm acceptance test passed and monitoring company connected", BH, "2026-12-09"],
+  ["Fire and life safety", "Fire department connection, Knox box, hydrant access and address numbers in place", BH, "2026-12-04"],
+  ["Fire and life safety", "Exit signs, emergency lights and exit doors with panic hardware working", BH, "2026-12-09"],
+  ["Fire and life safety", "Fire lane and access drive marked and passable", BH, "2026-12-11"],
+  ["Fire and life safety", "Fire extinguishers mounted and tagged", HI, "2026-12-11"],
+  ["Building systems", "Permanent power on and utility meter set", BH, "2026-11-20"],
+  ["Building systems", "Gas service set and piping pressure tested", BH, "2026-11-20"],
+  ["Building systems", "Heating and HVAC started up, test and balance done", BH, "2026-12-04"],
+  ["Building systems", "Water service, backflow preventer tested and certified", BH, "2026-12-09"],
+  ["Building systems", "Restrooms, eyewash and any safety showers working", BH, "2026-12-09"],
+  ["Building systems", "State electrical final inspection passed", BH, "2026-12-11"],
+  ["Building systems", "State plumbing final inspection passed", BH, "2026-12-11"],
+  ["Building systems", "Mechanical final inspection passed", BH, "2026-12-11"],
+  ["Site and access", "Accessible parking stalls, signs and accessible route to the entrance", BH, "2026-12-11"],
+  ["Site and access", "Paving or an approved temporary surface at entrances and dock doors", BH, "2026-12-11"],
+  ["Site and access", "Stormwater and erosion control in place", BH, "2026-12-11"],
+  ["Site and access", "Exterior lighting at doors, parking and walks", BH, "2026-12-11"],
+  ["Final inspections", "Punch walk with Harvard Integrations; life-safety items fixed first", HI, "2026-12-10"],
+  ["Final inspections", "Fire department final inspection passed", "Fire department", "2026-12-15"],
+  ["Final inspections", "City building final inspection passed", CITY, "2026-12-16"],
+  ["Final inspections", "Certificate of occupancy (or temporary CO) issued", CITY, "2026-12-18"],
+  ["Ready for production", "Rack or high-piled storage reviewed by the fire marshal (if storing above 12 feet)", HI, "2026-12-11"],
+  ["Ready for production", "Production equipment set; power and air drops inspected", HI, "2026-12-18"],
+  ["Ready for production", "Building added to property insurance (builder's risk hand-off)", HI, "2026-12-18"],
+  ["Ready for production", "Keys, door access and security alarm turned over", BH, "2026-12-18"],
+  ["Ready for production", "Safety signs, evacuation map posted and team walkthrough done", HI, "2026-12-18"],
+  ["Ready for production", "O&M manuals, warranties and as-built drawings delivered", BH, "2026-12-21"],
+  ["Ready for production", "First production day in the new building", HI, "2026-12-21"]
+];
+
+const $ = (id) => document.getElementById(id);
+function h(tag, attrs, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v; else if (k.startsWith("on")) n.addEventListener(k.slice(2), v); else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c != null && c !== false) n.append(c.nodeType ? c : String(c));
+  return n;
+}
+const icon = (id) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("aria-hidden", "true"); const u = document.createElementNS("http://www.w3.org/2000/svg", "use"); u.setAttribute("href", "#i-" + id); s.append(u); return s; };
+const pad = (n) => String(n).padStart(2, "0");
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const fmtDay = (s) => s ? new Date(s + "T12:00:00").toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"}) : "";
+const fmtWhen = (s) => { const d = new Date(s); const same = d.toDateString() === new Date().toDateString();
+  return same ? d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : d.toLocaleDateString(undefined, {month: "short", day: "numeric"}) + ", " + d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}); };
+const store = {get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} }};
+let toastT; function toast(t) { document.querySelector(".toast")?.remove(); clearTimeout(toastT); const n = h("div", {class: "toast", role: "status"}, t); document.body.append(n); toastT = setTimeout(() => n.remove(), 2600); }
+const AUTH_ERR = {"auth/invalid-credential": "That email and password don't match. Try again, or tap Forgot password.", "auth/wrong-password": "That password isn't right.",
+  "auth/user-not-found": "No account with that email yet. Tap Create account.", "auth/email-already-in-use": "That email already has an account. Sign in instead.",
+  "auth/weak-password": "Use at least 6 characters for the password.", "auth/invalid-email": "That email doesn't look right.", "auth/too-many-requests": "Too many tries. Wait a few minutes and try again."};
+const authMsg = (e) => AUTH_ERR[e?.code] || "Something went wrong. Try again.";
+
+// phone alert to the facilities manager through ntfy.sh. Says only what happened, never who, since anyone can read a topic.
+function pingOwner(title, msg) {
+  const t = CFG.notifyTopic; if (!t || me?.owner) return;
+  const q = new URLSearchParams({title, click: new URL("./", location.href).href, tags: "construction_site"});
+  fetch("https://ntfy.sh/" + encodeURIComponent(t) + "?" + q, {method: "POST", body: msg, keepalive: true}).catch(() => {});
+}
+
+/* ---------- sign in ---------- */
+let mode = "in", me = null, unsubs = [];
+function gateCard(...kids) { $("gate").replaceChildren(h("div", {class: "card"}, ...kids)); $("gate").hidden = false; $("app").hidden = true; }
+function note(t, good) { const n = $("aNote"); if (n) { n.textContent = t; n.className = "note" + (good ? " good" : ""); } }
+function signInScreen() {
+  const up = mode === "up";
+  const form = h("form", {id: "aForm", style: "display:grid;gap:12px"},
+    up ? h("label", {}, "Your name", h("input", {id: "aName", autocomplete: "name", required: true, maxlength: "100"})) : null,
+    h("label", {}, "Email", h("input", {id: "aEmail", type: "email", autocomplete: "email", autocapitalize: "off", required: true})),
+    h("label", {}, "Password", h("input", {id: "aPass", type: "password", autocomplete: up ? "new-password" : "current-password", minlength: "6", required: true})),
+    h("div", {class: "row"}, h("button", {class: "btn primary", type: "submit"}, up ? "Create account" : "Sign in"),
+      up ? null : h("button", {class: "btn ghost", type: "button", id: "aForgot"}, "Forgot password?")),
+    h("div", {class: "note", id: "aNote", role: "status"}));
+  gateCard(h("h2", {}, up ? "Create your account" : "Path to Occupancy"),
+    h("p", {}, up ? "Use the email Clint added to the team." : "For the new building team: Harvard Integrations and Beck & Hofer. Sign in to see the checklist and messages."),
+    form,
+    h("p", {}, up ? "Already have an account? " : "First time here? ", h("button", {class: "linkish", type: "button", onclick: () => { mode = up ? "in" : "up"; signInScreen(); }}, up ? "Sign in" : "Create account")));
+  $("aForgot")?.addEventListener("click", async () => {
+    const e = $("aEmail").value.trim(); if (!e) return note("Type your email above first.");
+    try { await sendPasswordResetEmail(auth, e); } catch {}
+    note("If that account exists, a reset link is on its way.", true);
+  });
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault(); const btn = form.querySelector("[type=submit]"); btn.disabled = true; note("");
+    const name = $("aName")?.value.trim() || "", email = $("aEmail").value.trim(), pass = $("aPass").value;
+    try {
+      if (up) { const c = await createUserWithEmailAndPassword(auth, email, pass);
+        if (name) await updateProfile(c.user, {displayName: name}).catch(() => {});
+        await sendEmailVerification(c.user).catch(() => {}); gate(c.user); }
+      else await signInWithEmailAndPassword(auth, email, pass);
+    } catch (e) { note(authMsg(e)); btn.disabled = false; }
+  });
+}
+function verifyScreen(u) {
+  gateCard(h("h2", {}, "Check your email"),
+    h("p", {}, "We sent a link to ", h("b", {}, u.email), ". Open it to confirm your email, then come back and tap Continue."),
+    h("p", {}, "Don't see it? Check your junk folder."),
+    h("div", {class: "row"},
+      h("button", {class: "btn primary", type: "button", onclick: async () => { await u.reload(); if (auth.currentUser.emailVerified) { await auth.currentUser.getIdToken(true); gate(auth.currentUser); } else note("Not confirmed yet. Open the link in the email first."); }}, "Continue"),
+      h("button", {class: "btn", type: "button", onclick: async () => { try { await sendEmailVerification(u); note("Sent. Check your email.", true); } catch (e) { note(authMsg(e)); } }}, "Send it again"),
+      h("button", {class: "btn ghost", type: "button", onclick: () => signOut(auth)}, "Sign out")),
+    h("div", {class: "note", id: "aNote", role: "status"}));
+}
+function notOnTeam(u) {
+  const email = String(u.email).toLowerCase();
+  // leave a note for Clint once, so the Team list shows who is waiting
+  setDoc(doc(db, "occKnock", email), {email, name: (u.displayName || "").slice(0, 100), uid: u.uid, at: new Date().toISOString()})
+    .then(() => pingOwner("Someone wants into Path to Occupancy", "Open the Team list on the page to add them.")).catch(() => {});
+  gateCard(h("h2", {}, "Almost there"),
+    h("p", {}, "You're signed in as ", h("b", {}, u.email), ", but that email isn't on the new building team yet."),
+    h("p", {}, "Clint has been told you're waiting. Once you're added, tap Try again."),
+    h("div", {class: "row"}, h("button", {class: "btn primary", type: "button", onclick: () => gate(auth.currentUser)}, "Try again"),
+      h("button", {class: "btn ghost", type: "button", onclick: () => signOut(auth)}, "Sign out")));
+}
+async function gate(u) {
+  unsubs.forEach((f) => f()); unsubs = [];
+  $("who").hidden = !u;
+  if (!u) { me = null; return signInScreen(); }
+  $("whoName").textContent = u.email;
+  if (!u.emailVerified) return verifyScreen(u);
+  const email = String(u.email).toLowerCase(), owner = email === OWNER;
+  let mine = null;
+  try { const s = await getDoc(doc(db, "occTeam", email)); mine = s.exists() ? s.data() : null; } catch {}
+  if (!owner && !mine) return notOnTeam(u);
+  me = {uid: u.uid, email, owner, name: mine?.name || u.displayName || (owner ? "Facilities Manager" : email)};
+  if (owner && !mine) setDoc(doc(db, "occTeam", email), {name: me.name, role: "Facilities Manager, " + HI, addedAt: new Date().toISOString()}).catch(() => {});
+  start();
+}
+onAuthStateChanged(auth, gate);
+$("signOut").addEventListener("click", () => signOut(auth));
+
+/* ---------- live data ---------- */
+let items = [], msgs = [], team = [], waiting = [], target = DEFAULT_TARGET;
+let loadError = false, filter = "open", whoFilter = "", mFilter = "all", aboutId = "", kind = "note", loadedItems = false;
+let seen = store.get("occSeen") || new Date(0).toISOString();
+function start() {
+  $("gate").hidden = true; $("app").hidden = false;
+  document.querySelectorAll(".ownerOnly").forEach((n) => (n.hidden = !me.owner));
+  $("cHint").textContent = me.owner ? "Posts here are for the whole team to see." : "Clint gets a phone alert for questions and delays.";
+  const err = () => { loadError = true; renderAll(); toast("Couldn't load the checklist. Reload the page."); };
+  unsubs.push(onSnapshot(collection(db, "occItems"), (s) => { items = s.docs.map((d) => ({id: d.id, ...d.data()})); loadedItems = true; renderAll(); }, err));
+  unsubs.push(onSnapshot(query(collection(db, "occMsgs"), orderBy("at", "desc"), limit(400)), (s) => { msgs = s.docs.map((d) => ({id: d.id, ...d.data()})); renderAll(); }, err));
+  unsubs.push(onSnapshot(collection(db, "occTeam"), (s) => { team = s.docs.map((d) => ({email: d.id, ...d.data()})); renderTeam(); }, () => {}));
+  unsubs.push(onSnapshot(doc(db, "occMeta", "main"), (s) => { target = s.data()?.target || DEFAULT_TARGET; renderAll(); }, () => {}));
+  if (me.owner) unsubs.push(onSnapshot(collection(db, "occKnock"), (s) => { waiting = s.docs.map((d) => ({email: d.id, ...d.data()})).filter((k) => !k.ignored); renderTeam(); }, () => {}));
+  renderAll();
+}
+// remember what's been read when the person leaves or switches away
+const markSeen = () => { if (msgs[0]) { seen = msgs[0].at; store.set("occSeen", seen); } };
+document.addEventListener("visibilitychange", () => { if (document.hidden) markSeen(); });
+addEventListener("pagehide", markSeen);
+
+const isLate = (it) => it.status !== "Done" && it.due && it.due < today();
+const openMsg = (m) => (m.kind === "question" || m.kind === "delay") && !m.resolved;
+function stamp() { return {updatedAt: new Date().toISOString(), updatedBy: me.name.slice(0, 100)}; }
+function sorted(list) { return [...list].sort((a, b) => (a.status === "Done") - (b.status === "Done") || (a.due || "9999").localeCompare(b.due || "9999") || (a.order ?? 999) - (b.order ?? 999)); }
+
+function renderAll() { if (!me) return; renderTiles(); renderFilters(); renderItems(); renderMsgs(); renderAbout(); }
+function renderTiles() {
+  const days = Math.round((new Date(target + "T12:00:00") - new Date(today() + "T12:00:00")) / 864e5);
+  $("tDays").querySelector("b").textContent = days >= 0 ? days : "0";
+  $("tDays").querySelector("span").textContent = days >= 0 ? "days to " + fmtDay(target) : "past the " + fmtDay(target) + " target";
+  $("tDays").className = "tile" + (days < 0 ? " bad" : "");
+  const done = items.filter((i) => i.status === "Done").length;
+  $("tDone").querySelector("b").textContent = `${done}/${items.length}`;
+  $("tDone").querySelector("i").style.width = items.length ? (100 * done / items.length) + "%" : "0";
+  const bad = items.filter((i) => isLate(i) || i.status === "Blocked").length;
+  $("tLate").querySelector("b").textContent = bad; $("tLate").className = "tile" + (bad ? " warn" : "");
+  const open = msgs.filter(openMsg).length;
+  $("tOpen").querySelector("b").textContent = open; $("tOpen").className = "tile" + (open ? " warn" : "");
+  const fresh = msgs.filter((m) => m.at > seen && m.author !== me.uid && m.kind !== "change").length;
+  $("newDot").hidden = !fresh; $("newDot").textContent = fresh;
+  $("subline").textContent = `Everything that has to be done before the building can be used for production. Target: ${fmtDay(target)}. Anyone on the team can check items off, change dates and post questions or delays.`;
+}
+function renderFilters() {
+  const box = $("filters"); box.replaceChildren();
+  const opts = [["open", "Still to do"], ["late", "Late or blocked"], ["done", "Done"], ["all", "All"]];
+  for (const [v, label] of opts) box.append(h("button", {class: "chip", type: "button", "aria-pressed": String(filter === v), onclick: () => { filter = v; renderAll(); }}, label));
+  const whos = [...new Set(items.map((i) => i.who).filter(Boolean))].sort();
+  const sel = h("select", {"aria-label": "Who owns it", onchange: (e) => { whoFilter = e.target.value; renderAll(); }}, h("option", {value: ""}, "Everyone"), whos.map((w) => h("option", {value: w, selected: w === whoFilter}, w)));
+  box.append(sel);
+  $("catList").replaceChildren(...[...new Set([...CATS, ...items.map((i) => i.cat).filter(Boolean)])].map((c) => h("option", {}, c)));
+}
+function passes(it) {
+  if (whoFilter && it.who !== whoFilter) return false;
+  if (filter === "open") return it.status !== "Done";
+  if (filter === "late") return isLate(it) || it.status === "Blocked";
+  if (filter === "done") return it.status === "Done";
+  return true;
+}
+function renderItems() {
+  const box = $("groups"); box.replaceChildren();
+  if (!loadedItems) { box.append(h("div", {class: "empty"}, loadError ? "Couldn't load the checklist. Reload the page, and if it keeps happening tell Clint." : "Loading…")); return; }
+  if (!items.length) {
+    box.append(me.owner
+      ? h("div", {class: "empty"}, h("p", {style: "margin:0"}, "No items yet. Start from a list of what a production building usually needs for occupancy, with dates worked back from the target. You can edit, add or delete anything after."),
+          h("button", {class: "btn primary", type: "button", onclick: seed}, "Load the starter checklist"))
+      : h("div", {class: "empty"}, "Clint hasn't set up the checklist yet."));
+    return;
+  }
+  const shown = sorted(items.filter(passes));
+  if (!shown.length) { box.append(h("div", {class: "empty"}, filter === "late" ? "Nothing late or blocked." : filter === "done" ? "Nothing checked off yet." : "Nothing left here.")); return; }
+  const cats = [...new Set([...CATS, ...items.map((i) => i.cat || "Other")])];
+  for (const c of cats) {
+    const list = shown.filter((i) => (i.cat || "Other") === c); if (!list.length) continue;
+    const all = items.filter((i) => (i.cat || "Other") === c);
+    box.append(h("div", {class: "group"}, h("h3", {}, c, h("span", {}, `${all.filter((i) => i.status === "Done").length} of ${all.length} done`)),
+      h("ul", {class: "items"}, list.map(itemRow))));
+  }
+}
+function itemRow(it) {
+  const n = msgs.filter((m) => m.itemId === it.id && m.kind !== "change").length;
+  const late = isLate(it), done = it.status === "Done";
+  const st = h("select", {class: "st " + ST_CLASS[it.status], "aria-label": "Status for " + it.title, onchange: (e) => setStatus(it, e.target.value)},
+    STATUSES.map((s) => h("option", {selected: s === it.status}, s)));
+  return h("li", {class: `item ${ST_CLASS[it.status] || ""}${late ? " late" : ""}`, id: "it-" + it.id},
+    h("button", {class: "check", type: "button", "aria-label": (done ? "Mark not done: " : "Mark done: ") + it.title, "aria-pressed": String(done), onclick: () => setStatus(it, done ? "In progress" : "Done")}, icon("check")),
+    h("div", {class: "body"},
+      h("button", {class: "title", type: "button", onclick: () => editItem(it)}, it.title),
+      h("div", {class: "meta"}, it.who ? h("span", {}, it.who) : null,
+        it.due ? h("span", {class: late ? "lt" : null}, (late ? "Late · was due " : done ? "Was due " : "Due ") + fmtDay(it.due)) : h("span", {}, "No date"),
+        it.updatedBy && it.updatedAt ? h("span", {}, `Updated by ${it.updatedBy}, ${fmtWhen(it.updatedAt)}`) : null),
+      it.note ? h("p", {class: "itemnote"}, it.note) : null),
+    h("div", {class: "side"}, st,
+      h("button", {class: "talk", type: "button", onclick: () => showAbout(it.id), "aria-label": `Messages about ${it.title} (${n})`}, icon("chat"), n ? String(n) : "Ask")));
+}
+async function setStatus(it, status) {
+  if (status === it.status) return;
+  try {
+    await setDoc(doc(db, "occItems", it.id), {status, ...stamp()}, {merge: true});
+    post({kind: "change", itemId: it.id, text: `Marked "${it.title}" ${status === "Done" ? "done" : status.toLowerCase()}.`}, true);
+    if (status === "Blocked") pingOwner("An item was marked Blocked", "Open Path to Occupancy to see which one.");
+    toast(status === "Done" ? "Checked off" : "Status set to " + status);
+  } catch { toast("Couldn't save that. Try again."); renderAll(); }
+}
+async function seed() {
+  try {
+    await Promise.all(STARTER.map(([cat, title, who, due], i) => setDoc(doc(db, "occItems", "s" + pad(i + 1)), {cat, title, who, due, status: "Not started", note: "", order: i + 1})));
+    toast("Starter checklist loaded");
+  } catch { toast("Couldn't load it. Try again."); }
+}
+
+/* ---------- item dialog ---------- */
+let editing = null;
+$("fStatus").replaceChildren(...STATUSES.map((s) => h("option", {}, s)));
+$("addItem").addEventListener("click", () => editItem(null));
+function editItem(it) {
+  editing = it;
+  $("itemH").textContent = it ? "Edit item" : "Add an item";
+  $("fTitle").value = it?.title || ""; $("fCat").value = it?.cat || ""; $("fWho").value = it?.who || "";
+  $("fDue").value = it?.due || ""; $("fStatus").value = it?.status || "Not started"; $("fNote").value = it?.note || "";
+  $("fStamp").textContent = it?.updatedBy ? `Last changed by ${it.updatedBy}, ${fmtWhen(it.updatedAt)}` : "";
+  $("fDelete").hidden = !(it && me.owner); $("fAsk").hidden = !it;
+  $("itemDlg").showModal(); $("fTitle").focus();
+}
+$("fCancel").addEventListener("click", () => $("itemDlg").close());
+$("fAsk").addEventListener("click", () => { const id = editing.id; $("itemDlg").close(); showAbout(id, true); });
+$("fDelete").addEventListener("click", async () => {
+  if (!confirm(`Delete "${editing.title}"? Its messages stay on the board.`)) return;
+  try { await deleteDoc(doc(db, "occItems", editing.id)); $("itemDlg").close(); toast("Deleted"); } catch { toast("Couldn't delete it."); }
+});
+$("itemForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const data = {title: $("fTitle").value.trim(), cat: $("fCat").value.trim(), who: $("fWho").value.trim(), due: $("fDue").value, status: $("fStatus").value, note: $("fNote").value.trim(), ...stamp()};
+  if (!data.title) return;
+  $("fSave").disabled = true;
+  try {
+    if (editing) {
+      await setDoc(doc(db, "occItems", editing.id), data, {merge: true});
+      const changed = [];
+      if (data.due !== (editing.due || "")) changed.push(data.due ? "due date to " + fmtDay(data.due) : "removed the due date");
+      if (data.status !== editing.status) changed.push("status to " + data.status);
+      if (data.who !== (editing.who || "")) changed.push("owner to " + (data.who || "nobody"));
+      if (changed.length) post({kind: "change", itemId: editing.id, text: `Changed "${data.title}": ${changed.join(", ")}.`}, true);
+      if (data.status === "Blocked" && editing.status !== "Blocked") pingOwner("An item was marked Blocked", "Open Path to Occupancy to see which one.");
+    } else {
+      const ref = await addDoc(collection(db, "occItems"), {...data, order: items.length + 1});
+      post({kind: "change", itemId: ref.id, text: `Added "${data.title}".`}, true);
+    }
+    $("itemDlg").close(); toast("Saved");
+  } catch { toast("Couldn't save that. Try again."); }
+  finally { $("fSave").disabled = false; }
+});
+
+/* ---------- messages ---------- */
+async function post(m, quiet) {
+  const data = {text: m.text.slice(0, 3000), kind: m.kind, author: me.uid, name: me.name.slice(0, 100), at: new Date().toISOString()};
+  if (m.itemId) data.itemId = m.itemId;
+  try { await addDoc(collection(db, "occMsgs"), data); } catch { if (!quiet) throw new Error("save"); }
+}
+document.querySelectorAll("[data-kind]").forEach((b) => b.addEventListener("click", () => {
+  kind = b.dataset.kind; document.querySelectorAll("[data-kind]").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+  $("cText").placeholder = kind === "question" ? "What do you need answered?" : kind === "delay" ? "What's late or in the way, and what does it push?" : "What's going on?";
+}));
+$("compose").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const text = $("cText").value.trim(); if (!text) return;
+  $("cPost").disabled = true;
+  try {
+    await post({kind, text, itemId: $("cAbout").value});
+    if (kind === "question") pingOwner("New question on Path to Occupancy", "Open the page to answer it.");
+    else if (kind === "delay") pingOwner("Delay reported on Path to Occupancy", "Open the page to read it.");
+    else pingOwner("New note on Path to Occupancy", "Open the page to read it.");
+    $("cText").value = ""; toast("Posted");
+  } catch { toast("Couldn't post that. Try again."); }
+  finally { $("cPost").disabled = false; }
+});
+document.querySelectorAll("[data-m]").forEach((b) => b.addEventListener("click", () => { mFilter = b.dataset.m; renderAll(); }));
+function showAbout(id, compose) {
+  aboutId = id; mFilter = "all"; $("cAbout").value = id; switchTab("msgPane"); renderAll();
+  $("msgPane").scrollIntoView({behavior: "smooth", block: "start"});
+  if (compose) $("cText").focus();
+}
+$("aboutClear").addEventListener("click", () => { aboutId = ""; $("cAbout").value = ""; renderAll(); });
+function renderAbout() {
+  const it = items.find((i) => i.id === aboutId);
+  $("aboutBar").hidden = !it; if (it) $("aboutName").textContent = it.title;
+  const cur = $("cAbout").value;
+  $("cAbout").replaceChildren(h("option", {value: ""}, "The whole project"), ...sorted(items).map((i) => h("option", {value: i.id, selected: i.id === cur}, i.title.length > 70 ? i.title.slice(0, 68) + "…" : i.title)));
+  document.querySelectorAll("[data-m]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.m === mFilter)));
+}
+function renderMsgs() {
+  const box = $("msgs"); box.replaceChildren();
+  let list = msgs;
+  if (aboutId) list = list.filter((m) => m.itemId === aboutId);
+  if (mFilter === "open") list = list.filter(openMsg);
+  if (mFilter === "talk") list = list.filter((m) => m.kind !== "change");
+  if (!list.length) { box.append(h("li", {class: "empty"}, mFilter === "open" ? "No open questions or delays." : "No messages yet. Post the first one above.")); return; }
+  for (const m of list) {
+    const it = m.itemId && items.find((i) => i.id === m.itemId);
+    const mine = m.author === me.uid, fresh = m.at > seen && !mine && m.kind !== "change";
+    if (m.kind === "change") { box.append(h("li", {class: "m k-change"}, h("p", {}, h("b", {}, m.name || "Someone"), " ", m.text, " · ", fmtWhen(m.at)))); continue; }
+    const foot = h("div", {class: "foot"});
+    if (m.kind === "question" || m.kind === "delay") {
+      if (m.resolved) foot.append(h("span", {class: "ok"}, (m.kind === "question" ? "Answered" : "Resolved") + (m.resolvedBy ? " · " + m.resolvedBy : "")),
+        h("button", {class: "linkish", type: "button", onclick: () => resolve(m, false)}, "Reopen"));
+      else foot.append(h("button", {class: "btn small", type: "button", onclick: () => resolve(m, true)}, m.kind === "question" ? "Mark answered" : "Mark resolved"));
+    }
+    foot.append(h("button", {class: "linkish", type: "button", onclick: () => reply(m)}, "Reply"));
+    if (mine || me.owner) foot.append(h("button", {class: "linkish", type: "button", onclick: () => remove(m)}, "Delete"));
+    box.append(h("li", {class: `m k-${m.kind}${m.resolved ? " done" : ""}`},
+      h("div", {class: "hd"}, m.kind !== "note" ? h("span", {class: "tag"}, KIND[m.kind]) : null, h("b", {}, m.name || "Someone"), h("span", {}, fmtWhen(m.at)), fresh ? h("span", {class: "new"}, "New") : null),
+      it ? h("button", {class: "ref", type: "button", onclick: () => jumpTo(it.id)}, "About: " + it.title) : null,
+      h("p", {}, m.text), foot));
+  }
+}
+function reply(m) {
+  $("cAbout").value = m.itemId || "";
+  $("cText").value = `@${m.name || "Someone"}: `; $("cText").focus();
+  $("compose").scrollIntoView({behavior: "smooth", block: "nearest"});
+}
+async function resolve(m, on) {
+  try { await setDoc(doc(db, "occMsgs", m.id), on ? {resolved: true, resolvedBy: me.name.slice(0, 100)} : {resolved: false, resolvedBy: ""}, {merge: true}); }
+  catch { toast("Couldn't save that."); }
+}
+async function remove(m) {
+  if (!confirm(m.author === me.uid ? "Delete your message?" : "Delete this message?")) return;
+  try { await deleteDoc(doc(db, "occMsgs", m.id)); } catch { toast("Couldn't delete it."); }
+}
+function jumpTo(id) {
+  if (!items.find((i) => i.id === id && passes(i))) { filter = "all"; whoFilter = ""; renderAll(); }
+  switchTab("listPane");
+  const n = $("it-" + id); if (!n) return;
+  n.scrollIntoView({behavior: "smooth", block: "center"}); n.classList.remove("flash"); void n.offsetWidth; n.classList.add("flash");
+}
+$("tLate").addEventListener("click", () => { filter = "late"; whoFilter = ""; switchTab("listPane"); renderAll(); $("listPane").scrollIntoView({behavior: "smooth"}); });
+$("tOpen").addEventListener("click", () => { mFilter = "open"; aboutId = ""; switchTab("msgPane"); renderAll(); $("msgPane").scrollIntoView({behavior: "smooth"}); });
+
+/* ---------- tabs (narrow screens) ---------- */
+function switchTab(id) {
+  document.querySelectorAll("[data-pane]").forEach((p) => p.classList.toggle("on", p.id === id));
+  document.querySelectorAll("[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === id)));
+  if (id === "msgPane") setTimeout(markSeenSoon, 4000);
+}
+function markSeenSoon() { if ($("msgPane").classList.contains("on") || matchMedia("(min-width:1001px)").matches) { markSeen(); renderTiles(); } }
+document.querySelectorAll("[data-tab]").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+
+/* ---------- team ---------- */
+$("teamBtn").addEventListener("click", () => { renderTeam(); $("tTarget").value = target; $("tUrl").textContent = location.host + location.pathname; $("teamDlg").showModal(); });
+$("teamClose").addEventListener("click", () => $("teamDlg").close());
+function renderTeam() {
+  if (!me) return;
+  const people = [...team].sort((a, b) => (b.email === OWNER) - (a.email === OWNER) || (a.name || "").localeCompare(b.name || ""));
+  $("teamList").replaceChildren(...people.map((p) => h("li", {},
+    h("div", {}, h("b", {}, p.name || p.email), h("small", {}, [p.role, p.email].filter(Boolean).join(" · "))),
+    me.owner ? h("button", {class: "btn small ghost", type: "button", onclick: () => { $("tEmail").value = p.email; $("tName").value = p.name || ""; $("tRole").value = p.role || ""; $("tName").focus(); }}, "Edit") : null,
+    me.owner && p.email !== OWNER ? h("button", {class: "btn small ghost danger", type: "button", onclick: () => removeMember(p)}, "Remove") : null)));
+  $("waitList").replaceChildren(...(me.owner ? waiting.filter((k) => !team.some((t) => t.email === k.email)) : []).map((k) => h("li", {class: "wait"},
+    h("div", {}, h("b", {}, (k.name || k.email) + " is waiting to get in"), h("small", {}, k.email)),
+    h("button", {class: "btn small primary", type: "button", onclick: () => { $("tEmail").value = k.email; $("tName").value = k.name || ""; $("tRole").focus(); }}, "Add"),
+    h("button", {class: "btn small ghost", type: "button", onclick: () => setDoc(doc(db, "occKnock", k.email), {ignored: true}, {merge: true}).catch(() => {})}, "Ignore"))));
+  $("teamBtn").replaceChildren(icon("team"), "Team", me.owner && $("waitList").children.length ? h("span", {class: "dot"}, $("waitList").children.length) : "");
+}
+async function removeMember(p) {
+  if (!confirm(`Take ${p.name || p.email} off the team? They won't be able to open this page.`)) return;
+  try { await deleteDoc(doc(db, "occTeam", p.email)); toast("Removed"); } catch { toast("Couldn't remove them."); }
+}
+$("teamForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const email = $("tEmail").value.trim().toLowerCase();
+  const prev = team.find((t) => t.email === email);
+  try {
+    await setDoc(doc(db, "occTeam", email), {name: $("tName").value.trim(), role: $("tRole").value.trim(), addedAt: prev?.addedAt || new Date().toISOString()});
+    deleteDoc(doc(db, "occKnock", email)).catch(() => {});
+    if (email === me.email) me.name = $("tName").value.trim() || me.name;
+    $("teamForm").reset(); toast(prev ? "Saved" : "Added. Tell them to create an account with that email.");
+  } catch { toast("Couldn't save that."); }
+});
+$("targetForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  try { await setDoc(doc(db, "occMeta", "main"), {target: $("tTarget").value}, {merge: true}); toast("Target saved"); } catch { toast("Couldn't save that."); }
+});
+</script>
+</body>
+</html>

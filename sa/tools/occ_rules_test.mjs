@@ -1,0 +1,63 @@
+// Checks the Path to Occupancy Firestore rules against the emulator (owner clint@example.com, see rules_test.mjs).
+import {initializeApp} from "firebase/app";
+import {getAuth,connectAuthEmulator,createUserWithEmailAndPassword} from "firebase/auth";
+import {getFirestore,connectFirestoreEmulator,doc,setDoc,getDoc,getDocs,collection,addDoc,updateDoc,deleteDoc} from "firebase/firestore";
+const P="demo-tracker";
+await fetch(`http://127.0.0.1:9099/emulator/v1/projects/${P}/accounts`,{method:"DELETE"});
+await fetch(`http://127.0.0.1:8080/emulator/v1/projects/${P}/databases/(default)/documents`,{method:"DELETE"});
+const mk=n=>{const a=initializeApp({projectId:P,apiKey:"demo"},n);const au=getAuth(a);connectAuthEmulator(au,"http://127.0.0.1:9099",{disableWarnings:true});const db=getFirestore(a);connectFirestoreEmulator(db,"127.0.0.1",8080);return{au,db}};
+async function user(n,email,verify=true){const c=mk(n);await createUserWithEmailAndPassword(c.au,email,"secret123");if(!verify)return c;
+  await fetch(`http://127.0.0.1:9099/identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=demo`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({requestType:"VERIFY_EMAIL",idToken:await c.au.currentUser.getIdToken()})});
+  const codes=(await (await fetch(`http://127.0.0.1:9099/emulator/v1/projects/${P}/oobCodes`)).json()).oobCodes.filter(x=>x.email===email);await fetch(codes.pop().oobLink);
+  await c.au.currentUser.reload();await c.au.currentUser.getIdToken(true);return c}
+let bad=0;const ok=async(label,p,expect=true)=>{try{await p;console.log(expect?"PASS":"FAIL",label,"(allowed)");if(!expect)bad++}catch(e){console.log(expect?"FAIL":"PASS",label,"(denied)",expect?e.code:"");if(expect)bad++}};
+const owner=await user("o","clint@example.com"),mike=await user("m","mike@example.com"),jim=await user("j","jim@example.com"),zed=await user("z","zed@example.com"),unv=await user("u","lance@example.com",false);
+await setDoc(doc(owner.db,"access/jim@example.com"),{name:"Jim"}); // a tracker follower, not on the occupancy team
+await ok("owner adds Mike to the team",setDoc(doc(owner.db,"occTeam/mike@example.com"),{name:"Mike",role:"PM"}));
+await ok("owner adds unverified Lance to the team",setDoc(doc(owner.db,"occTeam/lance@example.com"),{name:"Lance"}));
+await ok("owner seeds an item",setDoc(doc(owner.db,"occItems/s01"),{title:"Fire alarm test",cat:"Fire",who:"B&H",due:"2026-12-09",status:"Not started",note:"",order:1}));
+await ok("owner sets the target",setDoc(doc(owner.db,"occMeta/main"),{target:"2026-12-21"}));
+const mid=mike.au.currentUser.uid,msg=(x={})=>({text:"When is the hydro test?",kind:"question",author:mid,name:"Mike",at:new Date().toISOString(),...x});
+await ok("Mike reads his own team entry",getDoc(doc(mike.db,"occTeam/mike@example.com")));
+await ok("Mike lists the team",getDocs(collection(mike.db,"occTeam")));
+await ok("Mike reads the items",getDocs(collection(mike.db,"occItems")));
+await ok("Mike reads the target",getDoc(doc(mike.db,"occMeta/main")));
+await ok("Mike checks off an item",setDoc(doc(mike.db,"occItems/s01"),{status:"Done",updatedAt:"x",updatedBy:"Mike"},{merge:true}));
+await ok("Mike adds an item",addDoc(collection(mike.db,"occItems"),{title:"Dock levelers",status:"Not started",due:"2026-12-12"}));
+await ok("Mike uses a made-up status",updateDoc(doc(mike.db,"occItems/s01"),{status:"Whatever"}),false);
+await ok("Mike adds an extra field",updateDoc(doc(mike.db,"occItems/s01"),{admin:true}),false);
+await ok("Mike deletes an item",deleteDoc(doc(mike.db,"occItems/s01")),false);
+await ok("Mike adds himself to the team as someone else",setDoc(doc(mike.db,"occTeam/pal@example.com"),{name:"Pal"}),false);
+await ok("Mike changes the target",setDoc(doc(mike.db,"occMeta/main"),{target:"2027-01-01"}),false);
+const m1=await addDoc(collection(mike.db,"occMsgs"),msg());console.log("PASS Mike posts a question");
+await ok("Mike posts as someone else",addDoc(collection(mike.db,"occMsgs"),msg({author:"someone"})),false);
+await ok("Mike posts an unknown kind",addDoc(collection(mike.db,"occMsgs"),msg({kind:"admin"})),false);
+await ok("Mike posts a pre-resolved question",addDoc(collection(mike.db,"occMsgs"),msg({resolved:true})),false);
+await ok("Mike posts a huge message",addDoc(collection(mike.db,"occMsgs"),msg({text:"x".repeat(3100)})),false);
+const o1=await addDoc(collection(owner.db,"occMsgs"),{...msg(),author:owner.au.currentUser.uid,name:"Clint",kind:"note"});
+await ok("Mike marks a question answered",setDoc(doc(mike.db,"occMsgs/"+m1.id),{resolved:true,resolvedBy:"Mike"},{merge:true}));
+await ok("Mike rewrites a message",setDoc(doc(mike.db,"occMsgs/"+o1.id),{text:"changed"},{merge:true}),false);
+await ok("Mike deletes Clint's message",deleteDoc(doc(mike.db,"occMsgs/"+o1.id)),false);
+await ok("Mike deletes his own message",deleteDoc(doc(mike.db,"occMsgs/"+m1.id)));
+await ok("owner deletes any message",deleteDoc(doc(owner.db,"occMsgs/"+o1.id)));
+for(const [who,c] of [["tracker follower Jim",jim],["stranger Zed",zed],["unverified Lance",unv]]){
+  await ok(who+" reads items",getDocs(collection(c.db,"occItems")),false);
+  await ok(who+" reads messages",getDocs(collection(c.db,"occMsgs")),false);
+  await ok(who+" lists the team",getDocs(collection(c.db,"occTeam")),false);
+  await ok(who+" reads the target",getDoc(doc(c.db,"occMeta/main")),false);
+  await ok(who+" adds an item",addDoc(collection(c.db,"occItems"),{title:"x",status:"Done"}),false);
+  await ok(who+" posts a message",addDoc(collection(c.db,"occMsgs"),msg({author:c.au.currentUser.uid})),false);
+}
+await ok("Jim still reads tracker projects",getDocs(collection(jim.db,"projects")));
+await ok("Mike can't read tracker projects",getDocs(collection(mike.db,"projects")),false);
+await ok("Mike can't read people",getDocs(collection(mike.db,"people")),false);
+const zk={email:"zed@example.com",name:"Zed",uid:zed.au.currentUser.uid,at:"now"};
+await ok("Zed leaves his email",setDoc(doc(zed.db,"occKnock/zed@example.com"),zk));
+await ok("Zed overwrites it",setDoc(doc(zed.db,"occKnock/zed@example.com"),zk),false);
+await ok("Zed knocks as someone else",setDoc(doc(zed.db,"occKnock/boss@example.com"),{...zk,email:"boss@example.com"}),false);
+await ok("Mike reads knocks",getDocs(collection(mike.db,"occKnock")),false);
+await ok("Jim reads knocks",getDocs(collection(jim.db,"occKnock")),false);
+await ok("owner reads knocks",getDocs(collection(owner.db,"occKnock")));
+await ok("owner removes Mike",deleteDoc(doc(owner.db,"occTeam/mike@example.com")));
+await ok("removed Mike reads items",getDocs(collection(mike.db,"occItems")),false);
+console.log(bad?`${bad} FAILED`:"all passed");process.exit(bad?1:0);

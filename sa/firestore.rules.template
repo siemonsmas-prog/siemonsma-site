@@ -11,7 +11,7 @@ service cloud.firestore {
 
     // project requests are for the owner's eyes only; everything else is readable by people on the list
     match /{coll}/{rest=**} {
-      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock', 'notes', 'voice']));
+      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock', 'notes', 'voice', 'occTeam', 'occItems', 'occMsgs', 'occMeta', 'occKnock']));
       allow write: if isOwner();
     }
     // anyone can send a project request from the public request page, without an account
@@ -65,6 +65,46 @@ service cloud.firestore {
         && request.resource.data.author == request.auth.uid && request.resource.data.status == 'pending'
         && request.resource.data.projectId is string && request.resource.data.text is string
         && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 2000 && text(request.resource.data,'at',40));
+    }
+    // New building Path to Occupancy: only the owner and people on occTeam (added by the owner) read or write it
+    function onOcc() { return isOwner() || (signedIn() && exists(/databases/$(database)/documents/occTeam/$(email()))); }
+    match /occTeam/{addr} {
+      allow read: if onOcc() || (signedIn() && addr == email());
+    }
+    match /occMeta/{id} {
+      allow read: if onOcc();
+    }
+    function validOccItem(d) {
+      return d.keys().hasOnly(['title','cat','who','due','status','note','order','updatedAt','updatedBy'])
+        && d.keys().hasAll(['title','status'])
+        && d.title is string && d.title.size() > 0 && text(d,'title',200) && text(d,'cat',60) && text(d,'who',80)
+        && text(d,'due',10) && d.status in ['Not started','In progress','Blocked','Done'] && text(d,'note',2000)
+        && (!('order' in d) || d.order is number) && text(d,'updatedAt',40) && text(d,'updatedBy',100);
+    }
+    match /occItems/{id} {
+      allow read: if onOcc();
+      allow create, update: if onOcc() && validOccItem(request.resource.data);
+    }
+    function validOccMsg(d) {
+      return d.keys().hasOnly(['text','kind','itemId','author','name','at'])
+        && d.keys().hasAll(['text','kind','author','at'])
+        && d.author == request.auth.uid && d.text is string && d.text.size() > 0 && d.text.size() <= 3000
+        && d.kind in ['note','question','delay','change'] && text(d,'itemId',60) && text(d,'name',100) && text(d,'at',40);
+    }
+    match /occMsgs/{id} {
+      allow read: if onOcc();
+      allow create: if onOcc() && validOccMsg(request.resource.data);
+      // anyone on the team can mark a question answered or a delay resolved, and nothing else
+      allow update: if onOcc() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resolved','resolvedBy'])
+        && (!('resolved' in request.resource.data) || request.resource.data.resolved is bool) && text(request.resource.data,'resolvedBy',100);
+      allow delete: if onOcc() && resource.data.author == request.auth.uid;
+    }
+    // someone signed in but not on the team leaves their email once so the owner can add them
+    match /occKnock/{addr} {
+      allow create: if signedIn() && addr == email()
+        && request.resource.data.keys().hasOnly(['email','name','uid','at'])
+        && request.resource.data.email == email() && request.resource.data.uid == request.auth.uid
+        && text(request.resource.data,'name',100) && text(request.resource.data,'at',40);
     }
     // lets someone check whether their own email is on the list
     match /access/{addr} {
