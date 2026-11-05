@@ -11,7 +11,7 @@ service cloud.firestore {
 
     // project requests are for the owner's eyes only; everything else is readable by people on the list
     match /{coll}/{rest=**} {
-      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock', 'notes', 'voice', 'occTeam', 'occItems', 'occMsgs', 'occMeta', 'occKnock']));
+      allow read: if isOwner() || (invited() && !(coll in ['requests', 'knock', 'notes', 'voice', 'occTeam', 'occItems', 'occMsgs', 'occMeta', 'occKnock', 'occDocs', 'occSignoffs']));
       allow write: if isOwner();
     }
     // anyone can send a project request from the public request page, without an account
@@ -75,11 +75,12 @@ service cloud.firestore {
       allow read: if onOcc();
     }
     function validOccItem(d) {
-      return d.keys().hasOnly(['title','cat','who','due','status','note','order','updatedAt','updatedBy'])
+      return d.keys().hasOnly(['title','cat','who','due','status','note','order','updatedAt','updatedBy','flag','short','tag'])
         && d.keys().hasAll(['title','status'])
         && d.title is string && d.title.size() > 0 && text(d,'title',200) && text(d,'cat',60) && text(d,'who',80)
         && text(d,'due',10) && d.status in ['Not started','In progress','Blocked','Done'] && text(d,'note',2000)
-        && (!('order' in d) || d.order is number) && text(d,'updatedAt',40) && text(d,'updatedBy',100);
+        && (!('order' in d) || d.order is number) && text(d,'updatedAt',40) && text(d,'updatedBy',100)
+        && (!('flag' in d) || d.flag in ['', 'watch', 'confirm']) && text(d,'short',60) && text(d,'tag',60);
     }
     match /occItems/{id} {
       allow read: if onOcc();
@@ -98,6 +99,28 @@ service cloud.firestore {
       allow update: if onOcc() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['resolved','resolvedBy'])
         && (!('resolved' in request.resource.data) || request.resource.data.resolved is bool) && text(request.resource.data,'resolvedBy',100);
       allow delete: if onOcc() && resource.data.author == request.auth.uid;
+    }
+    // occupancy sign-offs (final inspections, acceptance tests, the CO): anyone on the team updates them, only the owner deletes
+    function validSignoff(d) {
+      return d.keys().hasOnly(['title','desc','party','status','date','ref','who','note','order','updatedAt','updatedBy'])
+        && d.keys().hasAll(['title','status']) && d.title is string && d.title.size() > 0 && text(d,'title',120)
+        && d.status in ['To verify','Scheduled','Corrections needed','Approved','Not applicable']
+        && text(d,'desc',200) && text(d,'party',100) && text(d,'date',10) && text(d,'ref',80) && text(d,'who',100) && text(d,'note',1000)
+        && (!('order' in d) || d.order is number) && text(d,'updatedAt',40) && text(d,'updatedBy',100);
+    }
+    match /occSignoffs/{id} {
+      allow read: if onOcc();
+      allow create, update: if onOcc() && validSignoff(request.resource.data);
+    }
+    // links the team shares (schedule, drawings, reports); anyone on the team adds one, the person who added it or the owner removes it
+    match /occDocs/{id} {
+      allow read: if onOcc();
+      allow create: if onOcc() && request.resource.data.keys().hasOnly(['title','url','by','name','at'])
+        && request.resource.data.keys().hasAll(['title','url','by','at']) && request.resource.data.by == request.auth.uid
+        && request.resource.data.title is string && request.resource.data.title.size() > 0 && text(request.resource.data,'title',120)
+        && request.resource.data.url is string && request.resource.data.url.matches('https://.{1,990}')
+        && text(request.resource.data,'name',100) && text(request.resource.data,'at',40);
+      allow delete: if onOcc() && resource.data.by == request.auth.uid;
     }
     // someone signed in but not on the team leaves their email once so the owner can add them
     match /occKnock/{addr} {

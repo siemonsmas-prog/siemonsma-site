@@ -48,6 +48,24 @@ for(const [who,c] of [["tracker follower Jim",jim],["stranger Zed",zed],["unveri
   await ok(who+" adds an item",addDoc(collection(c.db,"occItems"),{title:"x",status:"Done"}),false);
   await ok(who+" posts a message",addDoc(collection(c.db,"occMsgs"),msg({author:c.au.currentUser.uid})),false);
 }
+await ok("Mike pins an item to the watchlist",setDoc(doc(mike.db,"occItems/s01"),{flag:"watch",short:"Fire alarm",tag:"Not on look-ahead"},{merge:true}));
+await ok("Mike uses a made-up flag",setDoc(doc(mike.db,"occItems/s01"),{flag:"vip"},{merge:true}),false);
+const dk={title:"Shop drawings",url:"https://example.com/x",by:mid,name:"Mike",at:"now"};
+const d1=await addDoc(collection(mike.db,"occDocs"),dk);console.log("PASS Mike adds a link");
+await ok("Mike adds a non-https link",addDoc(collection(mike.db,"occDocs"),{...dk,url:"javascript:alert(1)"}),false);
+await ok("Mike adds a link as someone else",addDoc(collection(mike.db,"occDocs"),{...dk,by:"x"}),false);
+await ok("Jim reads links",getDocs(collection(jim.db,"occDocs")),false);
+await ok("Zed adds a link",addDoc(collection(zed.db,"occDocs"),{...dk,by:zed.au.currentUser.uid}),false);
+const o2=await addDoc(collection(owner.db,"occDocs"),{...dk,by:owner.au.currentUser.uid});
+await ok("Mike removes Clint's link",deleteDoc(doc(mike.db,"occDocs/"+o2.id)),false);
+await ok("Mike removes his own link",deleteDoc(doc(mike.db,"occDocs/"+d1.id)));
+await ok("owner loads a sign-off",setDoc(doc(owner.db,"occSignoffs/so01"),{title:"Electrical final",desc:"Tag",party:"State",status:"To verify",order:1}));
+await ok("Mike records an approval",setDoc(doc(mike.db,"occSignoffs/so01"),{status:"Approved",ref:"E-1234",date:"2026-12-10",who:"Dan",updatedAt:"x",updatedBy:"Mike"},{merge:true}));
+await ok("Mike uses a made-up sign-off status",setDoc(doc(mike.db,"occSignoffs/so01"),{status:"Done"},{merge:true}),false);
+await ok("Mike adds a sign-off",addDoc(collection(mike.db,"occSignoffs"),{title:"Elevator certificate",status:"Scheduled"}));
+await ok("Mike deletes a sign-off",deleteDoc(doc(mike.db,"occSignoffs/so01")),false);
+await ok("Jim reads sign-offs",getDocs(collection(jim.db,"occSignoffs")),false);
+await ok("Zed edits a sign-off",setDoc(doc(zed.db,"occSignoffs/so01"),{status:"Approved"},{merge:true}),false);
 await ok("Jim still reads tracker projects",getDocs(collection(jim.db,"projects")));
 await ok("Mike can't read tracker projects",getDocs(collection(mike.db,"projects")),false);
 await ok("Mike can't read people",getDocs(collection(mike.db,"people")),false);

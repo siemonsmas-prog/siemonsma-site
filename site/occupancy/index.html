@@ -5,299 +5,513 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Path to Occupancy · The Planning Pad</title>
 <meta name="robots" content="noindex">
-<meta name="theme-color" content="#0b111b">
+<meta name="theme-color" content="#1d2a47">
 <link rel="icon" type="image/png" href="../assets/favicon-64.png">
 <link rel="apple-touch-icon" href="../assets/icon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100..125,400..900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
 <style>
 /* Private page for the new building team: what has to happen before the building can be used for production,
-   who owns each item, and one place to post questions and delays. Only people on the team list get in. */
+   who owns each item, and one place to post questions and delays. Only people on the team list get in.
+   Names, targets and schedule details live in the database (loaded from a checklist file), never in this code. */
 :root{
-  --night:#0b111b;--panel:#121a27;--panel2:#172133;--line:#223047;--steel:#e9eef6;--mist:#9aa9be;
-  --signal:#3d8bff;--signal-ink:#fff;--ok:#3ecf8e;--late:#ffb547;--bad:#ff6b6b;
-  --display:"Archivo","Arial Black","Helvetica Neue",Arial,sans-serif;
-  --body:"Archivo","Helvetica Neue",Arial,sans-serif;
-  color-scheme:dark;
+  --bg:#f3f4f7;--card:#fff;--line:#dfe3ea;--line2:#eceff4;--ink:#18202f;--muted:#5d6678;--faint:#8a93a3;
+  --navy:#1d2a47;--navy2:#26365a;--navy-ink:#e7ecf5;--red:#c8102e;--red-soft:#fbe9ec;
+  --amber:#9a5a00;--amber-soft:#fdf1da;--amber-line:#f0cf8e;--green:#13795b;--green-soft:#e3f4ed;--blue:#1f5fbf;--blue-soft:#e6eefb;
+  --font:"IBM Plex Sans","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--night);color:var(--steel);font-family:var(--body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
 a{color:inherit}
-:focus-visible{outline:2px solid var(--signal);outline-offset:3px;border-radius:4px}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:4px}
 [hidden]{display:none!important}
-.wrap{max-width:1240px;margin:0 auto;padding-inline:max(16px,env(safe-area-inset-left,0px))}
-.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--night) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
-.top .wrap{display:flex;align-items:center;gap:16px;min-height:60px;padding-block:8px}
-.brand{font-family:var(--display);font-weight:900;font-stretch:125%;font-size:1.3rem;letter-spacing:.01em;text-decoration:none;white-space:nowrap}
-.brand span{color:var(--signal)}
-.who{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--mist);font-size:.88rem;min-width:0}
-.who span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+button{font:inherit}
+svg.i{width:18px;height:18px;flex:none;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 
-h1{margin:26px 0 4px;font-family:var(--display);font-weight:900;font-stretch:118%;font-size:clamp(1.6rem,5.4vw,2.6rem);line-height:1.05;letter-spacing:.01em;text-transform:uppercase}
-h1 small{display:block;font-size:.42em;letter-spacing:.14em;color:var(--signal);margin-bottom:6px}
-.sub{margin:0;color:var(--mist);max-width:70ch}
-h2{margin:0;font-size:.8rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mist)}
+/* header */
+.top{position:sticky;top:0;z-index:10;background:var(--card);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.top .in{display:flex;align-items:center;gap:16px;min-height:64px;padding:6px max(16px,env(safe-area-inset-left,0px))}
+.mark{display:flex;flex-direction:column;line-height:1;text-decoration:none;color:var(--navy)}
+.mark b{font-weight:700;letter-spacing:.06em;font-size:1rem}
+.mark small{font-size:.62rem;letter-spacing:.16em;color:var(--muted);margin-top:3px}
+.mark.right{align-items:flex-end;text-align:right}
+.mark.right b{color:var(--ink);letter-spacing:.02em}
+.top .mid{flex:1;text-align:center;font-size:.7rem;font-weight:600;letter-spacing:.22em;color:var(--faint);text-transform:uppercase}
+.top .who{display:flex;align-items:center;gap:8px;font-size:.82rem;color:var(--muted)}
+.top .who span{max-width:22ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top .logo{display:block;flex:none;line-height:0}
+.top .logo img,.top img.logo{height:46px;width:auto}
+.top .mid{color:var(--navy);display:flex;flex-direction:column;align-items:center;gap:5px}
+.cd{display:inline-flex;align-items:baseline;gap:6px;padding:3px 12px;border-radius:99px;background:var(--navy);color:#fff;letter-spacing:.02em;text-transform:none;font-size:.82rem;font-weight:500;white-space:nowrap}
+.cd b{font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums}
+.cd.soon{background:var(--red)}
+@media (max-width:1100px){.top .who span{display:none}}
+@media (max-width:760px){.top .in{flex-wrap:wrap}.top .mid{order:3;flex-basis:100%;padding-bottom:4px}.top #midLine{display:none}.top .logo img,.top img.logo{height:30px}.top img.bh{margin-left:auto}.top .in{gap:10px}}
+@media (max-width:420px){.top .logo img,.top img.logo{height:26px}.top .who .btn{padding:3px 8px}}
 
-.btn{white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:8px 14px;border-radius:6px;border:1px solid var(--line);background:var(--panel);color:var(--steel);font:inherit;font-size:.9rem;font-weight:600;cursor:pointer;text-decoration:none}
-.btn:hover{border-color:var(--signal)}
-.btn.primary{background:var(--signal);border-color:var(--signal);color:var(--signal-ink)}
-.btn.small{min-height:32px;padding:4px 10px;font-size:.82rem}
-.btn.ghost{background:transparent;border-color:transparent;color:var(--mist)}
-.btn.ghost:hover{color:var(--steel);border-color:var(--line)}
-.btn.danger{color:var(--bad)}
+/* shell */
+.shell{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:calc(100vh - 64px)}
+.side{background:var(--navy);color:var(--navy-ink);padding:18px 12px;position:sticky;top:var(--toph,64px);height:calc(100vh - var(--toph,64px));overflow:auto}
+.side nav{display:grid;gap:4px}
+.side a{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:6px;text-decoration:none;font-size:.9rem;font-weight:500;color:var(--navy-ink);border:1px solid transparent}
+.side a:hover{background:var(--navy2)}
+.side a[aria-current="page"]{background:var(--navy2);border-color:#3d5486;color:#fff}
+.side .count{margin-left:auto;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--red);color:#fff;font-size:.72rem;display:grid;place-items:center}
+.side .foot{margin-top:24px;padding:12px;border-top:1px solid #33456c;font-size:.78rem;color:#aab6cc}
+.side .foot a{display:inline;padding:0;border:0;color:#cfd8e8;text-decoration:underline;font-size:.78rem}
+.main{padding:22px clamp(16px,3vw,32px) 48px;min-width:0;max-width:1180px}
+@media (max-width:860px){
+  .shell{grid-template-columns:1fr}
+  .side{position:sticky;top:var(--toph,64px);z-index:9;height:auto;padding:8px 10px;overflow-x:auto}
+  .side nav{display:flex;gap:4px;width:max-content}
+  .side a{padding:7px 10px;font-size:.84rem;white-space:nowrap}
+  .side .foot{display:none}
+}
+
+/* page head */
+.head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;justify-content:space-between;margin-bottom:16px}
+h1{margin:0;font-size:clamp(1.6rem,4vw,2.3rem);line-height:1.1;font-weight:700;letter-spacing:-.01em;color:var(--navy)}
+.head .sub{margin:4px 0 0;color:var(--muted);font-size:1rem}
+.head .sub b{font-weight:600;color:var(--ink)}
+h2{margin:0;font-size:1.15rem;font-weight:700;color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:.88rem;font-weight:600;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{border-color:var(--navy)}
+.btn.outline{border:1.5px solid var(--navy);color:var(--navy)}
+.btn.primary{background:var(--navy);border-color:var(--navy);color:#fff}
+.btn.primary:hover{background:var(--navy2)}
+.btn.small{min-height:30px;padding:3px 10px;font-size:.8rem}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--line)}
+.btn.danger{color:var(--red)}
 .btn[disabled]{opacity:.55;cursor:default}
-.btn svg{width:16px;height:16px;flex:none}
-label{display:grid;gap:4px;font-size:.84rem;color:var(--mist)}
-input,select,textarea{font:inherit;font-size:.95rem;color:var(--steel);background:var(--night);border:1px solid var(--line);border-radius:6px;padding:9px 11px;min-width:0;width:100%}
-textarea{resize:vertical;min-height:84px}
-input:focus,select:focus,textarea:focus{border-color:var(--signal);outline:none}
-.linkish{background:none;border:0;padding:0;color:var(--mist);font:inherit;font-size:.86rem;text-decoration:underline;cursor:pointer}
-.linkish:hover{color:var(--steel)}
+.linkish{background:none;border:0;padding:0;color:var(--blue);font-size:.84rem;cursor:pointer;text-decoration:underline}
+label{display:grid;gap:4px;font-size:.82rem;font-weight:500;color:var(--muted)}
+input,select,textarea{font:inherit;font-size:.92rem;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px 10px;width:100%;min-width:0}
+textarea{resize:vertical;min-height:80px}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 3px var(--blue-soft)}
 
-/* sign-in and gate screens */
-.card{max-width:420px;margin:40px auto;padding:24px;border:1px solid var(--line);border-radius:10px;background:var(--panel);display:grid;gap:12px}
-.card h2{font-family:var(--display);font-weight:800;font-stretch:110%;font-size:1.25rem;letter-spacing:.04em;color:var(--steel)}
-.card p{margin:0;color:var(--mist);font-size:.93rem}
-.card .row{display:flex;gap:8px;flex-wrap:wrap}
-.note{font-size:.9rem;min-height:1.2em;color:var(--late)}
-.note.good{color:var(--ok)}
+/* overview */
+.banner{display:flex;align-items:center;gap:20px;padding:16px 22px;border-radius:8px;background:var(--navy);color:#fff;border-left:6px solid var(--red);margin-bottom:16px;overflow:hidden;position:relative}
+.banner b{display:block;font-size:clamp(1.1rem,2.6vw,1.45rem);font-weight:700;line-height:1.2}
+.banner span{color:#c9d3e6;font-size:.95rem}
+.banner::after{content:"";position:absolute;right:-30px;top:0;bottom:0;width:200px;background:repeating-linear-gradient(115deg,transparent 0 22px,rgba(255,255,255,.06) 22px 26px)}
+.tiles{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px;align-items:stretch}
+.tile{flex:1 1 200px;display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--card)}
+.tile .ic{width:40px;height:40px;border-radius:8px;display:grid;place-items:center;background:var(--red-soft);color:var(--red);flex:none}
+.tile .ic svg{width:24px;height:24px}
+.tile small{display:block;font-size:.7rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tile b{display:block;font-size:1.25rem;font-weight:700;color:var(--red);line-height:1.2}
+.tile em{display:block;font-style:normal;font-size:.78rem;color:var(--muted)}
+.tile.done .ic{background:var(--green-soft);color:var(--green)}
+.tile.done b{color:var(--green)}
+.baseline{flex:0 1 130px;align-self:center;font-size:.8rem;color:var(--muted);line-height:1.35}
+.row2{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px;margin-bottom:16px}
+@media (max-width:900px){.row2{grid-template-columns:1fr}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px 18px;min-width:0}
+.card-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.card-head h2{margin-right:auto}
+.card-head .note{font-size:.78rem;color:var(--muted);font-style:italic}
+.badge{padding:2px 10px;border-radius:99px;border:1px solid var(--red);color:var(--red);font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.badge.ok{border-color:var(--green);color:var(--green)}
+.watch{list-style:none;margin:0;padding:0}
+.watch li{display:flex;align-items:center;gap:12px;padding:10px 2px;border-top:1px solid var(--line2)}
+.watch li:first-child{border-top:0}
+.watch .wi{color:var(--muted)}
+.watch .wn{flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;font-weight:600;color:var(--ink);cursor:pointer}
+.watch .wn:hover{text-decoration:underline}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:6px;border:1px solid var(--line);background:#f6f7f9;color:var(--muted);font-size:.78rem;font-weight:500;white-space:nowrap}
+.chip svg{width:14px;height:14px}
+.chip.prog{background:var(--amber-soft);border-color:var(--amber-line);color:var(--amber)}
+.chip.block,.chip.late{background:var(--red-soft);border-color:#f1b8c2;color:var(--red)}
+.chip.done{background:var(--green-soft);border-color:#a9dcc8;color:var(--green)}
+.confirm{list-style:none;margin:0;padding:0}
+.confirm li{display:flex;align-items:center;gap:12px;padding:9px 2px;border-top:1px solid var(--line2)}
+.confirm li:first-child{border-top:0}
+.confirm .lbl{flex:1;min-width:0;background:none;border:0;padding:0;text-align:left;color:var(--ink);cursor:pointer}
+.confirm .lbl:hover{text-decoration:underline}
+.confirm .done .lbl{color:var(--muted);text-decoration:line-through}
+.box{width:22px;height:22px;border-radius:4px;border:1.5px solid #9aa3b2;background:#fff;display:grid;place-items:center;cursor:pointer;padding:0;color:#fff;flex:none}
+.box svg{width:14px;height:14px;opacity:0;stroke-width:3}
+.done .box,.box[aria-pressed="true"]{background:var(--green);border-color:var(--green)}
+.done .box svg,.box[aria-pressed="true"] svg{opacity:1}
+.people{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.people li{display:flex;gap:12px;align-items:center;min-width:0}
+.av{width:38px;height:38px;border-radius:99px;border:1.5px solid var(--line);display:grid;place-items:center;color:var(--muted);flex:none;overflow:hidden;background:#fff}
+.av img{width:100%;height:100%;object-fit:cover}
+.people .av{width:46px;height:46px}
+.people div{min-width:0}
+.people b{display:block;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.people small{display:block;color:var(--muted);font-size:.8rem;line-height:1.3}
+.fine{margin:14px 0 0;text-align:right;font-size:.78rem;color:var(--faint)}
+.setup{border:1.5px dashed var(--navy);background:var(--blue-soft);margin-bottom:16px}
+.setup p{margin:0 0 10px;color:var(--ink)}
+.setup .acts{display:flex;gap:8px;flex-wrap:wrap}
 
-/* summary tiles */
-.hero{display:flex;gap:16px 24px;align-items:flex-end;flex-wrap:wrap;justify-content:space-between}
-.actions{display:flex;gap:8px;flex-wrap:wrap}
-.tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:20px 0 18px}
-.tile{padding:14px 16px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;gap:2px;text-align:left;font:inherit;color:inherit}
-button.tile{cursor:pointer}
-button.tile:hover{border-color:var(--signal)}
-.tile b{font-family:var(--display);font-weight:900;font-stretch:115%;font-size:1.9rem;line-height:1.05;font-variant-numeric:tabular-nums}
-.tile span{color:var(--mist);font-size:.84rem}
-.tile.warn b{color:var(--late)}
-.tile.bad b{color:var(--bad)}
-.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:6px}
-.bar i{display:block;height:100%;background:var(--ok);border-radius:99px}
-@media (max-width:720px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.tile b{font-size:1.5rem}}
-
-/* two panes side by side on wide screens, tabs on narrow ones */
-.tabs{display:none;gap:6px;margin-bottom:12px}
-.tabs button{flex:1;min-height:42px;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--mist);font:inherit;font-weight:700;cursor:pointer}
-.tabs button[aria-selected="true"]{border-color:var(--signal);color:var(--steel);background:color-mix(in srgb,var(--signal) 14%,transparent)}
-.dot{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;margin-left:6px;border-radius:99px;background:var(--signal);color:#fff;font-size:.72rem}
-.cols{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:20px;align-items:start;margin-bottom:48px}
-.pane{border:1px solid var(--line);border-radius:10px;background:color-mix(in srgb,var(--panel) 60%,var(--night));padding:16px}
-.pane-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.pane-head h2{margin-right:auto}
-@media (max-width:1000px){.tabs{display:flex}.cols{grid-template-columns:1fr}.cols>[data-pane]:not(.on){display:none}}
-@media (min-width:1001px){#msgPane{position:sticky;top:76px;max-height:calc(100vh - 92px);overflow:auto}}
-
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.chip{min-height:32px;padding:4px 12px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mist);font:inherit;font-size:.84rem;cursor:pointer}
-.chip[aria-pressed="true"]{border-color:var(--signal);color:var(--steel);background:color-mix(in srgb,var(--signal) 14%,transparent)}
-.chips select{width:auto;min-height:32px;padding:3px 8px;font-size:.84rem;border-radius:999px}
-
-/* checklist */
-.group{margin:0 0 16px}
-.group h3{margin:0 0 8px;display:flex;justify-content:space-between;gap:10px;font-size:.92rem;font-weight:800;letter-spacing:.02em}
-.group h3 span{color:var(--mist);font-weight:600;font-size:.82rem}
+/* lists */
+.filters{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.fchip{min-height:32px;padding:4px 12px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--muted);font-size:.82rem;font-weight:500;cursor:pointer}
+.fchip[aria-pressed="true"]{border-color:var(--navy);background:var(--navy);color:#fff}
+.filters select{width:auto;min-height:32px;padding:3px 8px;font-size:.82rem;border-radius:99px}
+.group{margin:0 0 18px}
+.group h3{margin:0 0 8px;display:flex;justify-content:space-between;gap:10px;font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.group h3 span{letter-spacing:0;text-transform:none;font-weight:500}
 .items{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-left:3px solid var(--line);border-radius:8px;background:var(--panel)}
-.item.s-done{border-left-color:var(--ok)}
-.item.s-prog{border-left-color:var(--signal)}
-.item.s-block{border-left-color:var(--bad)}
-.item.late{border-left-color:var(--late)}
+.item{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--line);border-radius:6px;background:var(--card)}
+.item.s-done{border-left-color:var(--green)}
+.item.s-prog{border-left-color:#e0a33a}
+.item.s-block,.item.late{border-left-color:var(--red)}
 .item.flash{animation:fl 1.6s ease-out}
-@keyframes fl{from{background:color-mix(in srgb,var(--signal) 30%,var(--panel))}}
-.check{width:26px;height:26px;margin-top:1px;border-radius:6px;border:2px solid var(--mist);background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--night);padding:0}
-.check svg{width:16px;height:16px;opacity:0}
-.s-done .check{background:var(--ok);border-color:var(--ok)}
-.s-done .check svg{opacity:1}
-.item .body{min-width:0}
-.item .title{background:none;border:0;padding:0;font:inherit;font-weight:650;color:var(--steel);text-align:left;cursor:pointer}
-.item .title:hover{text-decoration:underline}
-.s-done .title{color:var(--mist);text-decoration:line-through}
-.item .meta{display:flex;flex-wrap:wrap;gap:2px 12px;color:var(--mist);font-size:.82rem}
-.item .meta .lt{color:var(--late);font-weight:700}
-.item .itemnote{margin:4px 0 0;color:var(--mist);font-size:.86rem;white-space:pre-wrap}
-.item .side{display:grid;gap:6px;justify-items:end}
-.st{width:auto;min-height:30px;padding:2px 26px 2px 10px;font-size:.8rem;font-weight:700;border-radius:99px;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 13px) 50%,calc(100% - 9px) 50%;background-size:4px 4px;background-repeat:no-repeat;cursor:pointer}
-.st.s-idle{color:var(--mist)}
-.st.s-prog{color:var(--signal);border-color:color-mix(in srgb,var(--signal) 50%,var(--line))}
-.st.s-done{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 50%,var(--line))}
-.st.s-block{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 50%,var(--line))}
-.talk{background:none;border:0;padding:0;color:var(--mist);font:inherit;font-size:.8rem;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
-.talk:hover{color:var(--steel)}
+@keyframes fl{from{background:var(--blue-soft)}}
+.item .box{margin-top:1px}
+.item .t{background:none;border:0;padding:0;font-weight:600;color:var(--ink);text-align:left;cursor:pointer}
+.item .t:hover{text-decoration:underline}
+.s-done .t{color:var(--muted);text-decoration:line-through}
+.item .meta{display:flex;flex-wrap:wrap;gap:2px 12px;color:var(--muted);font-size:.8rem}
+.item .meta .lt{color:var(--red);font-weight:600}
+.item .meta .pin{color:var(--navy);font-weight:600}
+.item .inote{margin:4px 0 0;color:var(--muted);font-size:.84rem;white-space:pre-wrap}
+.item .side2{display:grid;gap:6px;justify-items:end}
+.st{width:auto;min-height:30px;padding:2px 26px 2px 10px;font-size:.78rem;font-weight:600;border-radius:99px;appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(135deg,currentColor 50%,transparent 50%);background-position:calc(100% - 13px) 50%,calc(100% - 9px) 50%;background-size:4px 4px;background-repeat:no-repeat;cursor:pointer}
+.st.s-idle{color:var(--muted)}
+.st.s-prog{color:var(--amber);background-color:var(--amber-soft);border-color:var(--amber-line)}
+.st.s-done{color:var(--green);background-color:var(--green-soft);border-color:#a9dcc8}
+.st.s-block{color:var(--red);background-color:var(--red-soft);border-color:#f1b8c2}
+.talk{background:none;border:0;padding:0;color:var(--muted);font-size:.78rem;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+.talk:hover{color:var(--ink)}
 .talk svg{width:14px;height:14px}
-@media (max-width:560px){.item{grid-template-columns:auto minmax(0,1fr)}.item .side{grid-column:2;justify-items:start;grid-auto-flow:column;align-items:center}}
-.empty{padding:24px 16px;border:1px dashed var(--line);border-radius:8px;text-align:center;color:var(--mist)}
-.empty .btn{margin-top:12px}
+@media (max-width:560px){.item{grid-template-columns:auto minmax(0,1fr)}.item .side2{grid-column:2;justify-items:start;grid-auto-flow:column;align-items:center}}
+/* sign-offs table */
+.tablebar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tablebar input{flex:1 1 240px;width:auto}
+.tablebar select{flex:0 0 auto;width:auto}
+.so{width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.so th{text-align:left;font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);background:#f6f7f9;padding:10px 14px;border-bottom:1px solid var(--line)}
+.so td{padding:12px 14px;border-top:1px solid var(--line2);vertical-align:middle}
+.so tr:first-child td{border-top:0}
+.so .ap b{display:block;font-weight:600}
+.so .ap small{display:block;color:var(--muted);font-size:.8rem}
+.so select{width:auto;min-width:170px}
+.so .rec small{display:block;color:var(--muted);font-size:.78rem;margin-top:4px}
+.so .rec small.has{color:var(--ink)}
+.so tr.ok td:first-child{box-shadow:inset 4px 0 var(--green)}
+.so tr.fix td:first-child{box-shadow:inset 4px 0 var(--red)}
+.so tr.sched td:first-child{box-shadow:inset 4px 0 #e0a33a}
+.so tr.na{opacity:.6}
+.sosum{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 12px;font-size:.86rem;color:var(--muted)}
+.sosum b{color:var(--ink)}
+@media (max-width:760px){
+  .so,.so tbody,.so tr,.so td{display:block;width:100%}
+  .so thead{display:none}
+  .so tr{border-top:1px solid var(--line);padding:6px 0}
+  .so tr:first-child{border-top:0}
+  .so td{border:0;padding:6px 14px}
+  .so td[data-l]::before{content:attr(data-l);display:block;font-size:.66rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .so select{width:100%}
+}
+.empty{padding:22px 16px;border:1px dashed var(--line);border-radius:8px;text-align:center;color:var(--muted);background:var(--card)}
 
 /* messages */
-.compose{display:grid;gap:8px;margin-bottom:14px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+.compose{display:grid;gap:8px;margin-bottom:14px}
 .kinds{display:flex;gap:6px;flex-wrap:wrap}
-.kinds .chip{flex:1}
-.compose .row{display:flex;gap:8px;align-items:center}
-.compose .row select{flex:1}
-.about{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;border-radius:6px;background:color-mix(in srgb,var(--signal) 12%,transparent);font-size:.86rem}
+.kinds .fchip{flex:1}
+.compose .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.hint{margin:0;color:var(--muted);font-size:.8rem}
+.about{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:8px 10px;border-radius:6px;background:var(--blue-soft);font-size:.84rem}
 .about b{flex:1;min-width:0}
 .msgs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.m{padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;gap:4px}
-.m.k-question{border-left:3px solid var(--signal)}
-.m.k-delay{border-left:3px solid var(--late)}
-.m.done{opacity:.72}
-.m .hd{display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline;font-size:.82rem;color:var(--mist)}
-.m .hd b{color:var(--steel);font-size:.9rem}
-.m .tag{padding:0 8px;border-radius:99px;border:1px solid var(--line);font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.k-question .tag{color:var(--signal);border-color:color-mix(in srgb,var(--signal) 50%,var(--line))}
-.k-delay .tag{color:var(--late);border-color:color-mix(in srgb,var(--late) 50%,var(--line))}
-.m .new{color:var(--signal);font-weight:700}
+.m{padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card);display:grid;gap:4px}
+.m.k-question{border-left:4px solid var(--blue)}
+.m.k-delay{border-left:4px solid #e0a33a}
+.m.resolved{opacity:.7}
+.m .hd{display:flex;gap:4px 8px;flex-wrap:wrap;align-items:baseline;font-size:.8rem;color:var(--muted)}
+.m .hd b{color:var(--ink);font-size:.88rem}
+.m .tag{padding:0 8px;border-radius:99px;font-size:.68rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.k-question .tag{background:var(--blue-soft);color:var(--blue)}
+.k-delay .tag{background:var(--amber-soft);color:var(--amber)}
+.m .new{color:var(--red);font-weight:700}
 .m p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
-.m .ref{background:none;border:0;padding:0;font:inherit;font-size:.82rem;color:var(--mist);text-align:left;cursor:pointer;text-decoration:underline}
-.m .foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--mist)}
-.m .foot .ok{color:var(--ok);font-weight:700}
-.m.k-change{padding:6px 12px;background:transparent;border-style:dashed;font-size:.84rem;color:var(--mist)}
-.m.k-change p{color:var(--mist)}
+.m .ref{background:none;border:0;padding:0;font-size:.8rem;color:var(--muted);text-align:left;cursor:pointer;text-decoration:underline}
+.m .foot{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.8rem;color:var(--muted)}
+.m .foot .ok{color:var(--green);font-weight:600}
+.m.k-change{padding:6px 12px;background:transparent;border-style:dashed;font-size:.82rem}
+.m.k-change p{color:var(--muted)}
 
-/* dialogs */
-dialog{width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);padding:0;border:1px solid var(--line);border-radius:12px;background:var(--panel);color:var(--steel)}
-dialog::backdrop{background:rgba(3,6,12,.7)}
-dialog form,dialog .dbody{padding:20px;display:grid;gap:12px}
-dialog h2{color:var(--steel);font-size:.95rem}
-dialog .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+/* docs and team */
+.docs{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.docs li{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+.docs li div{flex:1;min-width:0;display:grid}
+.docs a{font-weight:600;text-decoration:none;color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.docs a:hover{text-decoration:underline}
+.docs small{color:var(--muted);font-size:.78rem}
+.form2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:560px){.form2{grid-template-columns:1fr}}
+.tlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.tlist li{display:flex;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+.tlist li div{flex:1;min-width:0;display:grid}
+.tlist small{color:var(--muted);overflow:hidden;text-overflow:ellipsis}
+.tlist .wait{border-color:var(--amber-line);background:var(--amber-soft)}
+.stack{display:grid;gap:16px}
+
+/* sign-in */
+.gate{max-width:420px;margin:48px auto;padding:24px;display:grid;gap:12px}
+.gate h2{font-size:1.4rem;color:var(--navy)}
+.gate p{margin:0;color:var(--muted)}
+.gate .row{display:flex;gap:8px;flex-wrap:wrap}
+.anote{font-size:.88rem;min-height:1.2em;color:var(--red)}
+.anote.good{color:var(--green)}
+
+dialog{width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 24px);padding:0;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink)}
+dialog::backdrop{background:rgba(16,24,40,.5)}
+dialog form{padding:20px;display:grid;gap:12px}
 dialog .foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding-top:4px}
 dialog .foot .left{margin-right:auto}
-@media (max-width:480px){dialog .row2{grid-template-columns:1fr}}
-.team{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.team li{display:flex;gap:10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:8px}
-.team li div{flex:1;min-width:0;display:grid}
-.team small{color:var(--mist);overflow:hidden;text-overflow:ellipsis}
-.wait{border-color:color-mix(in srgb,var(--late) 50%,var(--line))!important}
-.hint{margin:0;color:var(--mist);font-size:.84rem}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:20;padding:10px 16px;border-radius:8px;background:var(--steel);color:var(--night);font-weight:600;font-size:.9rem;box-shadow:0 8px 30px rgba(0,0,0,.4)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;padding:10px 16px;border-radius:8px;background:var(--navy);color:#fff;font-weight:600;font-size:.88rem;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 @media (prefers-reduced-motion:reduce){.item.flash{animation:none}}
 </style>
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></symbol>
-  <symbol id="i-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
-  <symbol id="i-out" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
-  <symbol id="i-team" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></symbol>
-  <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></symbol>
+  <symbol id="i-stamp" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2"/><path d="M8 12l3 3 5-6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9h-5v-6H9v6H4z"/></symbol>
+  <symbol id="i-factory" viewBox="0 0 24 24"><path d="M3 21V10l5 3V10l5 3V6h3l1-3h2v18zM7 17h2M12 17h2M17 17h1"/></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3c1 4 5 5.5 5 10a5 5 0 0 1-10 0c0-2.5 1.5-3.5 2-5 1 1.5 1.5 2.5 2.5 3 0-3-1-5.5.5-8z"/></symbol>
+  <symbol id="i-clipboard" viewBox="0 0 24 24"><rect x="5" y="4.5" width="14" height="16.5" rx="2"/><path d="M9 4.5V3h6v1.5M8.5 11l2 2 4-4M8.5 17h7"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6"/></symbol>
+  <symbol id="i-team" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-door" viewBox="0 0 24 24"><path d="M3 21V9l9-5 9 5v12M6 21v-9h12v9M6 15h12M6 18h12"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5h.01"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-out" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
 </svg>
-<header class="top"><div class="wrap">
-  <a class="brand" href="../">THE PLANNING <span>PAD</span></a>
+<header class="top"><div class="in">
+  <a class="logo" href="../" title="The Planning Pad home"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAVYAAABGCAYAAACXDrysAAAuEElEQVR4nO2de3wU5b3/P8/s7C3ZXJZcSAIJsJsLkECADQkyUcJNCYqKFqxUsWCLrVSxpT3aanvwFHv0HDkVK1asYgVFBSUoWO4SIA8EkhACSWBzA7KQK7kv2dnd2Z3fH5uEhGySCYL4q/N+vfiDmfk+88zs5Dvfeb434na7ISMjIyNz82Bu9wRkZGRk/t1gb/cEukMpZdsR5Fz1xg44HIIkGaWKxaJ5k/GrxWmkYwz9+arqxvLzFwaUncZNhRKiH8dxVppfYXp9/d7cSzXNgChKOveoqGCs+OmMxZzJuEmSgIyMzA+C75VihTp86YcfZ+JKk1WySKDCBxMTouYDHsUMln3UXFIKweXqV06r0UDJKtK4lBQrAJw5ezm3vLIedokKnSEEP743CVCrdkqerIyMzA+C781SAKUWTU1Dy/oC82XJMhq1Ekt+NBWwGT3Kzccn5MzZc+sGUqoAMOOuOwFBOA4ANP/8fZ/uyIHDKU2pAsBoYxhCh/gt5BIimyQLycjI/CD4/lisKvuKj788IXkJAAD8fTUYFzcslTOJAqVUA4VypeXSwIrZ398PRMHEc1M4HgCO5ZbvuNJslboCAFbB4BeL7gJxunZJnqyMjMwPhu+FYqWFFn3F5YZXS87XSpbx0arwy8emAbzxOCACGk1ITk7eSilRDnfdMaUIDkcFANDc0mXb9pyEIAxs5XYyYWwkdD7qdC7JKH3NQkZG5gfD90Kxgre/+MmOHDid0pQbIUBQoA4jIoOSuImiQM1mHQTXhvorVwaUDQ0NAVg2nUtJ4QFgHzWvb7Hykq1VtYrFL38yDfATsqRJyMjI/NC47YqV5pvDC87VrLx4qVGyjK9WjeeWzgTajQWACFxpCz2ad2KWFGs1eeKEreD5agCgeeVvfH3wzKCs1eTEUSAuVyoXFydbqzIyMl657YoVIvv6F7vzB/Tid8IQgoihgdDrtPHcZFGghYV6sK5jTS0tA8qOGhEFCMJSjuMEANi259SKqzaH5Kn6aFRY8qOpReCVeZKFZGRkfnDc1qgAmltqOJpXsai6fmCl2IlOp8FvfjYLcESXAABstvDDR4+FihK+5ePjRq8GwAMAzSnf982xc3C5pGee3ZkcAxDmSY6L5CULycjI/OC4vRYrYd7fceC0ZOXGMAwMw4Oh0irjuPGiQAsKQngbX9RmvTqg7Pj4eMDlfKXTWt305fFZvN0pear+Og0emWvajBBFgWQhGRmZHyS3TbHSnPKxe+nZtCuN0pcqA/w0eHbJ9Eq0GSoAEeD52KMncjCQtcooGERFDlvKJSd7rNW88vZj+RVwuyV6rADMnDoGUChe4yJla1VGRqZ/bt9SAMGufVnFcEksAsMqGMQZwgCRpHKcKFBKw680NWXZbLb+T0MIpiQlAU7nJgCglLDvbD6iHUwyQLBeh3kzxq9G++ViyUIyMjI/WG6LxUpPlqVs21sQ1dzav1LsTqC/D5Y9kprBmQwWSikLlSrl1OnCAa1VpVKJIQH+6dyUKQIAtIvFzlPFlkFZq+lpCYBINnUuI8jIyMj0x22xWAUB2Vm5ZZKtVSWrwISxkYBCtRwAoFZHXay0ZNjt9n7lGIZgeioHuFz7AU/a7Dubj8A5iPCqiKGBmH5H7HI4qiokC8nIyPyg+c4VK80vn/PpjhNotUq3VocE+mLRA8lruImR1ZRSFk73NHNpWb/WKgGg0WigJEjstDRr2q7YzBU1A1q53Zl/90TArdotW6syMjJS+c4Va0uLbVfumYuSP8VVKhZTJxkBhfhaxwbD2bKSDU5H//GnDMNgxp2pFQCKAYBSi/79LVRyvCwAGKKCYUqIXAx7ZaVkIRkZmR8836lipTkVD372dR6s7f1/wncndIgf5k1PWMElGusppRqI4uOVly6jP7VMCIGfvx8gCGkcxwmUEras5nLjhcsNklNXCSF45N4kgBf2y9aqjIzMYPjOnFeUUraqRZtRaL4s2VrVqpWYlToGcPCeQtJKZezJ02decjr7jz9VMAxSU5K3cikpFgCAujLqn9uODSoZYGx0OGKigufDEVuPftW4jIyMTE++O4tVE/bo57tPYjAppOFDA3FXUsxTHJfQRCnVQRSfr6ur71eGEILgkCBAEJYDALVYNCeLystr6qRndzGE4LEHUwAHQzlOlK1VGRmZQfGdWKyUWjTmqtqNJedrJTuOfLQq3D9zPKBRbgUAsGz8iZOnFglC/3qOVSiQNGHCGi452aOB65ymz77OgXsQDqtJCVEYGuSXDnt0k2ytysjIDJbvZilA7Vj61f4C2HhpKaQEwMhhQRg/ethiLiGyiVKqB8t+2NjYfwUshmFgGDkCcDpfAQBKzbpDBeezBtPqRaFg8NOH7wDstuOytSojI3Mj3HLFSgst+tzCi+vOX2qQbK36+qrx0N0TAF7IAAAoFCnHcvLiBvLosyyLGKNhBZeS0kQpYaFh53+5v0CywwoApk4ywEerTuVMBrnlioyMzA1x6y1Wu+PZ3YeLYHdItFYJQezIoTBEBs/jJkd3mpqaFNMkuLopVkIIWIWi7toGAIRY4HRuAAAEVPrt3FW4saWtXfJUlawCSx6eagPvlAutyMjI3DC3VLHSfHN4ZnbFqss1zZKtRn+dxhPm5FDv79rocu1mdLrQHp42q1WAS7heWwscx/GUUhaasGf3ZRUNylqdfkccoCB3cpxcxFpGRubGubUWq1u56mB2ieQGgQxDkBAbgZAgXRpnulZFiuM4Hh11VCXhExXy2Y6jq9quSo+X1aqV+PG9SdnwcZolC8nIyMh44ZYpVppbath5sGhZ7ZVWyX51X60aD8xKBOAS6MmylBs6sciwEMVXj+SUDUpszrR4QIkn5ZYrMjIy35ZbZ7ESxVtHT1ZgMOX5BJcbH315Aj5a5Q036hNFoK6hDe2DiJf189Vg3qzErbAqv3WhFZpX8RYgpoIonuImjTzu9ZiTFQ9CFNcBzLucadTLXo+hhIX2vAmi6wiACvCqCX11LvA46srMADH0M7U2ECyGTbmb4yJ5eryCg0LcDIId4G1/5LgEr866rBNlC4iCrIeId2GPfql7pATNKX8RDP4TwMvga17rK0ON5lVwgLgPINo+ZyeKBXCJT3Ep0V33jFKLBmrHPhCS2ofULkD8BLxq62C7OtATpY+CYV4HyMtckuHda+ckLNSlrwIkFnA/xyXFeH0maG75HBCyBUR8gZtkfJsWlI+FgB0D/AYARCcAypmM06nFokGdYx1AlvYvIlZBiQlcorHeM0eLBirH02CwCiB+/ZznFYBs4EwGS9e8C8pDIJAPAaT3c8Im0SU+RZwxGX1FxtCC8hA4sQ4Ec0DIS9wkw5td+6hFD42jHCD6fq8LAIiYBZuQznFxVppb/jEIZgEkqfucAU+NEbjIajAw9W2piU0QxZVQkp2d9+raXMnrgNgEjeplLiGy17PuedaciwHxRTDiQm5S9+eQslAOGwvGtR6ETOl9DQBcYiaA5dxkYzFwixQrzSkf+9muvPSGQYQ5AYCNd+D0uUu3Ykr98sDsRMDteoHjDN+6iPU3x8zL885cwO+W3f04AK+KFaK4ZdXanconHrpjVV+KFaoKQ37hxexPduTAz1cT98dfzV0K4G2vx0ZVsq+/ss9QXd+CoEBfEEKuOx3QarX5DQsLzHjmsbR5AHaCEZve/vhQlMMpLH9uyczjADZdPyylhL1Q37hl81cn8OLT6RxS0RXWm5VXtuC9rXS1uaIW8THhq5cs4IoAbPc6P7f46H/8zzatgiHw9+utW10uN9qu8ompSTHZEGKU1/6YW7Sbtp9OLTh7CQH+PeXcbhEOh5AeGOCTPi05ZiNUjvjOh1oKArB59Zs78fRj09YDePfanko290zlyq8OnMaSBVPnQVGRxE009O5xRsh//uH17X5/fGbuOgBvwy0a3vn4iKG+85kXRTgFN2x2J3w0SrCsokMMyknxUWmcyQi0QJuZXbL064NnMCTQt8+5+mhVESsWz9ID8CgLjePpNe/tX2Nt58Ew3nN8BMGlVKuVq/7wizlPAxh67cYpwjdsPZJedqEOWq0KrKKnvMvlht0h6CPDh2xZ9iizCDB8cv3YlFIW6qH3vbZ+74K2q3bclRyzFr7ODV1fe2pe/9cNmXprO991LxxOF9p5B/x8NVAwxNNqGUDsyNDUR+6f6gfAuudI8aKjJ8vx8nPzDACuvQxySw3b9p7edarYAoWCAcOQ66cEAHA4BX1YsP+G5Y+lrQXwXNcOuyt856HixUWlVfjtz2avoPnmCG5iXHUPYZ3Dr762bf3fNx/Gn565dw66/+2qQ6OO5JoL9h4phkrlRWWKIgSXO23OXfFF3GQjAW6Vxcpg28nCi4Mqz3e7CArUYcbU0WsQoqy6GePxvANtV+2AKPb5tnYKLmVrmw023rtV7XG+ha/cuuskZqeOwf6j5/DZv/LWQaP6xNvbFpVAS5sNTS3tWPP7H1V5tnRHVK776JApv9gCELKMUrqb47jiy3XN+N9/7IW5onYjQDKvtxKgKXt+U0Y2RgwLAghe4kSPwqOUsleu6rZcrmnGw/dMxFcHTqOh0ZpBKVV6tVoZRDS1tmPy+JFY9giXB5AeTkcR4pTf/uULZJ+qwDyu2w6dlm27yqPVasPrv3+4rseYBPqGpqvKPYeLsGn7cdh4RxGI29iXhXk9druA1jab1/X/dt6BuoY2rN98GAvvTcqFW0zjTMZDnfspISxEMaK5tf1abLZLLP7FojvzABLZMT+/A/ScNmPvKSx/bBpGDgvqNn+RAgBaPOfi7U78/hdzsvucLCFNULNdFlh1Xcuai1UN+N3P70ZkmL7Om8il2ubQNz44gHMVtaGw17Bdv4sI7VWbA/5+WvzHsrvBEHL9eaM+2n484tTZS4AoLgDQS7FCFWE4ml+2obGlHenT4vHVgdO4O3WMGcAwAIBG0/TrJdPN1yxWUfnNsRL9R18ex+9+fjfCQvybIKLzGTgOn/Y2ALhqc6ClzQaI6PkWFcnYU8UWjBwehMUPTQHLMF6vmeaVh2bsO4XWq/wKdFesIqNttzlw3tKA1et24enHplXRnPNx3ORRJV3HuFWs3SGgtY0HgJAeAxNF+InTF2CICsaSh6f2PjeBNmPvKb/M7BL89uezAdwCxUrzK0wbth6NaxpEEevbyYK5kwDiXMNFfntr9aahDBm750jRMo2axWxu9NKoiCEb3tl8GI/cm/QxgLn9yorM9B4PTAdf7DklAhaAXHtoh4XpUw1RIVmf7zqJF5enL6CUvNlpLVJK2WKLuNruFPDEQ3fkga+mgNEjqA5f+v4/dyNx9HDcMcGwsrisZs17W7Lw/FN3rwTwWl9TC9BpAHvtlOuVL82r4MJDA7IaW7yHxhFCwCUZh3rbNyTQb1arld+3dddJTEuOeRrAb/u9PxLRB/hgxpQ4fLnvFJpbbZlwk/ncZMP2vo7vUOhJnf+n1KwbFRncxrIMRg4LKuKSjAl9ySoUDLgk4x1S59Zq5SG6RUSG6zM5k3G6t2NofsWy3zw5a31ESOBG2Kt77ffzVYOIWMhNNm7tIUfN4WNjwqvyiiqB6xUMOj+Z3U/vyyrGovuTkTg6YmnOmYsb/rntWAQIieRMBkvHy390d5kRw4JsABAWGrgZJsMTnS9pSRCEuFxuhAb5gYUiiUvy8gUB4HJdswgRfRZ5MkQFY1RkMN7amInHHkwxgxW9f430QmQFwYVgvc7rc0gpZeffPfGyPc0Z2rntpitW0SXmFpVWQfj/wFoNDw1A8oRRK9BeXQ/E3bRx23kHKquaFgnHSxd5219oroKrj0I0ngeX3fDNUTN+9kgqYFd/EmcYKvhqVRvXbcpMB6MM5yZG9v5L6QdKKeut8A1nMlBrux1//L8vkXemco0pwb0d6LD41GGrP/t6JyaMiQQY9/JOZUgLLfqz5dXrbbwD8++ZkAm+5s0nF0599ff/u115rrz2Vehc6wbrABRFl5a3C/CsM2QB4AaQuEZq0qj9oujCMy9/hharfSWl5lU3I1xOpVRg9p1j9kePDJn1wRfH0NzangEWT3ETDe8OLD04BMGNQ8dLe/xALMu0QRcYwcUFSboWSi16UWOfRQgTDgBwiWxEsP8KuIXMQU1GpfJzOjv+dgl6Kz8fZ/zXBwpXuN0iEscOXwGi3L0gfRL+uuEAfjSHr4RnxfG2IULsMws90E+LBemmdUOD/JdvysjGvJnje32NeIcICoZBQ/NV0Lzy8l67NWEAxAq1WnF/56abqljp8Qpu3eZMtFq/P8Zffzz2QAqgED+52WUBed6J9Z8egVaj8rr/aru97+4JGqfp0x05piEBPogZHjyFS4nkab5l/9OPpeG/39kNl5OvQj8P75G8EvOxgp4RES6XiPziSqiULABSgW6LpTqNJm7CmOHmnQdPw5QQtYxS+hIAnLnofl4URSyYO2k/bDV5QLRnMLvj6S3/yvPUyBXdT3IcJ9C88tnj4oZlfrIjBy8b7lsH4Alvcys5X4tjZ4c4j53d12N7S5sNl2qaEBk+sK/DGwzDpLIKJuvipSsYHx/mB+BbK1ZRBCAib1SEfuWzT8woeGvjQbS22dbDLYaDr3kF6rBve4qOEwF2hxOvrt/TY7Pe38dv+ZJpWkCaYoXSFrlhS/aWznZHbrcIweXCwnuTYAwN7nVPLtc24+Dxki3Zp8/3GMbhcOGbY2Zo1UpA7OkjoGazDi72rWP5FVjyo6mAyfg2soCRUfZ5oyKDdrz7aRZ0alVKdwfk9wlCCCAIn9w1JXqnn06za9uek2hubc+E2z0frKbvOYuu6gljI3Hg6DmsWrvTq3PS5XYb7pwck81Nir65a6yUEvaqm88qu1g/qPJ8t4uRw4IwOnroQlhrmro+cW8SWo0Szzw+HWGh/m3e9heWVPn949PegQ+00KJ3ud1Zx/IrcO/0cQDLvE/zygUAGBrsD7fbjVfe3g0FYWO9fe4DwLnyGjAMgcstIq/wIlwuNyaOjcTY6HBMHj8ScJM13T293ORRJSDutt/+9+d+mcdLnk9Ljt0IBRZ/vmsnkhNHAi7Xyi5r1ZPwsbqhyYrEMcMBwmyjeZ4XeEriSNC8chw6UbYYdvJbjjP2KkPWauVRXOoxtpta2nG2vAY6HzUSYiMwmxuN2XeOBcfFD/4lJ4or3W4RQ/Q6oN3n5r3VGYBLij1Nc0uNLz6dXv7q+j3424cHVz2zeHo8CNHclHMQQK1W4qXl6T2fFRGVsKq8Pj9eUbBND8+ZhHab5zP4cm0LPtp+HM2t7UCor/L6w228E+cqaqBWsWi3OVB6sQ6C4EbMyFDEGYZ6fnsRG3sIWVnTxu3Hp9h4B4YG+wO5ZbnQAHBBP3FsFD77OhcXa5qyudtstfYLy4KbaNgNUZzir9Nkf/jFMTS32jIWzJ20qs9gA7umahY3Oi0tJTazyyHXDbdbxL8OFWH73lN4ecV9ntPctAn7lM16+53DuDqIIta3CwKCJQumgvCuXbeiiLVWo0JYiN9mzmT8ibf9TsElKrx5Nm3Oae91KNxj+RU4WXQxvnOXyyVCq1Ghpr4Fl+sazZQalN5CYX7+SOpyABUQRTbLGLbjkx05GB6mxwOzEl+D3fYaN3lUb+eX3TYibUpc44Gj55CWErfq9NlLCxiG4L4Z4zaArykGYjsmoXz1wNFzUCoV+MenWVAqmcTOIXi7AIWCwa5DhZiWEnME3dbYOkkcMxyP3Z88D4QIILjvo+0nlp84fR53TDIiPjZsIUmKyRhUqhw8Syd7c87OdwoChg8NzIK9sg2IHNQYA8ElxVTQfHPEH381N+vVd/YY/vudPQseuS9pYEGJsAoGnMno/23G6HA8dj1UNK/i4LY9+Wl9HR8VMQRP/+TOtQCzGyKJPXqqfG3G3lMwRIXggdmJa0CUa7ovOdFCi14UkZlfVAmVisVbG78BgETAY907nC4oWQX++cVRjBimX8IlRX/wba7nVsNNij4OF4l/9qcziv724UE0NFtXcaboXsdRSlj4OONFFzJZRrHi3unj3ux9jEUTPSLE9s3Rc13bbopipRaLpraubZelplFyg8DbSeyoUESG69PAR/Pfl7KANN8SfqXFmlF6sQ4rlszAyGFBvY5xOF34n3f34q8fHMDrvw/kAC9rQyKzv8uaVZF4rVZVtHFbNpyC+/kfpU9so2bz2uvXQDkuoQkabWZWblnaxoxjC86V13gKjLuxpstazSkf+8Xe/MUKBYNVK+bBV9t7meNKkxVr//kNtv4rLw4sxnKJPcOflKwCcNTu9nR1oPsfe2ByHsOQDe99loUnHpqyZSKYVJgM1Ov9yal4sMcGxqUFFGkVdVeW7fzmNMbFDQMIeeFWdXvgJsZV00JL0gtP3fPW2g8PLnp7U+ZNG1sUgazc0ll97SdEYQOvzOuM1WUVTGe4Ulqv+9IJI3KCy+2558HhvQp1qJQKiG5CU5ONuwHsFomrWMkq9mXsPQW73bly4b2mKkrpm13302bn/r75MIYG++N3P5/tNaSvvLIeb/7zG5w4U7kBk2M2DcpB1R9E5AnxWNlQiPfRnAqvb872dgcAAqVSIWlYbrKxmOaWGv/4q7nlf/n7bny6I6f3QVGVLOrEt/7w+nb84Zfpa2lORe82TUqX1sY7wXS7JzdFsYp19nnrPzk8qKD82wVDCJ5adBegE/I40/eoLKDLMf+fnx9F3KihMAwLjfP2qU8LLfoXfnFP43N/3oKc0xczwau0/QXGc4nGYljtUapHUiv/8VkWGpqsq59adGcapYULeyUE8Kr0B2Yl2j7+6gSCAn0xY0rsGtijS7pePAy25RVexKL7U+AXoA7tHoDdNb+c8rHTUmKL9h4pxv2zEosoJV6tagDoUK6bHr0/yapWsVve30Ixd3pLFiAu5kzGHjG1gsuNv28+lNF9m0MQ0Njcjqs2O8bGROAXi+5cB92tLZ7DJUQ2UbP5qRVPzKh497MjLxWV3oQIPRGw2Z3YlHFiX1+HaDRKLJwzOQ5ACQAYR4QUadXK+DXv7YePRpXhTabTMz48TA8pDrDUpJj9hChSVUpF1ic7clBT37rm2SdmTKHUvBQ+Pn4Nre07LlxuwKpn5+Gu5Bivn/oKMKYJ8ZG5n/8rD8kJI97AZOOvpNyCAWEUJUMCdcgvtqCmvmUVq/CuOOsb2+CjUSJEr5Pco67za+RPz8zd9Ze3dyf2ChGtrBSgDdskiuKUv238Bnp/3173W4SI6roWjDZeW3f/1oqVUoumrObKlrqGNuktVzQqmBKiPOs0N4goimi18jhw9Nyguq4mxEUgUKeN5+KMtyR1dVJCFAL9tQCYPj2NSoVi630zxy+IM/RwgMyaGB+JGXeMBpfkff2US4hsorkW44N3Tyhvu8oDaNECkTxQKcyZFo/mVhvgcPdQmBw31gKUh654Ykad+XwNSs7XzYodERYC4LrjInmo+bXtvHNF7KihAMS3uyvFSzXNcbO4MUiIiXiKSzR4bePATTYWg4hr3G5xZe2VVkQN6fDwi2T3Q/dMnD82OhxITUbn535HP7KMh+4RZ4cG+e1r5x1obGnfiM5kBatgm5YS64mjvQ61ioWfrwZxhlAE6jTzwat2cyaj5PVVXx/lrvtmjk8f3isOtFIYP3o4PH+8vWI8wcXFWSmlLy/7cWrJsZMVG4cE+PQRf+ojGKJY57yZiUqAeFV+AGymcSMG/GbSqFmAdKvwzguzn1sys6qotAoOp/foG5ZlEB0ViiEBPj0zrER31bTkGDCEgCiZHjG/nMlAQdxT9AE+2WfLanDafGnB+JFDV8DtZOsbrbh/ZiJ8tKq+suAAp9P8swVc5e4jxVEOwbUcQIdirRSMI8KcD8+ZpAQRD/VlySYnjkSAn8azvtydYGXRb5bOrMzKK4tqtfJ9rhbFjAqFadwIQEEe6rFDIdanTBjliRsXXb0iariJcdW0oHz2H55OX30kp3QZQLq+mjzO2YodL/xizrq8wovwRK/0JiF2GO5Kji7q/D9xf8tPd5pbtuTF//tqQ019qyQFRwCMGz0czz0xYyW0qhtfh3G4Yg8fP5f94bZsyYpVoWDw9/9aBDZCo+UiB5cCKRVKLRoEt7O4coXvM8WTUhYI1gA+QqfFSS0WDSrbWaBvuWvyZh0CfJRoiWq7Fnfq2eY1gaBzXgEdMawtlW19z82sQ5SPcP39kXJdPa4t2KOEurYFRPlB2e7sKxSra34t7c7u4VJd13o93a79RuiaZ1/XioF/C88YUWzfqcadv/Novs/U0O6/S19cd08kybbA1ue8zA064Apwxfu8uv8WwBUeSAWCz2mA4AGt375+a2qxaNACbf/PXud5vf+2lBIWOKfx+jwAQABsff1de37TDgOiz7kTFqhkgUrB2xy7rs0b46Laur8wvpVipdSsyy2tatuwlYK3S6u3qvNR48XlczFUxw7pKz994PNaNFA7X/zNX7a+1Nwqvd7qlAkGLHv0zqheGUYyMjIyN5FvtxSgYVd8visPdollAQkhiI+JQKhet5BLjm6ilGoA6IEB3tiAE0ATx3GeN6DKYdhzpHhQSlXJKrDsx6mV4KurgQHqZMjIyMh8C25YsdKC8pADR82rW9pskj/FdT5qLHogGcTp2gUAUKnm1NbWZTgc/Tu9tFotgkNDUgFQajbrQNgX/3WoUPJcCQHuSo4BNKoJXNKt8RrLyMjIdHLjFqtAVu8+VCjZWmUIgSkhCn4+6nQuyWillIa08faMkwWne7RcuR6FQoEYowHBYUM9C+1XFfGf7z65qG0Q2V1qlRI/eSBlV1/rjzIyMjI3kxtSrDTfHP7lvqJlHs+0NPx0GvzkwRTArsr0nJl9tKDoZL9KFQB8fLSIHmV4iZs4sZpSsw5q9o1DJ0oln5cQgvRp8QCvfGjgo2VuJ5QSFroyPRQqYaCXIM23hKO9sr67k4FSiwY6hx+sNU0cxwm00KL3OGA8ThpKy0MAVZs3BwalhXpA6dVJ5H2uZh00yms5uIxS6D4fSi0aaJw9i5gwTqF7uTpKLXpE9Xa40ILyEFivzZPmeYnb5JX13a+jr2vz3IOejqyu+5I6mseZSj/AE3HS49rAahGlartVTt5/d7wXcxwIQfH+oRMlfYZ6XI+CYXDn5BgoGJLGcZE8pTS8obFpbVtb/88wq1DAOHIkIDg8dUg1rGnD50enDCa7y0ejwrwZ49cOthCyzG1AUx5+8WJjHd/a3n+fcwC1dQ1VUEc87vHkdqDk5zc1tNdBE+4pRGJ3bIOarYSuzKMA1aiD2rHF64Bq7YdOlkhKIaUny1JanEJb5eWGys5/l6vqqqANWw8ANNdiENUOW/f9lZcbKmtq2qtobvmrgMczL7B8I2rtPXKbKbXoL11qroPasZRSwlJK2NILtZUXLl3pGue85UqlwPK2ToVLT5+PrW+31kHjyPYo2I6xCi369parjVA7XqUF17bDZv8YarYKWVkA79xnbWxrpCcqTEDHC0vNbmyyt9d5olRkboRBK1aaVxG56csT6VfbpScDBPhr8dDdiZXgazzxYSy7rMhsHtBa9fPTYfiwiMUcxzXRQoseIjLyCiXH/oJhCB66ZyJgr7kppeRkbh3UbNZBdGds/uoE1ry3DwO15vn4yxMAEZd7qmF1oFAs+3zXSQCiAQAqKq+kHcuv0MPhKX934Ng5XKppnudtPEtN07x9WWelTdZNXn/n40MICfJDSJAfgofoYKlpwv6scx2dAOzT/vONHV37Q4L8EDREh4pLV7Dz4JnnAQBXmrV7jhTjrx98Y6J5FY8Cnd0L7OVvfHAAYPA8oipZoJL9+8eH4aNVdY3lo1Xhv/72NQD3Ikop67QJ5iM5ZXhn85FEqLGga548r/9y3yms+yhzBQRsptQcDgAXq5vSaV65H5AKEGzdticfF2sacunJshS4nK/+ffPh+Xp/n2xgtGyM3CA3YLGKmblnpBexVigY3HPnWMDNPOQJts2LrK6tXWW1Xu1XTsmyGB0bCzidnuBqm517c+NBfV/Foa+HEE/Llel3xK68VWmOMjeRdmXcpu0nTL9/6p5dD949AcfzL/Rd+LmD+karCeqwbTS3fBvNLd/W1NKeJtziAkCUEBaExPrptJjFjSazuNHEhzQqp0wYlXnHxI5oE0L0Lpe7a/8sbjTxJTrtuLhhsHZrcMkQgtmpY7Dl67zNNLfUAHXF43/94Bv9bG4MIKKroDEBEBrkt06rVqZr1cr0ocF+q1QqBQCigU944kfbj+OhuydkxRmGorK6aV33pQOlQoEpEw344PNjs6Bmc2luaVdIDMeJAvjqNYsfmrJ2b1Yxqmvbst//nC5+atFdgJ8w+9vECf/QGZSpT3POx779yWGDVOUGAEMCfDF76phMOIwFlGaxUChWmkvL0V/8LCFAYGAggoKD0rmkJCstKA8RRHHH2TLpZUgZhsHj86eAMxn/T7KQTL9cC3gfLAME2hda9ILTlVvf2AYwZH98TLjw3J+3zEuZaHiQm9R3cemtX+fC11czrzO/0pOV893XquA4TqA555/y1aoGFcfn6Uo8LLu+wTrFfL6+vOR8LX69dKbt0PFSbff6UCKA97fQ5Rq1cjkA8HYnhgT4AoQUVNc054YO8QMgVkxPiQ1Z8/7+uJVLZ75EKV0OdSgIIZgUHwlTQtT+DVuPzlp0f3I5b3d25fp7st8sL/x8Yarh5b99Pe9nCzkwdtsQLilhwLVmajbrcGUwVwx0T4r5d2ZQitUNl/lsWTWkWgWsgsFD90wAgOUcJwo0V224cP7iiqvt/cefKlklxsePBez2TACAgDmvv7tvUPGy/joNJo4evlCSgIxEoljoHAPFHPfGGiUAXoomd+J0pKx5bz9USgXe30LXuN0ihgb749OvcjJgM/ZZb+Dpx9PywFd3dSSgeRUH//HpkbT+psLbnaAnSsZ3bVCwTQhV1gOAwyH03McQK+yaKm+KwOVyXzuWZbSt7fbsM+cug0syErhFQYTYcywN68c3OkF6VzVrmp48JvF/3t9VEDNyKMDX+DNMz9Y1hABPLuQ2wE12dNtaDLfbsHXXSRAA7289utgtiuAdTuQVWZaZ4qPWAm4eAAiIE3xN+tIFU9/4aPuJ5YLgQvd0ao6L5OnJsldGDQ+aNywscAdnMg4YPdORhaSEzjG4dVgFBAymlf3/p0i+KTT/wvjX39sPnpeWYQUAwXodUhJHbuSSjMWUUhYM+3rFhQv9xr0SQhASHAytRj2FS0nhKS0PaXHyG89fkv5qZBUMlj+WhtTk6K0DHy0jlQ4Fc1P/KCi1aNwq7IodGYr50yaEQufZLopM4p/+d/s+zD0/Fhh5+no5P50GAK5zNolNvj5qgIg8AGjUSqhVLABGAABfHzWO5VfgUk1TV7GWkcOCMJIJiPDRqHC5thmZOeVd+/QBPkgcHWEE0JVTz4miQEXxA5fb/XznsaII1Da0wRDZWdOAqQwLDugxliiKuNJkxYiIIZ4NOo9jFaLYhJRRxf/B3jMfIvI4k0HILT0IiKQJlZUCEMUG6LSAW8zgJht3dr/aj7afMM/mxmBMdHgqWNFTX8JJ5m/4nK43jYt6FVAs12qVAFDPcZxACXnuMbdY8uH242vV1zfFI6xNo1YC7uv7pXmn42Umhy/2gWTFetVqK7h4uUFyWUAlq/CEV6kUr3RsMpScr5hv4/v/u1SplJg4fpwTgjOPEsJCg8f/un6/5DVdQggC/LUwRAWnSRKQub0EQMvYxHnzZ45r4lK6tSymlqw//+b+lYDLa1uBnz/CrQKwoccSg+j+7aJ5STugIBUAEBGunxcxNKANvKMKAKYkjlo+ZYIhscdALlcmGEYI0isXLX98elqPfSLyoHD2bt6mUK19bvGMIii6teUWUQci7AYAOJz7n31iejoImd+13y06QcQmiIqOAjOqttRk40KAZHOiKKDbkodpbORCiK48pKYCWVnCn565bzXs7T3KKVJK2VHDwlYCzE7OdK1oD6WWjUt/xAEM8uDjbJqbNm4RXJ6qWJwoCpgc/SYYUtD58umi3WpZeK8pDSDyuupNQFKtAHqiwrTqrR25l2qaJFewGjY0EH9eef9r3CTjC5RSFgpl9oHDh039KVZCCEaNiMLY0XGJXHLyaZpXEXmppqnyv97cKXn5QaVi8crKB3D/zPHf3yrmMjIy/9YMGBVAKWGrG5pzB1MWUMkqPDVPRbLOs0UVW1RiNtns/VurarUaY+NiC7jk5NOUEhaie8U7mw9LVqoMIQjR+yHIT5M48NEyMjIyt4YBlwJEdUXamxsPSnYcAcCwsEAMDw1YwZkMFmqxaMCK+6qra/ot1s8QgpFRkQDDeBxO6pKoorLalTX1LZLPq1Kx+OMzc8Elx/Zak5ORkZH5rujXYqWUsqUXavY1NbdLLrSiUirw3E9nAiryCQCgujr+dFFRBG/vP1tKq9Ui2mjYyk2eXOIJ62Fe/Wj7cclWMsMQDA/TQ8WSm9sZUEZGRmaQ9L8UoAl79B+fHoFTkG6tGqJC4O+nWcwlGusppRq3y51bU+e14Py1STAMYowGwOFYAQDQhcVmnzq/oK5BepNKrVqJP/xyThWXFFMx8NEyMjIyt44+FSu1WDS5Zyo39tcK4XrUKha/XjoL4FWesBCWNeWfPoOBygL6+vpieHjYao7jqimlLJxk4xd78qV3BmAYGKJCASUmSJupjIyMzK2j7zXWGsfKj7Yflx7mBGBsdASUSsV8LiWyiVKqaXcKWVca+6+nwTAM4uNiAa3W01bWJzxx3+FiU2Nz/ymv3fHRqvDrpTP2e2twJyMjI/Nd49VipdSi+SbbvLrdJr2KlFqtxDOLp1XC17kfAESFOvVMcTGczv4TCgID/BEcNGQ5l5hYTyll4Rb37TpUOKg+VuNHDwN4Yf7AR8vIyMjcerxbrBrHum178iWHORECTB43AiKreDI1LtpKKdU0Wa37mpr79+grFAokJiQAgrDRc97wlIy9+frm1t4x2X2h81HjyYXcOs50a7quysjIyAyWXhYrpRbN9r0FSwcTXqVVq7BkAbeLBLFZACAqlfPOlZRCGMDpFRw0BD4a9UKO46yUUtYpuLIOZpsln5dlFZg6yQjwNc9JFpKRkZG5xfS2WLWOfXuOFElOXSUEmJYSCxD3y1xkJE8p1dQ2Nm1pae3fo8+yLEyJ40Hcbk9hCXXYrE+3H+9RVm0g/H01WDB30krOZJTT8GRkZL439LBYqcWi2bjteKpUhxXgKWyxYO6ktbDV5gEAlMpHS8srBixiHREWBoZh0jiO4ymlbOtV+67jBecln1elVGBW6hi5LKCMjMz3jp5LAXWOqqycUslB+YQAc6clAIxiA8dxAjWbdRcqKze0Wftf7lQplRgfP7YKguApLKEMXfDJVyfQbpNe5zXQ3wf33DVGLgsoIyPzvaNrKYBSyq7bek7vkqhUASDAzwdzpiW8gEmjiiGKQGvriouVl/otYg0AUVGRAMH9HUV2NdWt1s0FZy9JPq9apcT8eyYi1SSXBZSRkfn+0aVYeRLkzC+2SA5zIgAWpE8C3CSDE0WBUqoruWhZPVARa41ajdEx0VlccrJn6UDlXLbl61zwDul1XoMCfZGSODJNsoCMjIzMd0iXYt2w9Sh0PhpITbMaovfFHZNGLuqqBcmyKxoaG6FSqfqVi4uJBgh5EvBYyVUt2rWXapvh7yut44dGo8QTD98BzmQ8JElARkZG5jtGUj1WGRkZGRnp3ECXVhkZGRmZ/vh/SGcuxwNy/w4AAAAASUVORK5CYII=" alt="Harvard Integrations, a Hill Company" width="342" height="70"></a>
+  <div class="mid"><span id="midLine">New building</span><span class="cd" id="countdown" hidden><b id="cdNum"></b><span id="cdText"></span></span></div>
+  <img class="logo bh" src="data:image/png;base64,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" alt="Beck &amp; Hofer Construction" width="213" height="70">
   <div class="who" id="who" hidden><span id="whoName"></span><button class="btn small" id="signOut" type="button">Sign out</button></div>
 </div></header>
 
-<main class="wrap">
-  <section id="gate" aria-live="polite"></section>
+<div id="gate" hidden></div>
 
-  <section id="app" hidden>
-    <div class="hero">
-      <div>
-        <h1><small>New building</small>Path to Occupancy</h1>
-        <p class="sub" id="subline">Everything that has to be done before the building can be used for production. Anyone on the team can check items off, change dates and post questions or delays.</p>
+<div class="shell" id="app" hidden>
+  <aside class="side">
+    <nav aria-label="Sections">
+      <a href="#overview" data-nav="overview"><svg class="i"><use href="#i-home"/></svg>Overview</a>
+      <a href="#signoffs" data-nav="signoffs"><svg class="i"><use href="#i-stamp"/></svg>Occupancy sign-offs</a>
+      <a href="#readiness" data-nav="readiness"><svg class="i"><use href="#i-factory"/></svg>Production readiness</a>
+      <a href="#outlook" data-nav="outlook"><svg class="i"><use href="#i-calendar"/></svg>Three-week outlook</a>
+      <a href="#punch" data-nav="punch"><svg class="i"><use href="#i-clipboard"/></svg>Punch list</a>
+      <a href="#messages" data-nav="messages"><svg class="i"><use href="#i-chat"/></svg>Messages<span class="count" id="newCount" hidden></span></a>
+      <a href="#docs" data-nav="docs"><svg class="i"><use href="#i-doc"/></svg>Documents</a>
+      <a href="#team" data-nav="team"><svg class="i"><use href="#i-team"/></svg>Project team<span class="count" id="waitCount" hidden></span></a>
+    </nav>
+    <div class="foot">Part of <a href="../">The Planning Pad</a>.</div>
+  </aside>
+
+  <main class="main">
+    <!-- OVERVIEW -->
+    <section data-view="overview">
+      <div class="head">
+        <div><h1>Path to Occupancy</h1><p class="sub" id="projLine"></p></div>
+        <a class="btn outline" href="#outlook">Review outlook <svg class="i"><use href="#i-arrow"/></svg></a>
       </div>
-      <div class="actions">
-        <a class="btn" id="procore" href="https://app.procore.com/webclients/host/companies/135756/tools/hubs/company-hub/views/portfolio" target="_blank" rel="noopener"><svg><use href="#i-out"/></svg>Procore schedule</a>
-        <button class="btn" type="button" id="teamBtn"><svg><use href="#i-team"/></svg>Team</button>
+      <div class="banner"><div><b>From construction to production.</b><span>One place for priorities, dependencies and decisions.</span></div></div>
+      <div class="card setup" id="setup" hidden>
+        <p><b>Set up the checklist.</b> Import the checklist file Claude made from the latest schedule, or start from a general list for a production building.</p>
+        <div class="acts"><button class="btn primary" type="button" data-import>Import a checklist file</button><button class="btn" type="button" id="seedBtn">Load the general checklist</button></div>
       </div>
-    </div>
-
-    <div class="tiles">
-      <div class="tile" id="tDays"><b>–</b><span>days to occupancy</span></div>
-      <div class="tile" id="tDone"><b>–</b><span>items done</span><div class="bar"><i style="width:0"></i></div></div>
-      <button class="tile" type="button" id="tLate"><b>–</b><span>late or blocked</span></button>
-      <button class="tile" type="button" id="tOpen"><b>–</b><span>open questions and delays</span></button>
-    </div>
-
-    <div class="tabs" role="tablist">
-      <button type="button" role="tab" id="tabList" aria-selected="true" data-tab="listPane">Checklist</button>
-      <button type="button" role="tab" id="tabMsgs" aria-selected="false" data-tab="msgPane">Messages<span class="dot" id="newDot" hidden></span></button>
-    </div>
-
-    <div class="cols">
-      <section class="pane on" id="listPane" data-pane aria-labelledby="listH">
-        <div class="pane-head">
-          <h2 id="listH">Checklist</h2>
-          <button class="btn small" type="button" id="addItem"><svg><use href="#i-plus"/></svg>Add item</button>
+      <div class="tiles" id="tiles"></div>
+      <div class="row2">
+        <div class="card">
+          <div class="card-head"><h2>Priority watchlist</h2><span class="note" id="watchNote"></span></div>
+          <ul class="watch" id="watch"></ul>
         </div>
-        <div class="chips" id="filters" role="group" aria-label="Show"></div>
-        <div id="groups"></div>
-      </section>
+        <div class="card">
+          <div class="card-head"><h2>Occupancy confirmations</h2><span class="badge" id="confBadge"></span></div>
+          <ul class="confirm" id="confirms"></ul>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="card">
+          <div class="card-head"><h2>Project team</h2><a class="linkish" href="#team">See all</a></div>
+          <ul class="people" id="people"></ul>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Latest messages</h2><a class="linkish" href="#messages">Open messages</a></div>
+          <ul class="msgs" id="recent"></ul>
+        </div>
+      </div>
+      <p class="fine" id="fine"></p>
+    </section>
 
-      <section class="pane" id="msgPane" data-pane aria-labelledby="msgH">
-        <div class="pane-head"><h2 id="msgH">Messages</h2></div>
+    <!-- CHECKLIST VIEWS -->
+    <section data-view="signoffs" hidden>
+      <div class="head"><div><h1>Occupancy sign-offs</h1><p class="sub">Every approval needed before the building can be used. Record the permit or inspection number, date and inspector as each one comes in.</p></div>
+        <button class="btn primary" type="button" id="soAdd"><svg class="i"><use href="#i-plus"/></svg>Add sign-off</button></div>
+      <div class="sosum" id="soSum"></div>
+      <div class="tablebar">
+        <input id="soSearch" type="search" placeholder="Search approvals or approving parties…" aria-label="Search sign-offs">
+        <select id="soFilter" aria-label="Status"><option value="">All statuses</option></select>
+        <button class="btn" type="button" id="soCsv">Export CSV</button>
+      </div>
+      <div id="soBox"></div>
+    </section>
+    <section data-view="readiness" hidden>
+      <div class="head"><div><h1>Production readiness</h1><p class="sub">Everything that has to be done before the building can be used for production. Anyone on the team can check items off, change dates and owners.</p></div>
+        <button class="btn primary" type="button" data-add=""><svg class="i"><use href="#i-plus"/></svg>Add item</button></div>
+      <div class="filters" id="filters"></div>
+      <div id="groups"></div>
+    </section>
+    <section data-view="outlook" hidden>
+      <div class="head"><div><h1>Three-week outlook</h1><p class="sub" id="outlookSub">What's due over the next three weeks, plus anything late.</p></div></div>
+      <div id="outlookList"></div>
+    </section>
+    <section data-view="punch" hidden>
+      <div class="head"><div><h1>Punch list</h1><p class="sub">Items from the punch walk. Life-safety items first.</p></div>
+        <button class="btn primary" type="button" data-add="Punch list"><svg class="i"><use href="#i-plus"/></svg>Add punch item</button></div>
+      <div class="filters" id="pFilters"></div>
+      <div id="punchList"></div>
+    </section>
+
+    <!-- MESSAGES -->
+    <section data-view="messages" hidden>
+      <div class="head"><div><h1>Messages</h1><p class="sub" id="msgSub">Questions, delays and notes for the whole team.</p></div></div>
+      <div class="card" style="margin-bottom:16px">
         <form class="compose" id="compose">
           <div class="kinds" role="group" aria-label="Kind of message">
-            <button class="chip" type="button" data-kind="note" aria-pressed="true">Note</button>
-            <button class="chip" type="button" data-kind="question" aria-pressed="false">Question</button>
-            <button class="chip" type="button" data-kind="delay" aria-pressed="false">Delay</button>
+            <button class="fchip" type="button" data-kind="note" aria-pressed="true">Note</button>
+            <button class="fchip" type="button" data-kind="question" aria-pressed="false">Question</button>
+            <button class="fchip" type="button" data-kind="delay" aria-pressed="false">Delay</button>
           </div>
           <label>About <select id="cAbout"><option value="">The whole project</option></select></label>
           <textarea id="cText" maxlength="3000" placeholder="What's going on?" aria-label="Message" required></textarea>
-          <div class="row"><span class="hint" id="cHint">Clint gets a phone alert for questions and delays.</span><button class="btn primary" type="submit" id="cPost" style="margin-left:auto">Post</button></div>
+          <div class="row"><span class="hint" id="cHint"></span><button class="btn primary" type="submit" id="cPost" style="margin-left:auto">Post</button></div>
         </form>
-        <div class="about" id="aboutBar" hidden><span>Messages about</span><b id="aboutName"></b><button class="btn small ghost" type="button" id="aboutClear">Show all</button></div>
-        <div class="chips" id="mFilters" role="group" aria-label="Show messages">
-          <button class="chip" type="button" data-m="all" aria-pressed="true">All</button>
-          <button class="chip" type="button" data-m="open" aria-pressed="false">Open questions and delays</button>
-          <button class="chip" type="button" data-m="talk" aria-pressed="false">Hide check-offs</button>
+      </div>
+      <div class="about" id="aboutBar" hidden><span>Messages about</span><b id="aboutName"></b><button class="btn small ghost" type="button" id="aboutClear">Show all</button></div>
+      <div class="filters" id="mFilters">
+        <button class="fchip" type="button" data-m="all" aria-pressed="true">All</button>
+        <button class="fchip" type="button" data-m="open" aria-pressed="false">Open questions and delays</button>
+        <button class="fchip" type="button" data-m="talk" aria-pressed="false">Hide check-offs</button>
+      </div>
+      <ul class="msgs" id="msgs" aria-live="polite"></ul>
+    </section>
+
+    <!-- DOCUMENTS -->
+    <section data-view="docs" hidden>
+      <div class="head"><div><h1>Documents</h1><p class="sub">Links the team needs: the schedule, drawings, permits, inspection reports.</p></div></div>
+      <ul class="docs" id="docs"></ul>
+      <div class="card" style="margin-top:16px">
+        <form id="docForm" style="display:grid;gap:10px">
+          <h2>Add a link</h2>
+          <div class="form2"><label>Name <input id="dTitle" maxlength="120" required placeholder="Fire alarm shop drawings"></label>
+            <label>Link <input id="dUrl" type="url" maxlength="1000" required placeholder="https://"></label></div>
+          <p class="hint">Paste a link from Procore, OneDrive, Google Drive or email. Everyone on the team will see it.</p>
+          <div><button class="btn primary" type="submit">Add link</button></div>
+        </form>
+      </div>
+    </section>
+
+    <!-- TEAM -->
+    <section data-view="team" hidden>
+      <div class="head"><div><h1>Project team</h1><p class="sub">Only people on this list can open this page.</p></div></div>
+      <div class="stack">
+        <ul class="tlist" id="waitList"></ul>
+        <ul class="tlist" id="teamList"></ul>
+        <div class="card ownerOnly">
+          <form id="teamForm" style="display:grid;gap:10px">
+            <h2>Add someone</h2>
+            <label>Email <input id="tEmail" type="email" autocapitalize="off" required maxlength="200"></label>
+            <div class="form2"><label>Name <input id="tName" maxlength="100" required></label>
+              <label>Role <input id="tRole" maxlength="100" placeholder="Superintendent, Beck &amp; Hofer"></label></div>
+            <label>Photo (optional) <input id="tPhoto" type="file" accept="image/*"></label>
+            <p class="hint">Then send them the page link. This page isn't linked anywhere on the site, so the link is the only way in. They tap Create account and use this same email.</p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn primary" type="submit">Add to team</button><button class="btn" type="button" id="copyLink"><svg class="i"><use href="#i-link"/></svg>Copy the page link</button></div>
+            <p class="hint" id="linkText" style="user-select:all"></p>
+          </form>
         </div>
-        <ul class="msgs" id="msgs" aria-live="polite"></ul>
-      </section>
-    </div>
-  </section>
-</main>
+        <div class="card ownerOnly">
+          <form id="targetForm" style="display:grid;gap:10px">
+            <h2>Occupancy target</h2>
+            <div class="form2"><label>Target date <input id="tTarget" type="date" required></label>
+              <label>Is the date confirmed? <select id="tConfirmed"><option value="no">Not yet (shows "Date to confirm")</option><option value="yes">Yes</option></select></label></div>
+            <div><button class="btn" type="submit">Save</button></div>
+          </form>
+        </div>
+        <div class="card ownerOnly" style="display:grid;gap:8px">
+          <h2>Checklist file</h2>
+          <p class="hint">Load a checklist file Claude made for you, for example from a new look-ahead. Items already on the list get the file's dates, owners and notes, and keep their status.</p>
+          <div><button class="btn" type="button" data-import>Import a checklist file</button></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
 
 <dialog id="itemDlg">
   <form id="itemForm" method="dialog">
     <h2 id="itemH">Edit item</h2>
     <label>What has to happen <input id="fTitle" maxlength="200" required></label>
-    <div class="row2">
+    <div class="form2">
       <label>Group <input id="fCat" maxlength="60" list="catList" placeholder="Fire and life safety"></label>
       <label>Who owns it <input id="fWho" maxlength="80" list="whoList" placeholder="Beck &amp; Hofer"></label>
     </div>
-    <div class="row2">
+    <div class="form2">
       <label>Due <input id="fDue" type="date"></label>
       <label>Status <select id="fStatus"></select></label>
     </div>
     <label>Notes <textarea id="fNote" maxlength="2000" placeholder="Inspector name, what's still missing, links…"></textarea></label>
+    <div class="form2">
+      <label>Show on the overview <select id="fFlag"><option value="">No</option><option value="watch">Priority watchlist</option><option value="confirm">Occupancy confirmations</option></select></label>
+      <label>Short name <input id="fShort" maxlength="60" placeholder="Overhead doors"></label>
+    </div>
+    <label id="fTagWrap">Watchlist note <input id="fTag" maxlength="60" placeholder="Behind in baseline"></label>
     <p class="hint" id="fStamp"></p>
     <div class="foot">
       <button class="btn danger ghost left" type="button" id="fDelete" hidden>Delete</button>
-      <button class="btn ghost" type="button" id="fAsk"><svg><use href="#i-chat"/></svg>Message about this</button>
-      <button class="btn" type="button" value="cancel" id="fCancel">Cancel</button>
+      <button class="btn ghost" type="button" id="fAsk"><svg class="i"><use href="#i-chat"/></svg>Message about this</button>
+      <button class="btn" type="button" id="fCancel">Cancel</button>
       <button class="btn primary" type="submit" id="fSave">Save</button>
+    </div>
+  </form>
+</dialog>
+<dialog id="soDlg">
+  <form id="soForm" method="dialog">
+    <h2 id="soH">Sign-off details</h2>
+    <div class="form2">
+      <label>Approval <input id="sTitle" maxlength="120" required placeholder="Final building inspection"></label>
+      <label>Approving party <input id="sParty" maxlength="100" placeholder="Tea building inspector"></label>
+    </div>
+    <label>What it covers <input id="sDesc" maxlength="200" placeholder="Construction and code corrections"></label>
+    <div class="form2">
+      <label>Status <select id="sStatus"></select></label>
+      <label>Date (scheduled or approved) <input id="sDate" type="date"></label>
+    </div>
+    <div class="form2">
+      <label>Reference (permit, inspection or tag number) <input id="sRef" maxlength="80"></label>
+      <label>Inspector or contact <input id="sWho" maxlength="100"></label>
+    </div>
+    <label>Notes <textarea id="sNote" maxlength="1000" placeholder="Corrections called out, conditions, where the paperwork is…"></textarea></label>
+    <p class="hint" id="sStamp"></p>
+    <div class="foot">
+      <button class="btn danger ghost left" type="button" id="sDelete" hidden>Delete</button>
+      <button class="btn" type="button" id="sCancel">Cancel</button>
+      <button class="btn primary" type="submit" id="sSave">Save</button>
     </div>
   </form>
 </dialog>
 <datalist id="catList"></datalist>
 <datalist id="whoList"><option>Harvard Integrations</option><option>Beck &amp; Hofer</option><option>City of Tea</option><option>Fire department</option><option>State inspector</option><option>Utility</option></datalist>
-
-<dialog id="teamDlg">
-  <div class="dbody">
-    <h2>Team</h2>
-    <p class="hint" id="teamHint">Everyone on this list can sign in to this page. Nobody else can.</p>
-    <ul class="team" id="waitList"></ul>
-    <ul class="team" id="teamList"></ul>
-    <form id="teamForm" class="ownerOnly" style="padding:0;display:grid;gap:10px">
-      <h2>Add someone</h2>
-      <label>Email <input id="tEmail" type="email" autocapitalize="off" required maxlength="200"></label>
-      <div class="row2">
-        <label>Name <input id="tName" maxlength="100" required></label>
-        <label>Role <input id="tRole" maxlength="100" placeholder="Superintendent, Beck &amp; Hofer"></label>
-      </div>
-      <p class="hint">Then tell them to go to <b id="tUrl">siemonsma.org/occupancy/</b>, tap Create account and use this same email.</p>
-      <div class="foot" style="justify-content:flex-start"><button class="btn primary" type="submit">Add to team</button></div>
-    </form>
-    <form id="targetForm" class="ownerOnly" style="padding:0;display:grid;gap:10px">
-      <h2>Occupancy target</h2>
-      <div class="row2"><label>Target date <input id="tTarget" type="date" required></label><div style="align-self:end"><button class="btn" type="submit">Save date</button></div></div>
-    </form>
-    <div class="foot"><button class="btn" type="button" id="teamClose">Close</button></div>
-  </div>
-</dialog>
 
 <script src="../tracker/config.js"></script>
 <script type="module">
@@ -318,7 +532,8 @@ const STATUSES = ["Not started", "In progress", "Blocked", "Done"];
 const ST_CLASS = {"Not started": "s-idle", "In progress": "s-prog", "Blocked": "s-block", "Done": "s-done"};
 const KIND = {note: "Note", question: "Question", delay: "Delay", change: "Update"};
 const DEFAULT_TARGET = "2026-12-21";
-const CATS = ["Permits and approvals", "Fire and life safety", "Building systems", "Site and access", "Final inspections", "Ready for production"];
+const PUNCH = "Punch list";
+const CATS = ["Permits and approvals", "Fire and life safety", "Building systems", "Site and access", "Finishes", "Final inspections", "Ready for production"];
 const HI = "Harvard Integrations", BH = "Beck & Hofer", CITY = "City of Tea";
 // A starting list for a production building. Dates are a first guess worked back from the target; change them to match the schedule.
 const STARTER = [
@@ -367,10 +582,12 @@ function h(tag, attrs, ...kids) {
   for (const c of kids.flat()) if (c != null && c !== false) n.append(c.nodeType ? c : String(c));
   return n;
 }
-const icon = (id) => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("aria-hidden", "true"); const u = document.createElementNS("http://www.w3.org/2000/svg", "use"); u.setAttribute("href", "#i-" + id); s.append(u); return s; };
+const icon = (id, cls = "i") => { const s = document.createElementNS("http://www.w3.org/2000/svg", "svg"); s.setAttribute("class", cls); s.setAttribute("aria-hidden", "true"); const u = document.createElementNS("http://www.w3.org/2000/svg", "use"); u.setAttribute("href", "#i-" + id); s.append(u); return s; };
 const pad = (n) => String(n).padStart(2, "0");
-const today = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+const ymd = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const today = () => ymd(new Date());
 const fmtDay = (s) => s ? new Date(s + "T12:00:00").toLocaleDateString(undefined, {weekday: "short", month: "short", day: "numeric"}) : "";
+const fmtLong = (s) => s ? new Date(s + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric", year: "numeric"}) : "";
 const fmtWhen = (s) => { const d = new Date(s); const same = d.toDateString() === new Date().toDateString();
   return same ? d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}) : d.toLocaleDateString(undefined, {month: "short", day: "numeric"}) + ", " + d.toLocaleTimeString([], {hour: "numeric", minute: "2-digit"}); };
 const store = {get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} }};
@@ -389,8 +606,8 @@ function pingOwner(title, msg) {
 
 /* ---------- sign in ---------- */
 let mode = "in", me = null, unsubs = [];
-function gateCard(...kids) { $("gate").replaceChildren(h("div", {class: "card"}, ...kids)); $("gate").hidden = false; $("app").hidden = true; }
-function note(t, good) { const n = $("aNote"); if (n) { n.textContent = t; n.className = "note" + (good ? " good" : ""); } }
+function gateCard(...kids) { $("gate").replaceChildren(h("div", {class: "card gate"}, ...kids)); $("gate").hidden = false; $("app").hidden = true; }
+function note(t, good) { const n = $("aNote"); if (n) { n.textContent = t; n.className = "anote" + (good ? " good" : ""); } }
 function signInScreen() {
   const up = mode === "up";
   const form = h("form", {id: "aForm", style: "display:grid;gap:12px"},
@@ -399,9 +616,9 @@ function signInScreen() {
     h("label", {}, "Password", h("input", {id: "aPass", type: "password", autocomplete: up ? "new-password" : "current-password", minlength: "6", required: true})),
     h("div", {class: "row"}, h("button", {class: "btn primary", type: "submit"}, up ? "Create account" : "Sign in"),
       up ? null : h("button", {class: "btn ghost", type: "button", id: "aForgot"}, "Forgot password?")),
-    h("div", {class: "note", id: "aNote", role: "status"}));
+    h("div", {class: "anote", id: "aNote", role: "status"}));
   gateCard(h("h2", {}, up ? "Create your account" : "Path to Occupancy"),
-    h("p", {}, up ? "Use the email Clint added to the team." : "For the new building team: Harvard Integrations and Beck & Hofer. Sign in to see the checklist and messages."),
+    h("p", {}, up ? "Use the email Clint added to the team." : "For the new building team at Harvard Integrations and Beck & Hofer. Sign in to see priorities, the checklist and messages."),
     form,
     h("p", {}, up ? "Already have an account? " : "First time here? ", h("button", {class: "linkish", type: "button", onclick: () => { mode = up ? "in" : "up"; signInScreen(); }}, up ? "Sign in" : "Create account")));
   $("aForgot")?.addEventListener("click", async () => {
@@ -428,13 +645,13 @@ function verifyScreen(u) {
       h("button", {class: "btn primary", type: "button", onclick: async () => { await u.reload(); if (auth.currentUser.emailVerified) { await auth.currentUser.getIdToken(true); gate(auth.currentUser); } else note("Not confirmed yet. Open the link in the email first."); }}, "Continue"),
       h("button", {class: "btn", type: "button", onclick: async () => { try { await sendEmailVerification(u); note("Sent. Check your email.", true); } catch (e) { note(authMsg(e)); } }}, "Send it again"),
       h("button", {class: "btn ghost", type: "button", onclick: () => signOut(auth)}, "Sign out")),
-    h("div", {class: "note", id: "aNote", role: "status"}));
+    h("div", {class: "anote", id: "aNote", role: "status"}));
 }
 function notOnTeam(u) {
   const email = String(u.email).toLowerCase();
-  // leave a note for Clint once, so the Team list shows who is waiting
+  // leave a note for Clint once, so the team list shows who is waiting
   setDoc(doc(db, "occKnock", email), {email, name: (u.displayName || "").slice(0, 100), uid: u.uid, at: new Date().toISOString()})
-    .then(() => pingOwner("Someone wants into Path to Occupancy", "Open the Team list on the page to add them.")).catch(() => {});
+    .then(() => pingOwner("Someone wants into Path to Occupancy", "Open Project team on the page to add them.")).catch(() => {});
   gateCard(h("h2", {}, "Almost there"),
     h("p", {}, "You're signed in as ", h("b", {}, u.email), ", but that email isn't on the new building team yet."),
     h("p", {}, "Clint has been told you're waiting. Once you're added, tap Try again."),
@@ -452,132 +669,287 @@ async function gate(u) {
   try { const s = await getDoc(doc(db, "occTeam", email)); mine = s.exists() ? s.data() : null; } catch {}
   if (!owner && !mine) return notOnTeam(u);
   me = {uid: u.uid, email, owner, name: mine?.name || u.displayName || (owner ? "Facilities Manager" : email)};
-  if (owner && !mine) setDoc(doc(db, "occTeam", email), {name: me.name, role: "Facilities Manager, " + HI, addedAt: new Date().toISOString()}).catch(() => {});
+  if (owner && !mine) setDoc(doc(db, "occTeam", email), {name: me.name, role: "Facilities and Construction Manager, Harvard Integrations", addedAt: new Date().toISOString()}).catch(() => {});
   start();
 }
 onAuthStateChanged(auth, gate);
 $("signOut").addEventListener("click", () => signOut(auth));
 
 /* ---------- live data ---------- */
-let items = [], msgs = [], team = [], waiting = [], target = DEFAULT_TARGET;
-let loadError = false, filter = "open", whoFilter = "", mFilter = "all", aboutId = "", kind = "note", loadedItems = false;
+let items = [], msgs = [], team = [], waiting = [], docs = [], meta = {}, signoffs = [], loadedSo = false;
+let loadedItems = false, loadError = false;
+let filter = "open", whoFilter = "", pFilter = "open", mFilter = "all", aboutId = "", kind = "note";
 let seen = store.get("occSeen") || new Date(0).toISOString();
+const target = () => meta.target || DEFAULT_TARGET;
 function start() {
   $("gate").hidden = true; $("app").hidden = false;
   document.querySelectorAll(".ownerOnly").forEach((n) => (n.hidden = !me.owner));
   $("cHint").textContent = me.owner ? "Posts here are for the whole team to see." : "Clint gets a phone alert for questions and delays.";
-  const err = () => { loadError = true; renderAll(); toast("Couldn't load the checklist. Reload the page."); };
+  const err = () => { loadError = true; renderAll(); toast("Couldn't load the page. Reload it."); };
   unsubs.push(onSnapshot(collection(db, "occItems"), (s) => { items = s.docs.map((d) => ({id: d.id, ...d.data()})); loadedItems = true; renderAll(); }, err));
   unsubs.push(onSnapshot(query(collection(db, "occMsgs"), orderBy("at", "desc"), limit(400)), (s) => { msgs = s.docs.map((d) => ({id: d.id, ...d.data()})); renderAll(); }, err));
-  unsubs.push(onSnapshot(collection(db, "occTeam"), (s) => { team = s.docs.map((d) => ({email: d.id, ...d.data()})); renderTeam(); }, () => {}));
-  unsubs.push(onSnapshot(doc(db, "occMeta", "main"), (s) => { target = s.data()?.target || DEFAULT_TARGET; renderAll(); }, () => {}));
-  if (me.owner) unsubs.push(onSnapshot(collection(db, "occKnock"), (s) => { waiting = s.docs.map((d) => ({email: d.id, ...d.data()})).filter((k) => !k.ignored); renderTeam(); }, () => {}));
-  renderAll();
+  unsubs.push(onSnapshot(collection(db, "occTeam"), (s) => { team = s.docs.map((d) => ({email: d.id, ...d.data()})); renderAll(); }, () => {}));
+  unsubs.push(onSnapshot(collection(db, "occSignoffs"), (s) => { signoffs = s.docs.map((d) => ({id: d.id, ...d.data()})); loadedSo = true; renderAll(); }, () => { loadedSo = true; renderAll(); }));
+  unsubs.push(onSnapshot(collection(db, "occDocs"), (s) => { docs = s.docs.map((d) => ({id: d.id, ...d.data()})); renderDocs(); }, () => {}));
+  unsubs.push(onSnapshot(doc(db, "occMeta", "main"), (s) => { meta = s.data() || {}; renderAll(); }, () => {}));
+  if (me.owner) unsubs.push(onSnapshot(collection(db, "occKnock"), (s) => { waiting = s.docs.map((d) => ({email: d.id, ...d.data()})).filter((k) => !k.ignored); renderAll(); }, () => {}));
+  route();
 }
-// remember what's been read when the person leaves or switches away
 const markSeen = () => { if (msgs[0]) { seen = msgs[0].at; store.set("occSeen", seen); } };
-document.addEventListener("visibilitychange", () => { if (document.hidden) markSeen(); });
-addEventListener("pagehide", markSeen);
+document.addEventListener("visibilitychange", () => { if (document.hidden && view === "messages") markSeen(); });
+addEventListener("pagehide", () => { if (view === "messages") markSeen(); });
+
+/* ---------- views ---------- */
+const VIEWS = ["overview", "signoffs", "readiness", "outlook", "punch", "messages", "docs", "team"];
+let view = "overview";
+function route() {
+  const v = location.hash.slice(1);
+  if (view === "messages" && v !== "messages") markSeen();
+  view = VIEWS.includes(v) ? v : "overview";
+  document.querySelectorAll("[data-view]").forEach((s) => (s.hidden = s.dataset.view !== view));
+  document.querySelectorAll("[data-nav]").forEach((a) => { if (a.dataset.nav === view) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  document.querySelector(`[data-nav="${view}"]`)?.scrollIntoView({block: "nearest", inline: "nearest"});
+  if (me) renderAll();
+  scrollTo(0, 0);
+}
+addEventListener("hashchange", route);
+const go = (v) => { if (location.hash !== "#" + v) location.hash = v; else route(); };
 
 const isLate = (it) => it.status !== "Done" && it.due && it.due < today();
 const openMsg = (m) => (m.kind === "question" || m.kind === "delay") && !m.resolved;
+const isPunch = (it) => it.cat === PUNCH;
 function stamp() { return {updatedAt: new Date().toISOString(), updatedBy: me.name.slice(0, 100)}; }
 function sorted(list) { return [...list].sort((a, b) => (a.status === "Done") - (b.status === "Done") || (a.due || "9999").localeCompare(b.due || "9999") || (a.order ?? 999) - (b.order ?? 999)); }
+const nameOf = (it) => it.short || it.title;
 
-function renderAll() { if (!me) return; renderTiles(); renderFilters(); renderItems(); renderMsgs(); renderAbout(); }
-function renderTiles() {
-  const days = Math.round((new Date(target + "T12:00:00") - new Date(today() + "T12:00:00")) / 864e5);
-  $("tDays").querySelector("b").textContent = days >= 0 ? days : "0";
-  $("tDays").querySelector("span").textContent = days >= 0 ? "days to " + fmtDay(target) : "past the " + fmtDay(target) + " target";
-  $("tDays").className = "tile" + (days < 0 ? " bad" : "");
-  const done = items.filter((i) => i.status === "Done").length;
-  $("tDone").querySelector("b").textContent = `${done}/${items.length}`;
-  $("tDone").querySelector("i").style.width = items.length ? (100 * done / items.length) + "%" : "0";
-  const bad = items.filter((i) => isLate(i) || i.status === "Blocked").length;
-  $("tLate").querySelector("b").textContent = bad; $("tLate").className = "tile" + (bad ? " warn" : "");
-  const open = msgs.filter(openMsg).length;
-  $("tOpen").querySelector("b").textContent = open; $("tOpen").className = "tile" + (open ? " warn" : "");
+// Monday to Friday, skipping Thanksgiving and the day after, Christmas Eve and Day, New Year's Day, Memorial Day, July 4 and Labor Day
+function holidays(y) {
+  const nth = (m, wd, n) => { const d = new Date(y, m, 1, 12); d.setDate(1 + ((wd - d.getDay() + 7) % 7) + 7 * (n - 1)); return ymd(d); };
+  const lastMon = (m) => { const d = new Date(y, m + 1, 0, 12); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); };
+  const tg = nth(10, 4, 4), fri = new Date(tg + "T12:00:00"); fri.setDate(fri.getDate() + 1);
+  return new Set([`${y}-01-01`, lastMon(4), `${y}-07-04`, nth(8, 1, 1), tg, ymd(fri), `${y}-12-24`, `${y}-12-25`]);
+}
+function workingDays(from, to) { // from today up to, not including, the target day
+  let n = 0; const d = new Date(from + "T12:00:00"), end = new Date(to + "T12:00:00"), hol = {};
+  while (d < end) { const y = d.getFullYear(); hol[y] ||= holidays(y); const wd = d.getDay(); if (wd && wd < 6 && !hol[y].has(ymd(d))) n++; d.setDate(d.getDate() + 1); }
+  return n;
+}
+function renderCountdown() {
+  $("midLine").textContent = meta.project && meta.project.includes("|") ? meta.project.split("|").pop().trim() : "New building";
+  const n = workingDays(today(), target()), past = target() <= today();
+  $("countdown").hidden = false; $("countdown").classList.toggle("soon", !past && n <= 10);
+  $("cdNum").textContent = past ? "" : n;
+  $("cdText").textContent = past ? "Occupancy target day has arrived" : `working day${n === 1 ? "" : "s"} to occupancy · ${new Date(target() + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric"})}${meta.targetConfirmed ? "" : " goal"}`;
+  $("countdown").title = "Weekdays left, not counting holidays (Thanksgiving and the day after, Christmas Eve and Day, New Year's Day)";
+}
+const topEl = document.querySelector(".top");
+new ResizeObserver(() => document.documentElement.style.setProperty("--toph", topEl.offsetHeight + "px")).observe(topEl);
+function renderAll() {
+  if (!me) return;
+  renderCountdown();
   const fresh = msgs.filter((m) => m.at > seen && m.author !== me.uid && m.kind !== "change").length;
-  $("newDot").hidden = !fresh; $("newDot").textContent = fresh;
-  $("subline").textContent = `Everything that has to be done before the building can be used for production. Target: ${fmtDay(target)}. Anyone on the team can check items off, change dates and post questions or delays.`;
+  $("newCount").hidden = !fresh || view === "messages"; $("newCount").textContent = fresh;
+  const w = me.owner ? waiting.filter((k) => !team.some((t) => t.email === k.email)).length : 0;
+  $("waitCount").hidden = !w; $("waitCount").textContent = w;
+  $("catList").replaceChildren(...[...new Set([...CATS, PUNCH, ...items.map((i) => i.cat).filter(Boolean)])].map((c) => h("option", {}, c)));
+  renderAboutSelect();
+  if (view === "overview") renderOverview();
+  else if (view === "signoffs") renderSignoffs();
+  else if (view === "readiness") renderReadiness();
+  else if (view === "outlook") renderOutlook();
+  else if (view === "punch") renderPunch();
+  else if (view === "messages") renderMsgs();
+  else if (view === "docs") renderDocs();
+  else if (view === "team") renderTeam();
 }
-function renderFilters() {
-  const box = $("filters"); box.replaceChildren();
-  const opts = [["open", "Still to do"], ["late", "Late or blocked"], ["done", "Done"], ["all", "All"]];
-  for (const [v, label] of opts) box.append(h("button", {class: "chip", type: "button", "aria-pressed": String(filter === v), onclick: () => { filter = v; renderAll(); }}, label));
-  const whos = [...new Set(items.map((i) => i.who).filter(Boolean))].sort();
-  const sel = h("select", {"aria-label": "Who owns it", onchange: (e) => { whoFilter = e.target.value; renderAll(); }}, h("option", {value: ""}, "Everyone"), whos.map((w) => h("option", {value: w, selected: w === whoFilter}, w)));
-  box.append(sel);
-  $("catList").replaceChildren(...[...new Set([...CATS, ...items.map((i) => i.cat).filter(Boolean)])].map((c) => h("option", {}, c)));
+
+function tileIcon(label) { const l = label.toLowerCase(); return /heat|gas|power|utilit/.test(l) ? "flame" : /punch/.test(l) ? "clipboard" : /occup|production/.test(l) ? "factory" : "calendar"; }
+function watchIcon(it) { const l = nameOf(it).toLowerCase(); return /heat|gas|power|furnace|utilit/.test(l) ? "flame" : /door/.test(l) ? "door" : /alarm|fire|sprinkler/.test(l) ? "alert" : "gear"; }
+function statusChip(it) {
+  const late = isLate(it);
+  const cls = it.status === "Done" ? "done" : late ? "late" : it.status === "Blocked" ? "block" : it.status === "In progress" ? "prog" : "";
+  const text = it.status === "Done" ? "Done" : late ? "Late · " + (it.tag || "was due " + fmtDay(it.due)) : it.tag || (it.due ? "Target " + new Date(it.due + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric"}) : it.status);
+  return h("span", {class: "chip " + cls}, icon(cls === "" ? "link" : cls === "done" ? "check" : "alert"), text);
 }
-function passes(it) {
-  if (whoFilter && it.who !== whoFilter) return false;
-  if (filter === "open") return it.status !== "Done";
-  if (filter === "late") return isLate(it) || it.status === "Blocked";
-  if (filter === "done") return it.status === "Done";
-  return true;
-}
-function renderItems() {
-  const box = $("groups"); box.replaceChildren();
-  if (!loadedItems) { box.append(h("div", {class: "empty"}, loadError ? "Couldn't load the checklist. Reload the page, and if it keeps happening tell Clint." : "Loading…")); return; }
-  if (!items.length) {
-    box.append(me.owner
-      ? h("div", {class: "empty"}, h("p", {style: "margin:0"}, "No items yet. Start from a list of what a production building usually needs for occupancy, with dates worked back from the target. You can edit, add or delete anything after."),
-          h("button", {class: "btn primary", type: "button", onclick: seed}, "Load the starter checklist"))
-      : h("div", {class: "empty"}, "Clint hasn't set up the checklist yet."));
-    return;
+function renderOverview() {
+  $("projLine").replaceChildren(...(meta.project ? meta.project.split("|").flatMap((p, i) => i ? [h("span", {style: "color:var(--faint);padding:0 10px"}, "|"), p.trim()] : [h("b", {}, p.trim())]) : [h("b", {}, "Harvard Integrations"), " · new building"]));
+  $("setup").hidden = !(me.owner && loadedItems && !items.length);
+  // tiles: the occupancy target, then milestones from the checklist file, then the schedule baseline
+  const tiles = $("tiles"); tiles.replaceChildren();
+  const days = Math.round((new Date(target() + "T12:00:00") - new Date(today() + "T12:00:00")) / 864e5);
+  tiles.append(h("div", {class: "tile"}, h("span", {class: "ic"}, icon("factory")),
+    h("div", {}, h("small", {}, "Production occupancy"), h("b", {}, meta.targetConfirmed ? fmtLong(target()) : "Date to confirm"),
+      h("em", {}, meta.targetConfirmed ? (days >= 0 ? `${workingDays(today(), target())} working days to go` : "Target has passed") : `Goal ${fmtLong(target())}${days >= 0 ? " · " + workingDays(today(), target()) + " working days" : ""}`))));
+  for (const m of Array.isArray(meta.milestones) ? meta.milestones : []) {
+    if (!m || !m.label) continue;
+    const past = m.date && m.date < today();
+    tiles.append(h("div", {class: "tile"}, h("span", {class: "ic"}, icon(tileIcon(m.label))),
+      h("div", {}, h("small", {}, m.label), h("b", {}, m.date ? fmtLong(m.date) : "To confirm"), past ? h("em", {}, "Date has passed") : null)));
   }
-  const shown = sorted(items.filter(passes));
-  if (!shown.length) { box.append(h("div", {class: "empty"}, filter === "late" ? "Nothing late or blocked." : filter === "done" ? "Nothing checked off yet." : "Nothing left here.")); return; }
-  const cats = [...new Set([...CATS, ...items.map((i) => i.cat || "Other")])];
-  for (const c of cats) {
-    const list = shown.filter((i) => (i.cat || "Other") === c); if (!list.length) continue;
-    const all = items.filter((i) => (i.cat || "Other") === c);
-    box.append(h("div", {class: "group"}, h("h3", {}, c, h("span", {}, `${all.filter((i) => i.status === "Done").length} of ${all.length} done`)),
-      h("ul", {class: "items"}, list.map(itemRow))));
-  }
+  if (meta.baseline) tiles.append(h("div", {class: "baseline"}, meta.baseline));
+
+  const watch = sorted(items.filter((i) => i.flag === "watch"));
+  $("watchNote").textContent = watch.length ? "Tap one to update it." : "";
+  $("watch").replaceChildren(...(watch.length ? watch.map((it) => h("li", {}, h("span", {class: "wi"}, icon(watchIcon(it))),
+    h("button", {class: "wn", type: "button", onclick: () => editItem(it)}, nameOf(it)), statusChip(it)))
+    : [h("li", {style: "color:var(--muted)"}, "Nothing on the watchlist. Open an item and set Show on the overview to Priority watchlist.")]));
+
+  const conf = sorted(items.filter((i) => i.flag === "confirm"));
+  const left = conf.filter((i) => i.status !== "Done").length;
+  $("confBadge").textContent = conf.length ? (left ? `${left} to confirm` : "All confirmed") : "";
+  $("confBadge").className = "badge" + (conf.length && !left ? " ok" : ""); $("confBadge").hidden = !conf.length;
+  $("confirms").replaceChildren(...(conf.length ? conf.map((it) => { const done = it.status === "Done";
+    return h("li", {class: done ? "done" : null},
+      h("button", {class: "box", type: "button", "aria-pressed": String(done), "aria-label": (done ? "Mark not confirmed: " : "Mark confirmed: ") + nameOf(it), onclick: () => setStatus(it, done ? "In progress" : "Done")}, icon("check")),
+      h("button", {class: "lbl", type: "button", onclick: () => editItem(it)}, nameOf(it)), it.who ? h("span", {class: "hint"}, it.who) : null); })
+    : [h("li", {style: "color:var(--muted)"}, "Nothing to confirm yet.")]));
+
+  const people = [...team].sort((a, b) => (b.email === OWNER) - (a.email === OWNER) || (a.name || "").localeCompare(b.name || ""));
+  $("people").replaceChildren(...people.map((p) => h("li", {}, avatar(p), h("div", {}, h("b", {}, p.name || p.email), h("small", {}, p.role || "")))));
+
+  const recent = msgs.filter((m) => m.kind !== "change").slice(0, 4);
+  $("recent").replaceChildren(...(recent.length ? recent.map((m) => msgRow(m, true)) : [h("li", {class: "empty"}, "No messages yet.")]));
+  $("fine").textContent = (meta.baseline ? `Based on the ${meta.baseline.replace(/^the /i, "")}. ` : "") + "Targets are not occupancy approvals.";
 }
+
 function itemRow(it) {
   const n = msgs.filter((m) => m.itemId === it.id && m.kind !== "change").length;
   const late = isLate(it), done = it.status === "Done";
   const st = h("select", {class: "st " + ST_CLASS[it.status], "aria-label": "Status for " + it.title, onchange: (e) => setStatus(it, e.target.value)},
     STATUSES.map((s) => h("option", {selected: s === it.status}, s)));
   return h("li", {class: `item ${ST_CLASS[it.status] || ""}${late ? " late" : ""}`, id: "it-" + it.id},
-    h("button", {class: "check", type: "button", "aria-label": (done ? "Mark not done: " : "Mark done: ") + it.title, "aria-pressed": String(done), onclick: () => setStatus(it, done ? "In progress" : "Done")}, icon("check")),
-    h("div", {class: "body"},
-      h("button", {class: "title", type: "button", onclick: () => editItem(it)}, it.title),
-      h("div", {class: "meta"}, it.who ? h("span", {}, it.who) : null,
+    h("button", {class: "box", type: "button", "aria-label": (done ? "Mark not done: " : "Mark done: ") + it.title, "aria-pressed": String(done), onclick: () => setStatus(it, done ? "In progress" : "Done")}, icon("check")),
+    h("div", {},
+      h("button", {class: "t", type: "button", onclick: () => editItem(it)}, it.title),
+      h("div", {class: "meta"}, it.flag === "watch" ? h("span", {class: "pin"}, "Watchlist") : it.flag === "confirm" ? h("span", {class: "pin"}, "Confirmation") : null,
+        it.who ? h("span", {}, it.who) : null,
         it.due ? h("span", {class: late ? "lt" : null}, (late ? "Late · was due " : done ? "Was due " : "Due ") + fmtDay(it.due)) : h("span", {}, "No date"),
         it.updatedBy && it.updatedAt ? h("span", {}, `Updated by ${it.updatedBy}, ${fmtWhen(it.updatedAt)}`) : null),
-      it.note ? h("p", {class: "itemnote"}, it.note) : null),
-    h("div", {class: "side"}, st,
+      it.note ? h("p", {class: "inote"}, it.note) : null),
+    h("div", {class: "side2"}, st,
       h("button", {class: "talk", type: "button", onclick: () => showAbout(it.id), "aria-label": `Messages about ${it.title} (${n})`}, icon("chat"), n ? String(n) : "Ask")));
 }
+function emptyState(box, text) {
+  if (!loadedItems) { box.append(h("div", {class: "empty"}, loadError ? "Couldn't load the checklist. Reload the page, and if it keeps happening tell Clint." : "Loading…")); return true; }
+  if (!items.length) { box.append(h("div", {class: "empty"}, me.owner ? "No items yet. Set up the checklist from the Overview." : "Clint hasn't set up the checklist yet.")); return true; }
+  return false;
+}
+function chips(box, opts, cur, set) { for (const [v, label] of opts) box.append(h("button", {class: "fchip", type: "button", "aria-pressed": String(cur === v), onclick: () => { set(v); renderAll(); }}, label)); }
+function renderReadiness() {
+  const f = $("filters"); f.replaceChildren();
+  chips(f, [["open", "Still to do"], ["late", "Late or blocked"], ["done", "Done"], ["all", "All"]], filter, (v) => (filter = v));
+  const pool = items.filter((i) => !isPunch(i));
+  const whos = [...new Set(pool.map((i) => i.who).filter(Boolean))].sort();
+  f.append(h("select", {"aria-label": "Who owns it", onchange: (e) => { whoFilter = e.target.value; renderAll(); }}, h("option", {value: ""}, "Everyone"), whos.map((w) => h("option", {value: w, selected: w === whoFilter}, w))));
+  const box = $("groups"); box.replaceChildren();
+  if (emptyState(box)) return;
+  const pass = (it) => (!whoFilter || it.who === whoFilter) && (filter === "open" ? it.status !== "Done" : filter === "late" ? isLate(it) || it.status === "Blocked" : filter === "done" ? it.status === "Done" : true);
+  const shown = sorted(pool.filter(pass));
+  if (!shown.length) { box.append(h("div", {class: "empty"}, filter === "late" ? "Nothing late or blocked." : filter === "done" ? "Nothing checked off yet." : "Nothing left here.")); return; }
+  for (const c of [...new Set([...CATS, ...pool.map((i) => i.cat || "Other")])]) {
+    const list = shown.filter((i) => (i.cat || "Other") === c); if (!list.length) continue;
+    const all = pool.filter((i) => (i.cat || "Other") === c);
+    box.append(h("div", {class: "group"}, h("h3", {}, c, h("span", {}, `${all.filter((i) => i.status === "Done").length} of ${all.length} done`)), h("ul", {class: "items"}, list.map(itemRow))));
+  }
+}
+function renderOutlook() {
+  const box = $("outlookList"); box.replaceChildren();
+  if (emptyState(box)) return;
+  const d = new Date(); d.setHours(12); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // this week's Monday
+  const weeks = [0, 1, 2].map((k) => { const a = new Date(d); a.setDate(a.getDate() + 7 * k); const b = new Date(a); b.setDate(b.getDate() + 6); return [ymd(a), ymd(b)]; });
+  $("outlookSub").textContent = `What's due from ${fmtLong(weeks[0][0])} to ${fmtLong(weeks[2][1])}, plus anything late. Change a date or status right here.`;
+  const open = items.filter((i) => i.status !== "Done");
+  const late = sorted(open.filter(isLate));
+  if (late.length) box.append(h("div", {class: "group"}, h("h3", {}, "Late", h("span", {}, `${late.length} item${late.length > 1 ? "s" : ""}`)), h("ul", {class: "items"}, late.map(itemRow))));
+  weeks.forEach(([a, b], k) => {
+    const list = sorted(open.filter((i) => i.due && i.due >= a && i.due <= b && !isLate(i)));
+    box.append(h("div", {class: "group"}, h("h3", {}, (k === 0 ? "This week · " : k === 1 ? "Next week · " : "Week of ") + new Date(a + "T12:00:00").toLocaleDateString(undefined, {month: "short", day: "numeric"}), h("span", {}, list.length ? `${list.length} due` : "")),
+      list.length ? h("ul", {class: "items"}, list.map(itemRow)) : h("div", {class: "empty"}, "Nothing due.")));
+  });
+  const later = open.filter((i) => i.due && i.due > weeks[2][1]).length, undated = open.filter((i) => !i.due).length;
+  if (later || undated) box.append(h("p", {class: "hint"}, `${later} more due after that${undated ? `, ${undated} with no date` : ""}. See them in `, h("a", {href: "#readiness"}, "Production readiness"), "."));
+}
+function renderPunch() {
+  const f = $("pFilters"); f.replaceChildren();
+  chips(f, [["open", "Open"], ["done", "Done"], ["all", "All"]], pFilter, (v) => (pFilter = v));
+  const box = $("punchList"); box.replaceChildren();
+  if (!loadedItems) return emptyState(box);
+  const pool = items.filter(isPunch);
+  if (!pool.length) { box.append(h("div", {class: "empty"}, "No punch items yet. They come after the punch walk; tap Add punch item to log one.")); return; }
+  const shown = sorted(pool.filter((i) => pFilter === "all" || (pFilter === "done" ? i.status === "Done" : i.status !== "Done")));
+  box.append(h("p", {class: "hint", style: "margin-bottom:10px"}, `${pool.filter((i) => i.status === "Done").length} of ${pool.length} done`));
+  box.append(shown.length ? h("ul", {class: "items"}, shown.map(itemRow)) : h("div", {class: "empty"}, pFilter === "done" ? "Nothing done yet." : "All punch items are done."));
+}
+
 async function setStatus(it, status) {
   if (status === it.status) return;
   try {
     await setDoc(doc(db, "occItems", it.id), {status, ...stamp()}, {merge: true});
-    post({kind: "change", itemId: it.id, text: `Marked "${it.title}" ${status === "Done" ? "done" : status.toLowerCase()}.`}, true);
+    post({kind: "change", itemId: it.id, text: `Marked "${nameOf(it)}" ${status === "Done" ? "done" : status.toLowerCase()}.`}, true);
     if (status === "Blocked") pingOwner("An item was marked Blocked", "Open Path to Occupancy to see which one.");
     toast(status === "Done" ? "Checked off" : "Status set to " + status);
   } catch { toast("Couldn't save that. Try again."); renderAll(); }
 }
-async function seed() {
+$("seedBtn").addEventListener("click", async () => {
   try {
     await Promise.all(STARTER.map(([cat, title, who, due], i) => setDoc(doc(db, "occItems", "s" + pad(i + 1)), {cat, title, who, due, status: "Not started", note: "", order: i + 1})));
-    toast("Starter checklist loaded");
+    toast("General checklist loaded");
   } catch { toast("Couldn't load it. Try again."); }
-}
+});
+
+/* ---------- checklist file (kind "occupancy-checklist"): keeps names, targets and schedule details out of this public code ---------- */
+document.querySelectorAll("[data-import]").forEach((b) => b.addEventListener("click", () => $("importFile").click()));
+$("importFile").addEventListener("change", async (e) => {
+  const f = e.target.files[0]; e.target.value = ""; if (!f) return;
+  let data; try { data = JSON.parse(await f.text()); } catch { return toast("That file isn't a checklist file."); }
+  const list = data?.kind === "occupancy-checklist" && Array.isArray(data.items) ? data.items.filter((x) => x && typeof x.title === "string" && x.title.trim()) : [];
+  if (!list.length) return toast("That file isn't a checklist file.");
+  const clip = (v, n) => String(v ?? "").slice(0, n), isDay = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || "");
+  const known = new Set(items.map((i) => i.id));
+  let added = 0, updated = 0;
+  try {
+    await Promise.all(list.map((x, i) => {
+      const id = /^[A-Za-z0-9_-]{1,40}$/.test(x.id || "") ? x.id : "imp" + pad(i + 1);
+      const base = {title: clip(x.title, 200).trim(), cat: clip(x.cat, 60), who: clip(x.who, 80), due: isDay(x.due) ? x.due : "", note: clip(x.note, 2000),
+        order: typeof x.order === "number" ? x.order : i + 1, flag: ["watch", "confirm"].includes(x.flag) ? x.flag : "", short: clip(x.short, 60), tag: clip(x.tag, 60)};
+      if (known.has(id)) { updated++; return setDoc(doc(db, "occItems", id), {...base, ...stamp()}, {merge: true}); }
+      added++; return setDoc(doc(db, "occItems", id), {...base, status: STATUSES.includes(x.status) ? x.status : "Not started"});
+    }));
+    const m = data.meta || {}, next = {};
+    if (isDay(data.target)) next.target = data.target;
+    if (typeof m.project === "string") next.project = clip(m.project, 120);
+    if (typeof m.baseline === "string") next.baseline = clip(m.baseline, 80);
+    if (typeof m.targetConfirmed === "boolean") next.targetConfirmed = m.targetConfirmed;
+    if (Array.isArray(m.milestones)) next.milestones = m.milestones.filter((x) => x && x.label).slice(0, 4).map((x) => ({label: clip(x.label, 40), date: isDay(x.date) ? x.date : ""}));
+    if (Object.keys(next).length) await setDoc(doc(db, "occMeta", "main"), next, {merge: true});
+    // team details (full name, title, photo) for people already on the team, matched by first name or email
+    if (me.owner && Array.isArray(data.team)) for (const t of data.team) {
+      const key = String(t?.match || "").trim().toLowerCase(); if (!key) continue;
+      const who = team.find((p) => p.email === key || (p.name || "").trim().toLowerCase().split(/\s+/)[0] === key || p.email.split("@")[0].startsWith(key));
+      if (!who) continue;
+      const upd = {};
+      if (typeof t.name === "string" && t.name.trim()) upd.name = clip(t.name.trim(), 100);
+      if (typeof t.role === "string") upd.role = clip(t.role, 100);
+      if (typeof t.photo === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(t.photo) && t.photo.length < 300000) upd.photo = t.photo;
+      if (Object.keys(upd).length) await setDoc(doc(db, "occTeam", who.email), upd, {merge: true});
+    }
+    post({kind: "change", text: `Loaded a checklist file${data.source ? " (" + clip(data.source, 120) + ")" : ""}: ${added} added, ${updated} updated.`}, true);
+    toast(`Checklist loaded: ${added} added, ${updated} updated`);
+  } catch { toast("Couldn't load all of it. Try again."); }
+});
 
 /* ---------- item dialog ---------- */
-let editing = null;
+let editing = null, addCat = "";
 $("fStatus").replaceChildren(...STATUSES.map((s) => h("option", {}, s)));
-$("addItem").addEventListener("click", () => editItem(null));
+document.querySelectorAll("[data-add]").forEach((b) => b.addEventListener("click", () => { addCat = b.dataset.add; editItem(null); }));
+const syncFlag = () => { $("fTagWrap").hidden = $("fFlag").value !== "watch"; };
+$("fFlag").addEventListener("change", syncFlag);
 function editItem(it) {
   editing = it;
-  $("itemH").textContent = it ? "Edit item" : "Add an item";
-  $("fTitle").value = it?.title || ""; $("fCat").value = it?.cat || ""; $("fWho").value = it?.who || "";
+  $("itemH").textContent = it ? "Edit item" : addCat === PUNCH ? "Add a punch item" : "Add an item";
+  $("fTitle").value = it?.title || ""; $("fCat").value = it ? it.cat || "" : addCat; $("fWho").value = it?.who || "";
   $("fDue").value = it?.due || ""; $("fStatus").value = it?.status || "Not started"; $("fNote").value = it?.note || "";
+  $("fFlag").value = it?.flag || ""; $("fShort").value = it?.short || ""; $("fTag").value = it?.tag || ""; syncFlag();
   $("fStamp").textContent = it?.updatedBy ? `Last changed by ${it.updatedBy}, ${fmtWhen(it.updatedAt)}` : "";
   $("fDelete").hidden = !(it && me.owner); $("fAsk").hidden = !it;
   $("itemDlg").showModal(); $("fTitle").focus();
@@ -590,7 +962,8 @@ $("fDelete").addEventListener("click", async () => {
 });
 $("itemForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const data = {title: $("fTitle").value.trim(), cat: $("fCat").value.trim(), who: $("fWho").value.trim(), due: $("fDue").value, status: $("fStatus").value, note: $("fNote").value.trim(), ...stamp()};
+  const data = {title: $("fTitle").value.trim(), cat: $("fCat").value.trim(), who: $("fWho").value.trim(), due: $("fDue").value, status: $("fStatus").value, note: $("fNote").value.trim(),
+    flag: $("fFlag").value, short: $("fShort").value.trim(), tag: $("fFlag").value === "watch" ? $("fTag").value.trim() : "", ...stamp()};
   if (!data.title) return;
   $("fSave").disabled = true;
   try {
@@ -600,7 +973,7 @@ $("itemForm").addEventListener("submit", async (e) => {
       if (data.due !== (editing.due || "")) changed.push(data.due ? "due date to " + fmtDay(data.due) : "removed the due date");
       if (data.status !== editing.status) changed.push("status to " + data.status);
       if (data.who !== (editing.who || "")) changed.push("owner to " + (data.who || "nobody"));
-      if (changed.length) post({kind: "change", itemId: editing.id, text: `Changed "${data.title}": ${changed.join(", ")}.`}, true);
+      if (changed.length) post({kind: "change", itemId: editing.id, text: `Changed "${data.short || data.title}": ${changed.join(", ")}.`}, true);
       if (data.status === "Blocked" && editing.status !== "Blocked") pingOwner("An item was marked Blocked", "Open Path to Occupancy to see which one.");
     } else {
       const ref = await addDoc(collection(db, "occItems"), {...data, order: items.length + 1});
@@ -636,48 +1009,46 @@ $("compose").addEventListener("submit", async (e) => {
 });
 document.querySelectorAll("[data-m]").forEach((b) => b.addEventListener("click", () => { mFilter = b.dataset.m; renderAll(); }));
 function showAbout(id, compose) {
-  aboutId = id; mFilter = "all"; $("cAbout").value = id; switchTab("msgPane"); renderAll();
-  $("msgPane").scrollIntoView({behavior: "smooth", block: "start"});
-  if (compose) $("cText").focus();
+  aboutId = id; mFilter = "all"; if ($("itemDlg").open) $("itemDlg").close(); go("messages");
+  setTimeout(() => { $("cAbout").value = id; if (compose) $("cText").focus(); }, 0);
 }
 $("aboutClear").addEventListener("click", () => { aboutId = ""; $("cAbout").value = ""; renderAll(); });
-function renderAbout() {
-  const it = items.find((i) => i.id === aboutId);
-  $("aboutBar").hidden = !it; if (it) $("aboutName").textContent = it.title;
-  const cur = $("cAbout").value;
-  $("cAbout").replaceChildren(h("option", {value: ""}, "The whole project"), ...sorted(items).map((i) => h("option", {value: i.id, selected: i.id === cur}, i.title.length > 70 ? i.title.slice(0, 68) + "…" : i.title)));
-  document.querySelectorAll("[data-m]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.m === mFilter)));
+function renderAboutSelect() {
+  const cur = $("cAbout").value || aboutId;
+  $("cAbout").replaceChildren(h("option", {value: ""}, "The whole project"), ...sorted(items).map((i) => { const t = nameOf(i); return h("option", {value: i.id, selected: i.id === cur}, t.length > 70 ? t.slice(0, 68) + "…" : t); }));
+}
+function msgRow(m, compact) {
+  const it = m.itemId && items.find((i) => i.id === m.itemId);
+  const mine = m.author === me.uid, fresh = m.at > seen && !mine && m.kind !== "change";
+  if (m.kind === "change") return h("li", {class: "m k-change"}, h("p", {}, h("b", {}, m.name || "Someone"), " ", m.text, " · ", fmtWhen(m.at)));
+  const foot = h("div", {class: "foot"});
+  if (m.kind === "question" || m.kind === "delay") {
+    if (m.resolved) { foot.append(h("span", {class: "ok"}, (m.kind === "question" ? "Answered" : "Resolved") + (m.resolvedBy ? " · " + m.resolvedBy : "")));
+      if (!compact) foot.append(h("button", {class: "linkish", type: "button", onclick: () => resolve(m, false)}, "Reopen")); }
+    else foot.append(h("button", {class: "btn small", type: "button", onclick: () => resolve(m, true)}, m.kind === "question" ? "Mark answered" : "Mark resolved"));
+  }
+  if (!compact) {
+    foot.append(h("button", {class: "linkish", type: "button", onclick: () => reply(m)}, "Reply"));
+    if (mine || me.owner) foot.append(h("button", {class: "linkish", type: "button", onclick: () => remove(m)}, "Delete"));
+  }
+  return h("li", {class: `m k-${m.kind}${m.resolved ? " resolved" : ""}`},
+    h("div", {class: "hd"}, m.kind !== "note" ? h("span", {class: "tag"}, KIND[m.kind]) : null, h("b", {}, m.name || "Someone"), h("span", {}, fmtWhen(m.at)), fresh ? h("span", {class: "new"}, "New") : null),
+    it ? h("button", {class: "ref", type: "button", onclick: () => jumpTo(it)}, "About: " + nameOf(it)) : null,
+    h("p", {}, compact && m.text.length > 180 ? m.text.slice(0, 178) + "…" : m.text), foot.children.length ? foot : null);
 }
 function renderMsgs() {
+  const it = items.find((i) => i.id === aboutId);
+  $("aboutBar").hidden = !it; if (it) $("aboutName").textContent = nameOf(it);
+  document.querySelectorAll("[data-m]").forEach((x) => x.setAttribute("aria-pressed", String(x.dataset.m === mFilter)));
   const box = $("msgs"); box.replaceChildren();
   let list = msgs;
   if (aboutId) list = list.filter((m) => m.itemId === aboutId);
   if (mFilter === "open") list = list.filter(openMsg);
   if (mFilter === "talk") list = list.filter((m) => m.kind !== "change");
   if (!list.length) { box.append(h("li", {class: "empty"}, mFilter === "open" ? "No open questions or delays." : "No messages yet. Post the first one above.")); return; }
-  for (const m of list) {
-    const it = m.itemId && items.find((i) => i.id === m.itemId);
-    const mine = m.author === me.uid, fresh = m.at > seen && !mine && m.kind !== "change";
-    if (m.kind === "change") { box.append(h("li", {class: "m k-change"}, h("p", {}, h("b", {}, m.name || "Someone"), " ", m.text, " · ", fmtWhen(m.at)))); continue; }
-    const foot = h("div", {class: "foot"});
-    if (m.kind === "question" || m.kind === "delay") {
-      if (m.resolved) foot.append(h("span", {class: "ok"}, (m.kind === "question" ? "Answered" : "Resolved") + (m.resolvedBy ? " · " + m.resolvedBy : "")),
-        h("button", {class: "linkish", type: "button", onclick: () => resolve(m, false)}, "Reopen"));
-      else foot.append(h("button", {class: "btn small", type: "button", onclick: () => resolve(m, true)}, m.kind === "question" ? "Mark answered" : "Mark resolved"));
-    }
-    foot.append(h("button", {class: "linkish", type: "button", onclick: () => reply(m)}, "Reply"));
-    if (mine || me.owner) foot.append(h("button", {class: "linkish", type: "button", onclick: () => remove(m)}, "Delete"));
-    box.append(h("li", {class: `m k-${m.kind}${m.resolved ? " done" : ""}`},
-      h("div", {class: "hd"}, m.kind !== "note" ? h("span", {class: "tag"}, KIND[m.kind]) : null, h("b", {}, m.name || "Someone"), h("span", {}, fmtWhen(m.at)), fresh ? h("span", {class: "new"}, "New") : null),
-      it ? h("button", {class: "ref", type: "button", onclick: () => jumpTo(it.id)}, "About: " + it.title) : null,
-      h("p", {}, m.text), foot));
-  }
+  box.append(...list.map((m) => msgRow(m, false)));
 }
-function reply(m) {
-  $("cAbout").value = m.itemId || "";
-  $("cText").value = `@${m.name || "Someone"}: `; $("cText").focus();
-  $("compose").scrollIntoView({behavior: "smooth", block: "nearest"});
-}
+function reply(m) { $("cAbout").value = m.itemId || ""; $("cText").value = `@${m.name || "Someone"}: `; $("cText").focus(); scrollTo({top: 0, behavior: "smooth"}); }
 async function resolve(m, on) {
   try { await setDoc(doc(db, "occMsgs", m.id), on ? {resolved: true, resolvedBy: me.name.slice(0, 100)} : {resolved: false, resolvedBy: ""}, {merge: true}); }
   catch { toast("Couldn't save that."); }
@@ -686,31 +1057,144 @@ async function remove(m) {
   if (!confirm(m.author === me.uid ? "Delete your message?" : "Delete this message?")) return;
   try { await deleteDoc(doc(db, "occMsgs", m.id)); } catch { toast("Couldn't delete it."); }
 }
-function jumpTo(id) {
-  if (!items.find((i) => i.id === id && passes(i))) { filter = "all"; whoFilter = ""; renderAll(); }
-  switchTab("listPane");
-  const n = $("it-" + id); if (!n) return;
-  n.scrollIntoView({behavior: "smooth", block: "center"}); n.classList.remove("flash"); void n.offsetWidth; n.classList.add("flash");
+function jumpTo(it) {
+  if (isPunch(it)) { pFilter = "all"; go("punch"); } else { filter = "all"; whoFilter = ""; go("readiness"); }
+  setTimeout(() => { const n = $("it-" + it.id); if (!n) return; n.scrollIntoView({behavior: "smooth", block: "center"}); n.classList.remove("flash"); void n.offsetWidth; n.classList.add("flash"); }, 50);
 }
-$("tLate").addEventListener("click", () => { filter = "late"; whoFilter = ""; switchTab("listPane"); renderAll(); $("listPane").scrollIntoView({behavior: "smooth"}); });
-$("tOpen").addEventListener("click", () => { mFilter = "open"; aboutId = ""; switchTab("msgPane"); renderAll(); $("msgPane").scrollIntoView({behavior: "smooth"}); });
 
-/* ---------- tabs (narrow screens) ---------- */
-function switchTab(id) {
-  document.querySelectorAll("[data-pane]").forEach((p) => p.classList.toggle("on", p.id === id));
-  document.querySelectorAll("[data-tab]").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === id)));
-  if (id === "msgPane") setTimeout(markSeenSoon, 4000);
+/* ---------- occupancy sign-offs ---------- */
+const SO_STATUS = ["To verify", "Scheduled", "Corrections needed", "Approved", "Not applicable"];
+const SO_CLASS = {"Scheduled": "sched", "Corrections needed": "fix", "Approved": "ok", "Not applicable": "na"};
+// the approvals a production building in Tea typically needs; who signs each one is confirmed with the city
+const SO_STARTER = [
+  ["Final building inspection", "Construction and code corrections", "Tea building inspector"],
+  ["Electrical final", "Final approval and inspection tag", "State electrical inspector"],
+  ["Mechanical final", "Heat, ventilation, gas and safety controls", "Tea mechanical inspector"],
+  ["Plumbing final", "Fixtures, water and sewer", "State plumbing inspector"],
+  ["Fire sprinkler acceptance", "Testing, certificates and acceptance", "Authority to confirm"],
+  ["Fire alarm & monitoring", "Acceptance testing and required monitoring", "Authority to confirm"],
+  ["Commercial site inspection", "Approved site-plan conditions", "Tea planning / building"],
+  ["Occupancy authorization", "Written approval for the intended area and use", "Building official"]
+];
+$("sStatus").replaceChildren(...SO_STATUS.map((x) => h("option", {}, x)));
+$("soFilter").append(...SO_STATUS.map((x) => h("option", {value: x}, x)));
+$("soSearch").addEventListener("input", () => renderSignoffs());
+$("soFilter").addEventListener("change", () => renderSignoffs());
+const soSorted = () => [...signoffs].sort((a, b) => (a.order ?? 999) - (b.order ?? 999) || (a.title || "").localeCompare(b.title || ""));
+function soShown() {
+  const q = $("soSearch").value.trim().toLowerCase(), f = $("soFilter").value;
+  return soSorted().filter((x) => (!f || (x.status || "To verify") === f) && (!q || [x.title, x.desc, x.party, x.ref, x.who, x.note].join(" ").toLowerCase().includes(q)));
 }
-function markSeenSoon() { if ($("msgPane").classList.contains("on") || matchMedia("(min-width:1001px)").matches) { markSeen(); renderTiles(); } }
-document.querySelectorAll("[data-tab]").forEach((t) => t.addEventListener("click", () => switchTab(t.dataset.tab)));
+function soRecord(x) {
+  const bits = [x.ref && "#" + x.ref.replace(/^#/, ""), x.date && fmtLong(x.date), x.who].filter(Boolean);
+  return bits.length ? h("small", {class: "has"}, bits.join(" · ")) : h("small", {}, "No reference recorded");
+}
+function renderSignoffs() {
+  if (!me) return;
+  const box = $("soBox"); box.replaceChildren();
+  const counts = SO_STATUS.map((st) => [st, signoffs.filter((x) => (x.status || "To verify") === st).length]);
+  const need = signoffs.filter((x) => x.status !== "Not applicable");
+  $("soSum").replaceChildren(...(signoffs.length ? [h("span", {}, h("b", {}, `${need.filter((x) => x.status === "Approved").length} of ${need.length}`), " approved"),
+    ...counts.filter(([st, n]) => n && st !== "Approved" && st !== "Not applicable").map(([st, n]) => h("span", {}, h("b", {}, n), " " + st.toLowerCase()))] : []));
+  if (!loadedSo) { box.append(h("div", {class: "empty"}, "Loading…")); return; }
+  if (!signoffs.length) {
+    box.append(h("div", {class: "empty"}, me.owner ? h("div", {}, h("p", {style: "margin:0 0 10px"}, "No sign-offs yet. Start with the eight approvals a production building usually needs, then change who signs each one once the city confirms."),
+      h("button", {class: "btn primary", type: "button", onclick: seedSignoffs}, "Load the standard sign-offs")) : "Clint hasn't set up the sign-offs yet."));
+    return;
+  }
+  const rows = soShown();
+  if (!rows.length) { box.append(h("div", {class: "empty"}, "No sign-offs match.")); return; }
+  box.append(h("table", {class: "so"},
+    h("thead", {}, h("tr", {}, h("th", {}, "Approval"), h("th", {}, "Approving party"), h("th", {}, "Status"), h("th", {}, "Records"))),
+    h("tbody", {}, rows.map((x) => h("tr", {class: SO_CLASS[x.status] || null},
+      h("td", {class: "ap"}, h("b", {}, x.title), x.desc ? h("small", {}, x.desc) : null),
+      h("td", {"data-l": "Approving party"}, x.party || "To confirm"),
+      h("td", {"data-l": "Status"}, h("select", {"aria-label": "Status for " + x.title, onchange: (e) => setSoStatus(x, e.target.value)}, SO_STATUS.map((st) => h("option", {selected: st === (x.status || "To verify")}, st)))),
+      h("td", {class: "rec", "data-l": "Records"}, h("button", {class: "btn small", type: "button", onclick: () => editSo(x)}, x.ref || x.date || x.who || x.note ? "Edit details" : "Add details"), soRecord(x)))))));
+}
+async function seedSignoffs() {
+  try { await Promise.all(SO_STARTER.map(([title, desc, party], i) => setDoc(doc(db, "occSignoffs", "so" + pad(i + 1)), {title, desc, party, status: "To verify", order: i + 1}))); toast("Sign-offs loaded"); }
+  catch { toast("Couldn't load them. Try again."); }
+}
+async function setSoStatus(x, status) {
+  try {
+    await setDoc(doc(db, "occSignoffs", x.id), {status, ...stamp()}, {merge: true});
+    post({kind: "change", text: `Set sign-off "${x.title}" to ${status.toLowerCase()}.`}, true);
+    if (status === "Corrections needed") pingOwner("Corrections needed on a sign-off", "Open Path to Occupancy to see which one.");
+    toast("Status set to " + status);
+  } catch { toast("Couldn't save that. Try again."); renderAll(); }
+}
+let soEditing = null;
+function editSo(x) {
+  soEditing = x;
+  $("soH").textContent = x ? x.title : "Add a sign-off";
+  $("sTitle").value = x?.title || ""; $("sParty").value = x?.party || ""; $("sDesc").value = x?.desc || ""; $("sStatus").value = x?.status || "To verify";
+  $("sDate").value = x?.date || ""; $("sRef").value = x?.ref || ""; $("sWho").value = x?.who || ""; $("sNote").value = x?.note || "";
+  $("sStamp").textContent = x?.updatedBy ? `Last changed by ${x.updatedBy}, ${fmtWhen(x.updatedAt)}` : "";
+  $("sDelete").hidden = !(x && me.owner);
+  $("soDlg").showModal();
+}
+$("soAdd").addEventListener("click", () => editSo(null));
+$("sCancel").addEventListener("click", () => $("soDlg").close());
+$("sDelete").addEventListener("click", async () => {
+  if (!confirm(`Delete the "${soEditing.title}" sign-off?`)) return;
+  try { await deleteDoc(doc(db, "occSignoffs", soEditing.id)); $("soDlg").close(); toast("Deleted"); } catch { toast("Couldn't delete it."); }
+});
+$("soForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const data = {title: $("sTitle").value.trim(), party: $("sParty").value.trim(), desc: $("sDesc").value.trim(), status: $("sStatus").value, date: $("sDate").value,
+    ref: $("sRef").value.trim(), who: $("sWho").value.trim(), note: $("sNote").value.trim(), ...stamp()};
+  if (!data.title) return;
+  $("sSave").disabled = true;
+  try {
+    if (soEditing) {
+      await setDoc(doc(db, "occSignoffs", soEditing.id), data, {merge: true});
+      if (data.status !== (soEditing.status || "To verify")) {
+        post({kind: "change", text: `Set sign-off "${data.title}" to ${data.status.toLowerCase()}.`}, true);
+        if (data.status === "Corrections needed") pingOwner("Corrections needed on a sign-off", "Open Path to Occupancy to see which one.");
+      } else post({kind: "change", text: `Updated the details on sign-off "${data.title}".`}, true);
+    } else {
+      await addDoc(collection(db, "occSignoffs"), {...data, order: signoffs.length + 1});
+      post({kind: "change", text: `Added sign-off "${data.title}".`}, true);
+    }
+    $("soDlg").close(); toast("Saved");
+  } catch { toast("Couldn't save that. Try again."); }
+  finally { $("sSave").disabled = false; }
+});
+$("soCsv").addEventListener("click", () => {
+  const q = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [["Approval", "What it covers", "Approving party", "Status", "Date", "Reference", "Inspector or contact", "Notes", "Last changed by", "Last changed"].map(q).join(",")];
+  for (const x of soShown()) lines.push([x.title, x.desc, x.party, x.status || "To verify", x.date, x.ref, x.who, x.note, x.updatedBy, x.updatedAt ? new Date(x.updatedAt).toLocaleString() : ""].map(q).join(","));
+  const a = h("a", {href: URL.createObjectURL(new Blob(["\ufeff" + lines.join("\r\n")], {type: "text/csv"})), download: `occupancy-sign-offs-${today()}.csv`});
+  document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+});
+
+/* ---------- documents ---------- */
+const PROCORE = "https://app.procore.com/webclients/host/companies/135756/tools/hubs/company-hub/views/portfolio";
+function renderDocs() {
+  if (!me) return;
+  const rows = [h("li", {}, icon("out"), h("div", {}, h("a", {href: PROCORE, target: "_blank", rel: "noopener"}, "Procore schedule and project hub"), h("small", {}, "Needs a Procore login")))];
+  for (const d of [...docs].sort((a, b) => (b.at || "").localeCompare(a.at || ""))) {
+    rows.push(h("li", {}, icon("link"), h("div", {}, h("a", {href: d.url, target: "_blank", rel: "noopener noreferrer"}, d.title), h("small", {}, `Added by ${d.name || "someone"}, ${fmtWhen(d.at)}`)),
+      d.by === me.uid || me.owner ? h("button", {class: "btn small ghost danger", type: "button", onclick: async () => { if (confirm(`Remove "${d.title}"?`)) { try { await deleteDoc(doc(db, "occDocs", d.id)); } catch { toast("Couldn't remove it."); } } }}, "Remove") : null));
+  }
+  $("docs").replaceChildren(...rows);
+}
+$("docForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const url = $("dUrl").value.trim();
+  if (!/^https:\/\//i.test(url)) return toast("Use a link that starts with https://");
+  try { await addDoc(collection(db, "occDocs"), {title: $("dTitle").value.trim().slice(0, 120), url: url.slice(0, 1000), by: me.uid, name: me.name.slice(0, 100), at: new Date().toISOString()});
+    $("docForm").reset(); toast("Link added"); } catch { toast("Couldn't add that link."); }
+});
 
 /* ---------- team ---------- */
-$("teamBtn").addEventListener("click", () => { renderTeam(); $("tTarget").value = target; $("tUrl").textContent = location.host + location.pathname; $("teamDlg").showModal(); });
-$("teamClose").addEventListener("click", () => $("teamDlg").close());
 function renderTeam() {
-  if (!me) return;
+  $("linkText").textContent = location.origin + location.pathname;
+  if (document.activeElement !== $("tTarget")) $("tTarget").value = target();
+  $("tConfirmed").value = meta.targetConfirmed ? "yes" : "no";
   const people = [...team].sort((a, b) => (b.email === OWNER) - (a.email === OWNER) || (a.name || "").localeCompare(b.name || ""));
-  $("teamList").replaceChildren(...people.map((p) => h("li", {},
+  $("teamList").replaceChildren(...people.map((p) => h("li", {}, avatar(p),
     h("div", {}, h("b", {}, p.name || p.email), h("small", {}, [p.role, p.email].filter(Boolean).join(" · "))),
     me.owner ? h("button", {class: "btn small ghost", type: "button", onclick: () => { $("tEmail").value = p.email; $("tName").value = p.name || ""; $("tRole").value = p.role || ""; $("tName").focus(); }}, "Edit") : null,
     me.owner && p.email !== OWNER ? h("button", {class: "btn small ghost danger", type: "button", onclick: () => removeMember(p)}, "Remove") : null)));
@@ -718,7 +1202,21 @@ function renderTeam() {
     h("div", {}, h("b", {}, (k.name || k.email) + " is waiting to get in"), h("small", {}, k.email)),
     h("button", {class: "btn small primary", type: "button", onclick: () => { $("tEmail").value = k.email; $("tName").value = k.name || ""; $("tRole").focus(); }}, "Add"),
     h("button", {class: "btn small ghost", type: "button", onclick: () => setDoc(doc(db, "occKnock", k.email), {ignored: true}, {merge: true}).catch(() => {})}, "Ignore"))));
-  $("teamBtn").replaceChildren(icon("team"), "Team", me.owner && $("waitList").children.length ? h("span", {class: "dot"}, $("waitList").children.length) : "");
+}
+function avatar(p) {
+  const ok = typeof p.photo === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(p.photo);
+  return h("span", {class: "av"}, ok ? h("img", {src: p.photo, alt: ""}) : icon("user"));
+}
+// a small square photo stored on the team entry itself, so only the team can see it
+function squarePhoto(file, size = 200) {
+  return new Promise((res, rej) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => { const s = Math.min(img.naturalWidth, img.naturalHeight), c = document.createElement("canvas"); c.width = c.height = size;
+      c.getContext("2d").drawImage(img, (img.naturalWidth - s) / 2, Math.max(0, (img.naturalHeight - s) / 3), s, s, 0, 0, size, size);
+      URL.revokeObjectURL(url); res(c.toDataURL("image/jpeg", 0.85)); };
+    img.onerror = () => { URL.revokeObjectURL(url); rej(new Error("photo")); };
+    img.src = url;
+  });
 }
 async function removeMember(p) {
   if (!confirm(`Take ${p.name || p.email} off the team? They won't be able to open this page.`)) return;
@@ -729,15 +1227,23 @@ $("teamForm").addEventListener("submit", async (e) => {
   const email = $("tEmail").value.trim().toLowerCase();
   const prev = team.find((t) => t.email === email);
   try {
-    await setDoc(doc(db, "occTeam", email), {name: $("tName").value.trim(), role: $("tRole").value.trim(), addedAt: prev?.addedAt || new Date().toISOString()});
+    const entry = {name: $("tName").value.trim(), role: $("tRole").value.trim(), addedAt: prev?.addedAt || new Date().toISOString()};
+    const f = $("tPhoto").files[0];
+    if (f) entry.photo = await squarePhoto(f); else if (prev?.photo) entry.photo = prev.photo;
+    await setDoc(doc(db, "occTeam", email), entry);
     deleteDoc(doc(db, "occKnock", email)).catch(() => {});
     if (email === me.email) me.name = $("tName").value.trim() || me.name;
-    $("teamForm").reset(); toast(prev ? "Saved" : "Added. Tell them to create an account with that email.");
+    $("teamForm").reset(); toast(prev ? "Saved" : "Added. Now send them the page link.");
   } catch { toast("Couldn't save that."); }
+});
+$("copyLink").addEventListener("click", async () => {
+  const url = location.origin + location.pathname;
+  try { await navigator.clipboard.writeText(url); toast("Link copied. Paste it in a text or email."); }
+  catch { const r = document.createRange(); r.selectNodeContents($("linkText")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Copy the highlighted link."); }
 });
 $("targetForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  try { await setDoc(doc(db, "occMeta", "main"), {target: $("tTarget").value}, {merge: true}); toast("Target saved"); } catch { toast("Couldn't save that."); }
+  try { await setDoc(doc(db, "occMeta", "main"), {target: $("tTarget").value, targetConfirmed: $("tConfirmed").value === "yes"}, {merge: true}); toast("Saved"); } catch { toast("Couldn't save that."); }
 });
 </script>
 </body>
