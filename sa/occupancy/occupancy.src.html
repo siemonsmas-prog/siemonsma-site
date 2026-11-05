@@ -446,10 +446,19 @@ dialog .foot .left{margin-right:auto}
 
     <!-- DOCUMENTS -->
     <section data-view="docs" hidden>
-      <div class="head"><div><h1>Documents</h1><p class="sub">Links the team needs: the schedule, drawings, permits, inspection reports.</p></div></div>
+      <div class="head"><div><h1>Documents</h1><p class="sub">Files and links the team needs: the schedule, drawings, permits, inspection reports.</p></div></div>
       <ul class="docs" id="docs"></ul>
       <h2 class="subh">Reference sources</h2>
       <ul class="docs" id="refs"></ul>
+      <div class="card" style="margin-top:16px" id="upCard">
+        <form id="upForm" style="display:grid;gap:10px">
+          <h2>Upload a file</h2>
+          <div class="form2"><label>Name (optional) <input id="uTitle" maxlength="120" placeholder="IT scope markup"></label>
+            <label>File <input id="uFile" type="file" required></label></div>
+          <p class="hint">PDFs, drawings, photos or spreadsheets, up to 30 MB. Only people on the team can open them.</p>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><button class="btn primary" type="submit" id="uBtn">Upload</button><span class="hint" id="uProg" role="status"></span></div>
+        </form>
+      </div>
       <div class="card" style="margin-top:16px">
         <form id="docForm" style="display:grid;gap:10px">
           <h2>Add a link</h2>
@@ -564,16 +573,19 @@ dialog .foot .left{margin-right:auto}
 <script src="../tracker/config.js"></script>
 <script type="module">
 import {initializeApp,getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendEmailVerification,sendPasswordResetEmail,signOut,updateProfile,connectAuthEmulator,
-  initializeFirestore,connectFirestoreEmulator,doc,collection,query,orderBy,limit,onSnapshot,getDoc,setDoc,deleteDoc,addDoc} from "../tracker/vendor/firebase.js";
+  initializeFirestore,connectFirestoreEmulator,doc,collection,query,orderBy,limit,onSnapshot,getDoc,setDoc,deleteDoc,addDoc,
+  getStorage,connectStorageEmulator,ref as sref,uploadBytes,getDownloadURL,deleteObject} from "../tracker/vendor/firebase.js";
 
 const CFG = window.APP_CONFIG;
 const OWNER = String(CFG.ownerEmail || "").trim().toLowerCase();
 const fbApp = initializeApp(CFG.firebase);
 const auth = getAuth(fbApp);
 const db = initializeFirestore(fbApp, {});
+const st = CFG.firebase.storageBucket ? getStorage(fbApp) : null;
 if (CFG.useEmulators && ["localhost", "127.0.0.1"].includes(location.hostname)) {
   connectAuthEmulator(auth, "http://127.0.0.1:9099", {disableWarnings: true});
   connectFirestoreEmulator(db, "127.0.0.1", 8080);
+  if (st) connectStorageEmulator(st, "127.0.0.1", 9199);
 }
 
 const STATUSES = ["Not started", "In progress", "Blocked", "Done"];
@@ -1300,12 +1312,35 @@ function renderDocs() {
   if (!me) return;
   const rows = [h("li", {}, icon("out"), h("div", {}, h("a", {href: PROCORE, target: "_blank", rel: "noopener"}, "Procore schedule and project hub"), h("small", {}, "Needs a Procore login")))];
   for (const d of [...docs].sort((a, b) => (b.at || "").localeCompare(a.at || ""))) {
-    rows.push(h("li", {}, icon("link"), h("div", {}, h("a", {href: d.url, target: "_blank", rel: "noopener noreferrer"}, d.title), h("small", {}, `Added by ${d.name || "someone"}, ${fmtWhen(d.at)}`)),
-      d.by === me.uid || me.owner ? h("button", {class: "btn small ghost danger", type: "button", onclick: async () => { if (confirm(`Remove "${d.title}"?`)) { try { await deleteDoc(doc(db, "occDocs", d.id)); } catch { toast("Couldn't remove it."); } } }}, "Remove") : null));
+    const info = d.path ? [fileKind(d), d.size ? fmtSize(d.size) : ""].filter(Boolean).join(" · ") + " · " : "";
+    rows.push(h("li", {}, icon(d.path ? "doc" : "link"), h("div", {}, h("a", {href: d.url, target: "_blank", rel: "noopener noreferrer"}, d.title), h("small", {}, `${info}Added by ${d.name || "someone"}, ${fmtWhen(d.at)}`)),
+      d.by === me.uid || me.owner ? h("button", {class: "btn small ghost danger", type: "button", onclick: async () => { if (confirm(`Remove "${d.title}"?`)) { try { if (d.path && st) await deleteObject(sref(st, d.path)).catch(() => {}); await deleteDoc(doc(db, "occDocs", d.id)); } catch { toast("Couldn't remove it."); } } }}, "Remove") : null));
   }
   $("docs").replaceChildren(...rows);
   $("refs").replaceChildren(...REFS.map(([t, u, d]) => h("li", {}, icon("out"), h("div", {}, h("a", {href: u, target: "_blank", rel: "noopener"}, t), h("small", {}, d)))));
 }
+const fmtSize = (n) => n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
+const fileKind = (d) => { const x = (d.path.split(".").pop() || "").toLowerCase(); return /^(pdf|xlsx?|docx?|csv|png|jpe?g|dwg|zip)$/.test(x) ? x.toUpperCase().replace("JPEG", "JPG") : "File"; };
+$("upCard").hidden = !st;
+$("upForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const f = $("uFile").files[0]; if (!f || !st) return;
+  if (f.size > 30 * 1024 * 1024) return toast("That file is over 30 MB. Share a link to it instead.");
+  const b = new Uint8Array(10); crypto.getRandomValues(b);
+  const id = [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
+  const safe = f.name.replace(/[^\w.\- ]+/g, "_").slice(-120) || "file";
+  const path = `occ/${id}/${safe}`, title = ($("uTitle").value.trim() || f.name.replace(/\.[^.]+$/, "")).slice(0, 120);
+  $("uBtn").disabled = true; $("uProg").textContent = "Uploading…";
+  try {
+    const r = sref(st, path);
+    await uploadBytes(r, f, {contentType: f.type || "application/octet-stream", customMetadata: {by: me.uid}});
+    const url = await getDownloadURL(r);
+    await addDoc(collection(db, "occDocs"), {title, url, path, size: f.size, type: (f.type || "").slice(0, 100), by: me.uid, name: me.name.slice(0, 100), at: new Date().toISOString()});
+    $("upForm").reset(); $("uProg").textContent = ""; toast("File uploaded");
+    alertAll("New file on Path to Occupancy", "Open Documents on the page to see it.");
+  } catch { $("uProg").textContent = ""; toast("Couldn't upload that. Try again."); }
+  finally { $("uBtn").disabled = false; }
+});
 $("docForm").addEventListener("submit", async (e) => {
   e.preventDefault();
   const url = $("dUrl").value.trim();

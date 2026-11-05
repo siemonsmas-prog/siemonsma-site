@@ -7,6 +7,19 @@ service firebase.storage {
                    && request.auth.token.email.lower() == 'csiemonsma@harvardintegrations.com'
                    && (request.resource == null || request.resource.size < 20 * 1024 * 1024);
     }
+    // Path to Occupancy documents: only the owner and people on the occupancy team (occTeam in Firestore) read or add them;
+    // the person who added a file (or the owner) deletes it, and nobody overwrites one
+    function onOcc() {
+      return request.auth != null && request.auth.token.email_verified == true
+        && (request.auth.token.email.lower() == 'csiemonsma@harvardintegrations.com'
+            || firestore.exists(/databases/(default)/documents/occTeam/$(request.auth.token.email.lower())));
+    }
+    match /occ/{id}/{name} {
+      allow read: if onOcc();
+      allow create: if onOcc() && resource == null && request.resource.size < 30 * 1024 * 1024
+        && request.resource.metadata.by == request.auth.uid;
+      allow delete: if onOcc() && (resource.metadata.by == request.auth.uid || request.auth.token.email.lower() == 'csiemonsma@harvardintegrations.com');
+    }
     // voice reports from the operators' page: anyone can add a new recording (audio only, under 10 MB);
     // only the owner can listen to or delete them, and nobody can overwrite one
     match /voice/{file} {

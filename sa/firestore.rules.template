@@ -128,14 +128,16 @@ service cloud.firestore {
       allow read: if onOcc();
       allow create, update: if onOcc() && validSignoff(request.resource.data);
     }
-    // links the team shares (schedule, drawings, reports); anyone on the team adds one, the person who added it or the owner removes it
+    // links and uploaded files the team shares (schedule, drawings, reports); anyone on the team adds one, the person who added it or the owner removes it
     match /occDocs/{id} {
       allow read: if onOcc();
-      allow create: if onOcc() && request.resource.data.keys().hasOnly(['title','url','by','name','at'])
+      allow create: if onOcc() && request.resource.data.keys().hasOnly(['title','url','by','name','at','path','size','type'])
         && request.resource.data.keys().hasAll(['title','url','by','at']) && request.resource.data.by == request.auth.uid
         && request.resource.data.title is string && request.resource.data.title.size() > 0 && text(request.resource.data,'title',120)
         && request.resource.data.url is string && request.resource.data.url.matches('https://.{1,990}')
-        && text(request.resource.data,'name',100) && text(request.resource.data,'at',40);
+        && text(request.resource.data,'name',100) && text(request.resource.data,'at',40)
+        && (!('path' in request.resource.data) || (request.resource.data.path is string && request.resource.data.path.matches('occ/[A-Za-z0-9_-]{10,40}/.{1,200}')))
+        && (!('size' in request.resource.data) || request.resource.data.size is number) && text(request.resource.data,'type',100);
       allow delete: if onOcc() && resource.data.by == request.auth.uid;
     }
     // someone signed in but not on the team leaves their email once so the owner can add them
