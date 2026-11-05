@@ -269,6 +269,31 @@ dialog .foot{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;paddin
 dialog .foot .left{margin-right:auto}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:30;padding:10px 16px;border-radius:8px;background:var(--navy);color:#fff;font-weight:600;font-size:.88rem;box-shadow:0 8px 30px rgba(0,0,0,.25)}
 @media (prefers-reduced-motion:reduce){.item.flash{animation:none}}
+/* next decisions, baseline weeks, supporting checks */
+.decide{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.decide li{padding:12px 14px;border-left:4px solid var(--red);background:var(--bg,#f6f8fb);border-radius:6px}
+.decide b{display:block;color:var(--navy)}
+.decide p{margin:4px 0 0;color:var(--muted);font-size:.9rem}
+.weeks{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:12px}
+.weeks .card h3{margin:0;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--red)}
+.weeks .card small{display:block;color:var(--muted);margin-bottom:8px}
+.weeks ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:.92rem}
+.later{list-style:none;margin:0;padding:0}
+.later li{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-top:1px solid var(--line2)}
+.later li:first-child{border-top:0}
+.later b{font-weight:600}
+.later span{color:var(--muted);white-space:nowrap}
+.checks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:4px 16px}
+.checks label{display:flex;align-items:center;gap:10px;font-size:.92rem;font-weight:500;color:var(--ink);padding:6px 0;cursor:pointer}
+.checks input{width:18px;height:18px;flex:none;accent-color:var(--navy)}
+.checks li.done label{color:var(--muted);text-decoration:line-through}
+.subh{margin:22px 0 10px;font-size:1rem}
+@media print{
+  .top,.side,.head .btn,.setup,.tablebar,#docForm,.ownerOnly,.talk,.toast,dialog{display:none!important}
+  .shell{display:block}.main{max-width:none;padding:0}
+  .card,.banner,.group{break-inside:avoid}
+  .banner{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 </style>
 </head>
 <body>
@@ -322,9 +347,9 @@ dialog .foot .left{margin-right:auto}
     <section data-view="overview">
       <div class="head">
         <div><h1>Path to Occupancy</h1><p class="sub" id="projLine"></p></div>
-        <a class="btn outline" href="#outlook">Review outlook <svg class="i"><use href="#i-arrow"/></svg></a>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" type="button" id="printBtn">Print view</button><a class="btn outline" href="#outlook">Review outlook <svg class="i"><use href="#i-arrow"/></svg></a></div>
       </div>
-      <div class="banner"><div><b>From construction to production.</b><span>One place for priorities, dependencies and decisions.</span></div></div>
+      <div class="banner"><div><b>From construction to production.</b><span id="bannerLine">One place for priorities, dependencies and decisions.</span></div></div>
       <div class="card setup" id="setup" hidden>
         <p><b>Set up the checklist.</b> Import the checklist file Claude made from the latest schedule, or start from a general list for a production building.</p>
         <div class="acts"><button class="btn primary" type="button" data-import>Import a checklist file</button><button class="btn" type="button" id="seedBtn">Load the general checklist</button></div>
@@ -339,6 +364,10 @@ dialog .foot .left{margin-right:auto}
           <div class="card-head"><h2>Occupancy confirmations</h2><span class="badge" id="confBadge"></span></div>
           <ul class="confirm" id="confirms"></ul>
         </div>
+      </div>
+      <div class="card" id="decideCard" style="margin-bottom:16px" hidden>
+        <div class="card-head"><h2>Next decisions</h2></div>
+        <ul class="decide" id="decide"></ul>
       </div>
       <div class="row2">
         <div class="card">
@@ -364,6 +393,11 @@ dialog .foot .left{margin-right:auto}
         <button class="btn" type="button" id="soCsv">Export CSV</button>
       </div>
       <div id="soBox"></div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-head"><h2>Supporting checks</h2><span class="badge" id="chkBadge" hidden></span></div>
+        <p class="hint" style="margin-bottom:10px">Checked under the matching final inspection. Not every item gets its own signature.</p>
+        <ul class="checks" id="checks"></ul>
+      </div>
     </section>
     <section data-view="readiness" hidden>
       <div class="head"><div><h1>Production readiness</h1><p class="sub">Everything that has to be done before the building can be used for production. Anyone on the team can check items off, change dates and owners.</p></div>
@@ -374,6 +408,7 @@ dialog .foot .left{margin-right:auto}
     <section data-view="outlook" hidden>
       <div class="head"><div><h1>Three-week outlook</h1><p class="sub" id="outlookSub">What's due over the next three weeks, plus anything late.</p></div></div>
       <div id="outlookList"></div>
+      <div id="baseBox"></div>
     </section>
     <section data-view="punch" hidden>
       <div class="head"><div><h1>Punch list</h1><p class="sub">Items from the punch walk. Life-safety items first.</p></div>
@@ -410,6 +445,8 @@ dialog .foot .left{margin-right:auto}
     <section data-view="docs" hidden>
       <div class="head"><div><h1>Documents</h1><p class="sub">Links the team needs: the schedule, drawings, permits, inspection reports.</p></div></div>
       <ul class="docs" id="docs"></ul>
+      <h2 class="subh">Reference sources</h2>
+      <ul class="docs" id="refs"></ul>
       <div class="card" style="margin-top:16px">
         <form id="docForm" style="display:grid;gap:10px">
           <h2>Add a link</h2>
@@ -427,6 +464,10 @@ dialog .foot .left{margin-right:auto}
       <div class="stack">
         <ul class="tlist" id="waitList"></ul>
         <ul class="tlist" id="teamList"></ul>
+        <div class="card" style="border-left:4px solid var(--red)">
+          <h2>Inspection coordination</h2>
+          <p class="hint" style="margin-top:6px;font-size:.9rem">The general contractor schedules the final inspections with the city and state. Confirm who the assigned inspectors are, and who accepts the fire systems, before booking them.</p>
+        </div>
         <div class="card ownerOnly">
           <form id="teamForm" style="display:grid;gap:10px">
             <h2>Add someone</h2>
@@ -533,6 +574,9 @@ const ST_CLASS = {"Not started": "s-idle", "In progress": "s-prog", "Blocked": "
 const KIND = {note: "Note", question: "Question", delay: "Delay", change: "Update"};
 const DEFAULT_TARGET = "2026-12-21";
 const PUNCH = "Punch list";
+const CHECKS_CAT = "Supporting checks";
+const CHECKS = ["Exit routes, doors and hardware", "Exit signs and emergency lighting", "Fire-rated construction and firestopping", "Accessible routes, parking and restrooms",
+  "Fire access and extinguishers", "Structural and special-inspection reports", "Elevator approval", "Energy-code closeout, if it applies", "Production hazards and process permits, if they apply"];
 const CATS = ["Permits and approvals", "Fire and life safety", "Building systems", "Site and access", "Finishes", "Final inspections", "Ready for production"];
 const HI = "Harvard Integrations", BH = "Beck & Hofer", CITY = "City of Tea";
 // A starting list for a production building. Dates are a first guess worked back from the target; change them to match the schedule.
@@ -718,6 +762,7 @@ const go = (v) => { if (location.hash !== "#" + v) location.hash = v; else route
 const isLate = (it) => it.status !== "Done" && it.due && it.due < today();
 const openMsg = (m) => (m.kind === "question" || m.kind === "delay") && !m.resolved;
 const isPunch = (it) => it.cat === PUNCH;
+const isCheck = (it) => it.cat === CHECKS_CAT;
 function stamp() { return {updatedAt: new Date().toISOString(), updatedBy: me.name.slice(0, 100)}; }
 function sorted(list) { return [...list].sort((a, b) => (a.status === "Done") - (b.status === "Done") || (a.due || "9999").localeCompare(b.due || "9999") || (a.order ?? 999) - (b.order ?? 999)); }
 const nameOf = (it) => it.short || it.title;
@@ -809,6 +854,10 @@ function renderOverview() {
 
   const recent = msgs.filter((m) => m.kind !== "change").slice(0, 4);
   $("recent").replaceChildren(...(recent.length ? recent.map((m) => msgRow(m, true)) : [h("li", {class: "empty"}, "No messages yet.")]));
+  $("bannerLine").textContent = `The finish line: ready for production by ${fmtLong(target())}.`;
+  const dec = (Array.isArray(meta.decisions) ? meta.decisions : []).filter((x) => x && x.title);
+  $("decideCard").hidden = !dec.length;
+  $("decide").replaceChildren(...dec.map((x) => h("li", {}, h("b", {}, x.title), x.text ? h("p", {}, x.text) : null)));
   $("fine").textContent = (meta.baseline ? `Based on the ${meta.baseline.replace(/^the /i, "")}. ` : "") + "Targets are not occupancy approvals.";
 }
 
@@ -838,7 +887,7 @@ function chips(box, opts, cur, set) { for (const [v, label] of opts) box.append(
 function renderReadiness() {
   const f = $("filters"); f.replaceChildren();
   chips(f, [["open", "Still to do"], ["late", "Late or blocked"], ["done", "Done"], ["all", "All"]], filter, (v) => (filter = v));
-  const pool = items.filter((i) => !isPunch(i));
+  const pool = items.filter((i) => !isPunch(i) && !isCheck(i));
   const whos = [...new Set(pool.map((i) => i.who).filter(Boolean))].sort();
   f.append(h("select", {"aria-label": "Who owns it", onchange: (e) => { whoFilter = e.target.value; renderAll(); }}, h("option", {value: ""}, "Everyone"), whos.map((w) => h("option", {value: w, selected: w === whoFilter}, w))));
   const box = $("groups"); box.replaceChildren();
@@ -852,13 +901,26 @@ function renderReadiness() {
     box.append(h("div", {class: "group"}, h("h3", {}, c, h("span", {}, `${all.filter((i) => i.status === "Done").length} of ${all.length} done`)), h("ul", {class: "items"}, list.map(itemRow))));
   }
 }
+function renderBaseline() {
+  const box = $("baseBox"); box.replaceChildren();
+  const weeks = (Array.isArray(meta.weeks) ? meta.weeks : []).filter((w) => w && w.label);
+  const later = (Array.isArray(meta.later) ? meta.later : []).filter((x) => x && x.label);
+  if (!weeks.length && !later.length) return;
+  box.append(h("h2", {class: "subh"}, "Contractor baseline" + (meta.baseline ? " · " + meta.baseline : "")),
+    h("p", {class: "hint", style: "margin-bottom:10px"}, "The schedule as it was marked, not a report of what's finished today."));
+  if (weeks.length) box.append(h("div", {class: "weeks"}, weeks.map((w) => h("div", {class: "card"}, h("h3", {}, w.label), w.dates ? h("small", {}, w.dates) : null,
+    h("ul", {}, (Array.isArray(w.work) ? w.work : []).map((t) => h("li", {}, String(t))))))));
+  if (later.length) box.append(h("div", {class: "card"}, h("div", {class: "card-head"}, h("h2", {}, "Later schedule targets")),
+    h("ul", {class: "later"}, later.map((x) => h("li", {}, h("b", {}, x.label), h("span", {}, x.when || ""))))));
+}
 function renderOutlook() {
+  renderBaseline();
   const box = $("outlookList"); box.replaceChildren();
   if (emptyState(box)) return;
   const d = new Date(); d.setHours(12); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // this week's Monday
   const weeks = [0, 1, 2].map((k) => { const a = new Date(d); a.setDate(a.getDate() + 7 * k); const b = new Date(a); b.setDate(b.getDate() + 6); return [ymd(a), ymd(b)]; });
   $("outlookSub").textContent = `What's due from ${fmtLong(weeks[0][0])} to ${fmtLong(weeks[2][1])}, plus anything late. Change a date or status right here.`;
-  const open = items.filter((i) => i.status !== "Done");
+  const open = items.filter((i) => i.status !== "Done" && !isCheck(i));
   const late = sorted(open.filter(isLate));
   if (late.length) box.append(h("div", {class: "group"}, h("h3", {}, "Late", h("span", {}, `${late.length} item${late.length > 1 ? "s" : ""}`)), h("ul", {class: "items"}, late.map(itemRow))));
   weeks.forEach(([a, b], k) => {
@@ -890,6 +952,7 @@ async function setStatus(it, status) {
     toast(status === "Done" ? "Checked off" : "Status set to " + status);
   } catch { toast("Couldn't save that. Try again."); renderAll(); }
 }
+$("printBtn").addEventListener("click", () => print());
 $("seedBtn").addEventListener("click", async () => {
   try {
     await Promise.all(STARTER.map(([cat, title, who, due], i) => setDoc(doc(db, "occItems", "s" + pad(i + 1)), {cat, title, who, due, status: "Not started", note: "", order: i + 1})));
@@ -921,6 +984,9 @@ $("importFile").addEventListener("change", async (e) => {
     if (typeof m.baseline === "string") next.baseline = clip(m.baseline, 80);
     if (typeof m.targetConfirmed === "boolean") next.targetConfirmed = m.targetConfirmed;
     if (Array.isArray(m.milestones)) next.milestones = m.milestones.filter((x) => x && x.label).slice(0, 4).map((x) => ({label: clip(x.label, 40), date: isDay(x.date) ? x.date : ""}));
+    if (Array.isArray(m.decisions)) next.decisions = m.decisions.filter((x) => x && x.title).slice(0, 6).map((x) => ({title: clip(x.title, 80), text: clip(x.text, 300)}));
+    if (Array.isArray(m.weeks)) next.weeks = m.weeks.filter((x) => x && x.label).slice(0, 4).map((x) => ({label: clip(x.label, 30), dates: clip(x.dates, 40), work: (Array.isArray(x.work) ? x.work : []).slice(0, 10).map((t) => clip(t, 120))}));
+    if (Array.isArray(m.later)) next.later = m.later.filter((x) => x && x.label).slice(0, 10).map((x) => ({label: clip(x.label, 80), when: clip(x.when, 40)}));
     if (Object.keys(next).length) await setDoc(doc(db, "occMeta", "main"), next, {merge: true});
     // team details (full name, title, photo) for people already on the team, matched by first name or email
     if (me.owner && Array.isArray(data.team)) for (const t of data.team) {
@@ -1089,8 +1155,22 @@ function soRecord(x) {
   const bits = [x.ref && "#" + x.ref.replace(/^#/, ""), x.date && fmtLong(x.date), x.who].filter(Boolean);
   return bits.length ? h("small", {class: "has"}, bits.join(" · ")) : h("small", {}, "No reference recorded");
 }
+function renderChecks() {
+  const list = [...items.filter(isCheck)].sort((a, b) => (a.order ?? 999) - (b.order ?? 999));
+  const left = list.filter((i) => i.status !== "Done").length;
+  $("chkBadge").hidden = !list.length; $("chkBadge").textContent = left ? `${left} to check` : "All checked"; $("chkBadge").className = "badge" + (left ? "" : " ok");
+  if (!loadedItems) return $("checks").replaceChildren(h("li", {class: "hint"}, "Loading…"));
+  if (!list.length) return $("checks").replaceChildren(h("li", {}, me.owner ? h("button", {class: "btn", type: "button", onclick: seedChecks}, "Load the supporting checks") : h("span", {class: "hint"}, "Clint hasn't set these up yet.")));
+  $("checks").replaceChildren(...list.map((it) => { const done = it.status === "Done";
+    return h("li", {class: done ? "done" : null}, h("label", {}, h("input", {type: "checkbox", checked: done, onchange: (e) => setStatus(it, e.target.checked ? "Done" : "Not started")}), it.title)); }));
+}
+async function seedChecks() {
+  try { await Promise.all(CHECKS.map((title, i) => setDoc(doc(db, "occItems", "chk" + pad(i + 1)), {cat: CHECKS_CAT, title, who: "", due: "", status: "Not started", note: "", order: i + 1}))); toast("Supporting checks loaded"); }
+  catch { toast("Couldn't load them. Try again."); }
+}
 function renderSignoffs() {
   if (!me) return;
+  renderChecks();
   const box = $("soBox"); box.replaceChildren();
   const counts = SO_STATUS.map((st) => [st, signoffs.filter((x) => (x.status || "To verify") === st).length]);
   const need = signoffs.filter((x) => x.status !== "Not applicable");
@@ -1170,6 +1250,9 @@ $("soCsv").addEventListener("click", () => {
 });
 
 /* ---------- documents ---------- */
+const REFS = [["City of Tea building services", "https://www.teasd.com/departments/planning-zoningbuilding-services/documents", "Planning, zoning and building documents"],
+  ["South Dakota electrical inspections", "https://dlr.sd.gov/electrical/inspections.aspx", "State electrical inspection requests"],
+  ["South Dakota plumbing inspections", "https://dlr.sd.gov/plumbing/inspections.aspx", "State plumbing inspection requests"]];
 const PROCORE = "https://app.procore.com/webclients/host/companies/135756/tools/hubs/company-hub/views/portfolio";
 function renderDocs() {
   if (!me) return;
@@ -1179,6 +1262,7 @@ function renderDocs() {
       d.by === me.uid || me.owner ? h("button", {class: "btn small ghost danger", type: "button", onclick: async () => { if (confirm(`Remove "${d.title}"?`)) { try { await deleteDoc(doc(db, "occDocs", d.id)); } catch { toast("Couldn't remove it."); } } }}, "Remove") : null));
   }
   $("docs").replaceChildren(...rows);
+  $("refs").replaceChildren(...REFS.map(([t, u, d]) => h("li", {}, icon("out"), h("div", {}, h("a", {href: u, target: "_blank", rel: "noopener"}, t), h("small", {}, d)))));
 }
 $("docForm").addEventListener("submit", async (e) => {
   e.preventDefault();
