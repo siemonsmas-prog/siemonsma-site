@@ -174,7 +174,7 @@ footer b{color:#fff;font-family:var(--head);letter-spacing:.04em}
   <div>
   <p class="eyebrow">Harvard Integrations · Tea, SD</p>
   <h1>Forklift Service Portal</h1>
-  <p class="lede">Live hour meters and the next service due on every lift. Book a visit at least <span id="lead">24</span> hours out and Clint Siemonsma approves it. On site, tap <b>Arrived</b> (no need to stop at the front desk), then <b>Service complete</b> when you're done.</p>
+  <p class="lede">Live hour meters and the next service due on every lift. Book a visit at least <span id="lead">24</span> hours out and the Harvard team approves it. On site, tap <b>Arrived</b> (no need to stop at the front desk), then <b>Service complete</b> when you're done.</p>
   </div>
   <div class="stats" id="stats" hidden>
     <div class="stat"><b id="sLifts">0</b><span>Lifts in service</span></div>
@@ -190,7 +190,7 @@ footer b{color:#fff;font-family:var(--head);letter-spacing:.04em}
   <section id="main" hidden>
     <div class="emergency">
       <div class="ico" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c62828" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></div>
-      <p><b>Lift down?</b> Use Emergency to book a visit sooner than 24 hours. Clint gets it right away.</p>
+      <p><b>Lift down?</b> Use Emergency to book a visit sooner than 24 hours. The Harvard team gets it right away.</p>
       <button class="btn danger" type="button" id="emBtn">Emergency visit</button>
     </div>
 
@@ -209,7 +209,7 @@ footer b{color:#fff;font-family:var(--head);letter-spacing:.04em}
 
 <footer><div class="wrap">
   <div><b>HARVARD INTEGRATIONS</b><br>27157 470th Avenue, Tea, SD 57064 · (605) 368-5306</div>
-  <div>Maintenance: Clint Siemonsma</div>
+  <div>Maintenance Department</div>
 </div></footer>
 
 <dialog id="dlg">
@@ -228,7 +228,7 @@ footer b{color:#fff;font-family:var(--head);letter-spacing:.04em}
     <p class="msg" id="fMsg" role="status"></p>
     <div class="actions">
       <button class="btn" type="button" data-close>Close</button>
-      <button class="btn primary" type="submit" id="fSend">Send to Clint</button>
+      <button class="btn primary" type="submit" id="fSend">Send to Harvard team</button>
     </div>
   </form>
 </dialog>
@@ -257,7 +257,7 @@ footer b{color:#fff;font-family:var(--head);letter-spacing:.04em}
     <p class="hint" id="qRepairs"></p>
     <label>Quote PDF <input type="file" id="qPdf" accept="application/pdf,.pdf" required></label>
     <div>
-      <p class="hint" style="margin-bottom:6px">Line items (Clint approves item by item)</p>
+      <p class="hint" style="margin-bottom:6px">Line items (the Harvard team approves item by item)</p>
       <div class="lines" id="qLines"></div>
       <button class="btn small" type="button" id="qAdd" style="margin-top:8px">+ Add a line</button>
     </div>
@@ -266,7 +266,7 @@ footer b{color:#fff;font-family:var(--head);letter-spacing:.04em}
     <p class="msg" id="qMsg" role="status"></p>
     <div class="actions">
       <button class="btn" type="button" data-close>Close</button>
-      <button class="btn primary" type="submit" id="qSend">Send quote to Clint</button>
+      <button class="btn primary" type="submit" id="qSend">Send quote to Harvard team</button>
     </div>
   </form>
 </dialog>
@@ -2754,7 +2754,7 @@ async function emailApprover(env, b, origin, what) {
 
 async function emailVendor(env, b, title, line, extraRows = [], extraHtml = "") {
   const subject = `Harvard Integrations: ${b.lift} ${title}`;
-  const rows = [["", line], ...bookingRows(b).slice(0, 3), ...extraRows, ["Note from Clint", b.reviewNote]];
+  const rows = [["", line], ...bookingRows(b).slice(0, 3), ...extraRows, ["Note from the Harvard team", b.reviewNote]];
   return sendMail(env, env.VENDOR_EMAILS, subject, mailBox(title.toUpperCase(), "#19437f", rows, null, extraHtml), `${line}\n\n${rowsText(rows)}`);
 }
 
@@ -2779,7 +2779,7 @@ async function emailFrontDesk(env, b, what) {
   const vendor = vendorName(env);
   const inBldg = what === "arrived";
   const subject = inBldg ? `On site: ${vendor} (${b.contact || "service tech"}) for ${b.lift}` : `Left site: ${vendor} finished ${b.lift}`;
-  const rows = [["Company", vendor], ["Tech", b.contact], ["Working on", `${b.lift} (${b.service})`], [inBldg ? "Arrived" : "Finished", whenText(inBldg ? b.arrivedAt : b.completedAt)], ["Expected on site", inBldg ? `about ${b.estHours} hr` : null], ["Host", "Clint Siemonsma, Maintenance"]];
+  const rows = [["Company", vendor], ["Tech", b.contact], ["Working on", `${b.lift} (${b.service})`], [inBldg ? "Arrived" : "Finished", whenText(inBldg ? b.arrivedAt : b.completedAt)], ["Expected on site", inBldg ? `about ${b.estHours} hr` : null], ["Host", "Maintenance team"]];
   return sendMail(env, env.FRONT_DESK_EMAILS, subject, mailBox(inBldg ? "VENDOR ON SITE" : "VENDOR LEFT SITE", inBldg ? "#19437f" : "#748182", rows), rowsText(rows));
 }
 
@@ -2809,7 +2809,7 @@ async function emailAP(env, b, kind, origin) {
   if (kind === "po") {
     const q = b.quote, pdf = await vendorStore(env).get(`svc:pdf:${b.id}`, "arrayBuffer");
     const items = q.approvedItems.map((i) => q.items[i]);
-    const rows = [["Vendor", vendor], ["For", `${b.lift} (${b.model}) repair`], ["Approved by", "Clint Siemonsma, Maintenance"], ["Limble work order", b.taskID ? `#${b.taskID}` : null], ["Approved total", money(q.approvedTotal)], ["Vendor quote total", money(q.total)]];
+    const rows = [["Vendor", vendor], ["For", `${b.lift} (${b.model}) repair`], ["Approved by", "Maintenance team"], ["Limble work order", b.taskID ? `#${b.taskID}` : null], ["Approved total", money(q.approvedTotal)], ["Vendor quote total", money(q.total)]];
     const html = mailBox("PO REQUEST: APPROVED REPAIR QUOTE", "#19437f", rows, null, quoteTableHtml({ items, total: q.approvedTotal }) + `<p style="font-size:13px;color:#666;margin:12px 0 0">The vendor's quote PDF is attached. Please issue a PO to ${esc(vendor)} for the approved total.</p>`);
     return sendMail(env, to, `PO request: ${vendor}, ${b.lift} repair, ${money(q.approvedTotal)}`, html, `${rowsText(rows)}\n\n${items.map((it) => `${it.item}: ${money(it.amount)}`).join("\n")}`,
       pdf ? [{ filename: `${vendor.replace(/\W+/g, "-")}-quote-${b.lift}.pdf`, content: b64(pdf) }] : undefined);
@@ -2838,7 +2838,7 @@ async function vendorAction(env, body, origin) {
     await putBooking(env, b);
     await woComment(env, b, `${vendorName(env)} cancelled this service visit on the vendor page.`);
     await emailApprover(env, b, origin, "cancelled");
-    return { ok: true, booking: publicBooking(b), message: "Cancelled. Clint has been emailed." };
+    return { ok: true, booking: publicBooking(b), message: "Cancelled. The Harvard team has been emailed." };
   }
 
   if (action === "arrive") {
@@ -2850,7 +2850,7 @@ async function vendorAction(env, body, origin) {
     await woComment(env, b, `${vendorName(env)} arrived on site at ${whenText(now)} (checked in on the vendor page).`);
     await emailApprover(env, b, origin, "arrived");
     await emailFrontDesk(env, b, "arrived");
-    return { ok: true, booking: publicBooking(b), message: "Checked in. Clint has been told you're here." };
+    return { ok: true, booking: publicBooking(b), message: "Checked in. The Harvard team knows you're here." };
   }
 
   if (action === "complete") {
@@ -2896,7 +2896,7 @@ async function vendorAction(env, body, origin) {
     await putBooking(env, b);
     await woComment(env, b, `${vendorName(env)} sent a repair quote for ${b.lift}: ${money(total)} (${items.length} item${items.length > 1 ? "s" : ""}). Waiting on approval.`);
     const m = await emailApprover(env, b, origin, "quote");
-    return { ok: true, booking: publicBooking(b), message: m.emailed ? "Quote sent to Clint." : "Quote saved. Clint will see it on his page." };
+    return { ok: true, booking: publicBooking(b), message: m.emailed ? "Quote sent to the Harvard team." : "Quote saved. The Harvard team will see it." };
   }
 
   if (action === "invoice") {
@@ -2958,7 +2958,7 @@ async function vendorAction(env, body, origin) {
   await putBooking(env, b);
   if (repairFrom && !repairFrom.quote.repairBookingID) { repairFrom.quote.repairBookingID = b.id; await putBooking(env, repairFrom); }
   const mail = await emailApprover(env, b, origin, was ? "new time" : "booking");
-  return { ok: true, booking: publicBooking(b), message: mail.emailed ? "Sent to Clint for approval. You'll see the answer here." : "Saved. Clint will see it here (email isn't set up)." };
+  return { ok: true, booking: publicBooking(b), message: mail.emailed ? "Sent to the Harvard team for approval. You'll see the answer here." : "Saved. The Harvard team will see it here." };
 }
 
 async function handleVendorApi(request, env) {
@@ -2977,7 +2977,7 @@ async function handleVendorApi(request, env) {
   if (key.length < 20) return reply({ error: "The vendor page isn't set up yet." }, 503);
   let diff = sent.length ^ key.length;
   for (let i = 0; i < key.length; i++) diff |= key.charCodeAt(i) ^ (sent.charCodeAt(i) || 0);
-  if (diff) return reply({ error: "This link isn't valid. Ask Clint Siemonsma for the current one." }, 401);
+  if (diff) return reply({ error: "This link isn't valid. Ask the Harvard Integrations maintenance team for the current one." }, 401);
 
   try {
     if (request.method === "GET") return reply(await vendorView(env));
@@ -3396,7 +3396,7 @@ async function call(method, body) {
 }
 
 async function load() {
-  if (!key) { $("state").replaceChildren(el("div", "state", "This page needs your private link. Ask Clint Siemonsma for it.")); return; }
+  if (!key) { $("state").replaceChildren(el("div", "state", "This page needs your private link. Ask the Harvard Integrations maintenance team for it.")); return; }
   try {
     data = await call("GET");
     $("lead").textContent = data.leadHours;
@@ -3430,8 +3430,8 @@ function bookingCard(b) {
   if (b.arrived) meta.append(el("span", null, "Arrived " + b.arrived));
   if (b.completed) meta.append(el("span", null, "Finished " + b.completed));
   li.append(r1, meta, steps(b));
-  if (b.status === "new_time" && b.reviewNote) li.append(el("p", "note", "From Clint: " + b.reviewNote));
-  else if (b.reviewNote && b.status !== "complete") li.append(el("p", "hint", "From Clint: " + b.reviewNote));
+  if (b.status === "new_time" && b.reviewNote) li.append(el("p", "note", "From the Harvard team: " + b.reviewNote));
+  else if (b.reviewNote && b.status !== "complete") li.append(el("p", "hint", "From the Harvard team: " + b.reviewNote));
   if (b.repairFor && b.note) li.append(el("p", "hint", b.note));
 
   if (b.completion) {
@@ -3448,10 +3448,10 @@ function bookingCard(b) {
   const q = b.quote;
   if (q) {
     const qd = el("div", "quote");
-    if (q.status === "waiting") qd.append(el("span", null, `Quote sent ${q.sent}: ${money(q.total)}. Waiting on Clint.`));
+    if (q.status === "waiting") qd.append(el("span", null, `Quote sent ${q.sent}: ${money(q.total)}. Waiting on the Harvard team.`));
     else if (q.status === "approved") qd.append(el("b", null, `Quote approved: ${money(q.approvedTotal)} of ${money(q.total)}.`), q.repairBooked ? " Repair visit booked." : " Book the repair visit next.");
     else qd.append(el("span", "note", `Quote declined${q.reviewNote ? ": " + q.reviewNote : "."} You can send a revised one.`));
-    if (q.reviewNote && q.status === "approved") qd.append(el("p", "hint", "From Clint: " + q.reviewNote));
+    if (q.reviewNote && q.status === "approved") qd.append(el("p", "hint", "From the Harvard team: " + q.reviewNote));
     li.append(qd);
   }
 
@@ -3526,7 +3526,7 @@ function render() {
 // ---- booking form
 function fillServices(lift, chosen) {
   const sel = $("fService"); sel.replaceChildren();
-  const opts = repairFor ? [{ service: "Approved repair", estHours: 2, tasks: "The items Clint approved on your quote." }]
+  const opts = repairFor ? [{ service: "Approved repair", estHours: 2, tasks: "The items the Harvard team approved on your quote." }]
     : [...(emergency ? [{ service: "Emergency repair", estHours: 2, tasks: "Breakdown or safety problem. Describe it in the note." }] : []), ...lift.options];
   opts.forEach((o) => { const op = el("option", null, o.service); op.value = o.service; sel.append(op); });
   sel.value = chosen || (repairFor ? "Approved repair" : emergency ? "Emergency repair" : lift.next ? lift.next.service : opts[0].service);
@@ -3556,7 +3556,7 @@ function openForm({ lift, booking, em = false, repair = null }) {
   $("fDate").value = booking ? booking.date : emergency ? centralToday(0) : centralToday(2);
   if (booking) $("fTime").value = booking.time;
   $("fEst").oninput = () => { editingEst = true; };
-  $("fSend").textContent = emergency ? "Send emergency to Clint" : "Send to Clint";
+  $("fSend").textContent = emergency ? "Send emergency to Harvard team" : "Send to Harvard team";
   $("fSend").className = "btn " + (emergency ? "danger" : "primary");
   $("dlg").showModal();
 }
@@ -3694,8 +3694,8 @@ body{padding-bottom:76px}
     <p style="margin:0;color:#64707d">Sample data only. Nothing goes to Limble or anyone's email. Try it like this:</p>
     <ol>
       <li><b>FL-5</b> is approved for today: tap <b>Arrived</b>, then <b>Service complete</b> and add a repair.</li>
-      <li>Open <b>Clint's approvals</b> to approve the FL-2 booking and the FL-7 repair quote, item by item.</li>
-      <li>Open <b>Emails</b> to see what Clint, AP, the front desk and Lift Solutions receive.</li>
+      <li>Open <b>Harvard team approvals</b> to approve the FL-2 booking and the FL-7 repair quote, item by item.</li>
+      <li>Open <b>Emails</b> to see what the Harvard team, AP, the front desk and Lift Solutions receive.</li>
       <li>Back on the vendor view, <b>Schedule repair</b> and <b>Send invoice</b> on FL-7.</li>
     </ol>
     <button class="btn primary" type="button" onclick="document.getElementById('demoIntro').remove()">Start the demo</button>
@@ -3710,7 +3710,7 @@ body{padding-bottom:76px}
 <nav class="demo-bar" aria-label="Demo">
   <span class="demo-tag">DEMO</span>
   <button type="button" data-tab="vendor" aria-pressed="true">Lift Solutions view</button>
-  <button type="button" data-tab="approvals">Clint's approvals<span class="n" id="nApprovals" hidden></span></button>
+  <button type="button" data-tab="approvals">Harvard team approvals<span class="n" id="nApprovals" hidden></span></button>
   <button type="button" data-tab="mail">Emails<span class="n" id="nMail" hidden></span></button>
   <button type="button" id="demoRestart">Start over</button>
 </nav>
@@ -3722,7 +3722,7 @@ const panel = $("demoPanel"), list = $("demoList"), view = $("demoView");
 let tab = "vendor", seen = 0, openMail = null;
 const RCPT = (to) => {
   const t = (Array.isArray(to) ? to : [to]).join(",");
-  if (/ap@/.test(t)) return "Accounts Payable"; if (/frontdesk/.test(t)) return "Front desk"; if (/liftsolutions/.test(t)) return "Lift Solutions"; return "Clint";
+  if (/ap@/.test(t)) return "Accounts Payable"; if (/frontdesk/.test(t)) return "Front desk"; if (/liftsolutions/.test(t)) return "Lift Solutions"; return "Harvard team";
 };
 const needsClint = () => window.demoBookings().filter((b) => b.status === "pending" || (b.quote && b.quote.status === "waiting"));
 function refreshBadge() {
@@ -3782,8 +3782,8 @@ function linkFor(id) {
 }
 function renderApprovals() {
   list.replaceChildren();
-  const h = document.createElement("h3"); h.textContent = "Clint's approvals"; list.append(h);
-  const p = document.createElement("p"); p.className = "d"; p.textContent = "In real life each one arrives as an email with one button. Approving a visit puts a work order in Limble for the techs and an invite on Clint's calendar."; list.append(p);
+  const h = document.createElement("h3"); h.textContent = "Harvard team approvals"; list.append(h);
+  const p = document.createElement("p"); p.className = "d"; p.textContent = "In real life each one arrives as an email with one button. Approving a visit puts a work order in Limble for the techs and an invite on the maintenance calendar."; list.append(p);
   const all = window.demoBookings().filter((b) => b.status !== "cancelled").sort((a, b) => (needsClint().includes(b) ? 0 : 1) - (needsClint().includes(a) ? 0 : 1));
   const waiting = new Set(needsClint().map((b) => b.id));
   all.sort((a, b) => waiting.has(b.id) - waiting.has(a.id) || b.start - a.start).forEach((b) => {
