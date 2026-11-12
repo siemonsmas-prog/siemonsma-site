@@ -102,6 +102,16 @@ shutil.copy(HERE / "maintenance/maintenance.src.html", site / "maintenance" / "i
 # private new building page: checklist and messages for the occupancy team (sign-in, team list in Firestore)
 (site / "occupancy").mkdir()
 shutil.copy(HERE / "occupancy/occupancy.src.html", site / "occupancy" / "index.html")
+# Forklift service portal demo page (unlisted)
+(site / "vendor-demo").mkdir()
+shutil.copy(HERE / "vendor-demo/vendor-demo.src.html", site / "vendor-demo" / "index.html")
+# talk to type: every page gets the mic for its text boxes (dictate/dictate.js, inlined so it works offline too)
+DICTATE = "<script>\n" + (HERE / "dictate" / "dictate.js").read_text() + "</script>\n"
+for page in site.rglob("*.html"):
+    s = page.read_text()
+    if "__dictateLoaded" not in s and "</body>" in s:
+        i = s.rindex("</body>")
+        page.write_text(s[:i] + DICTATE + s[i:])
 zipbase = HERE.parent / "siemonsma-site"
 shutil.make_archive(str(zipbase), "zip", site)
 shutil.move(str(zipbase) + ".zip", site / "siemonsma-site.zip")
