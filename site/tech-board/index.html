@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Technician Work Order Board</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="../assets/favicon-64.png">
+<link rel="apple-touch-icon" href="../assets/icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Same look as the Technician Work Order Board on Claude. Always-on version: reads the Limble connector with the board key. */
+:root{
+  --bg:#eef1f4;--surface:#fff;--ink:#14202b;--muted:#566573;--line:#d3dae1;--accent:#c2410c;
+  --red:#b91c1c;--red-soft:#fde2e2;--amber:#a15c00;--amber-soft:#fff1d1;--blue:#1d4ed8;--blue-soft:#e0e9ff;--green:#15803d;--green-soft:#dcf3e4;--pink:#9d174d;--pink-soft:#fce7f3;--teal:#0f766e;--teal-soft:rgba(20,184,166,.16);
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root{--bg:#0f161d;--surface:#18222c;--ink:#e6edf3;--muted:#9aa9b6;--line:#2b3945;--accent:#f97316;--red:#f87171;--red-soft:#3b1a1c;--amber:#fbbf24;--amber-soft:#382b10;--blue:#93b4ff;--blue-soft:#1b2a4a;--green:#4ade80;--green-soft:#12301f;--pink:#f9a8d4;--pink-soft:#3a1a2c;--teal:#5eead4;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+[hidden]{display:none!important}
+.wrap{max-width:1200px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:0;z-index:5;background:var(--ink);color:var(--bg);padding-top:env(safe-area-inset-top,0px)}
+header .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:10px}
+header h1{margin:0;font:700 24px var(--display);letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+header span{font-size:12px;opacity:.7}
+.btn{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:600 13px var(--body);padding:8px 14px;border-radius:6px;cursor:pointer}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+main .wrap{padding-block:16px 60px}
+h2{font:700 30px var(--display);text-transform:uppercase;letter-spacing:.02em;margin:0 0 6px}
+.lede{color:var(--muted);margin:0 0 10px;max-width:70ch}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 12px}
+.chip{appearance:none;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:500 14px var(--body);padding:7px 13px;border-radius:999px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .n{opacity:.7;margin-left:3px;font-variant-numeric:tabular-nums}
+.grid{display:grid;gap:16px}
+@media (min-width:1000px){.grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}}
+.mapbox{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow-x:auto}
+.aerial{position:relative;min-width:600px}
+.aerial img{display:block;width:100%;height:auto;max-width:none}
+.pin{position:absolute;transform:translate(-50%,-50%);width:6.5%;aspect-ratio:2/1;min-width:34px;border:3px solid transparent;border-radius:6px;background:transparent;padding:0;cursor:pointer}
+.pin[data-n]::after{content:attr(data-n);position:absolute;top:-11px;right:-11px;min-width:22px;height:22px;padding:0 5px;border-radius:11px;font:700 12px/18px var(--body);border:2px solid #fff;box-sizing:border-box;text-align:center}
+.pin.wr{border-color:#facc15;background:rgba(250,204,21,.38);box-shadow:0 0 0 3px rgba(0,0,0,.4),0 0 20px 5px #facc15}.pin.wr::after{background:#facc15;color:#1a1300}
+.pin.mine{border-color:#14b8a6;background:rgba(20,184,166,.35);box-shadow:0 0 0 3px rgba(0,0,0,.4),0 0 20px 6px #14b8a6}.pin.mine::after{background:#14b8a6;color:#04201c}
+@media (prefers-reduced-motion:no-preference){.pin.wr,.tile.wr{animation:blink 1.1s steps(2,jump-none) infinite}}
+@keyframes blink{50%{opacity:.35}}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;margin-top:8px}
+.tile{appearance:none;font:inherit;color:var(--ink);text-align:left;background:var(--surface);border:2px solid var(--line);border-radius:8px;padding:10px 14px;cursor:pointer;display:grid;grid-template-columns:1fr auto;gap:0 12px;align-items:center}
+.tile b{font:700 20px var(--display);text-transform:uppercase;letter-spacing:.03em}
+.tile small{grid-column:1;font-size:12.5px;color:var(--muted)}
+.tile .c{grid-column:2;grid-row:1/span 2;font:700 22px var(--body);font-variant-numeric:tabular-nums;color:var(--muted);min-width:36px;text-align:center}
+.tile.wr{border-color:#facc15;background:rgba(250,204,21,.18)}.tile.mine{border-color:#14b8a6;background:var(--teal-soft)}.tile.wr .c,.tile.mine .c{color:inherit}
+.section{background:var(--surface);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.section h3{margin:0;padding:10px 14px;border-bottom:1px solid var(--line);font:700 19px var(--display);letter-spacing:.03em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;font:600 12px var(--body);padding:1px 8px;border-radius:999px;white-space:nowrap;letter-spacing:0}
+.p-red{background:var(--red-soft);color:var(--red)}.p-amber{background:var(--amber-soft);color:var(--amber)}.p-blue{background:var(--blue-soft);color:var(--blue)}.p-green{background:var(--green-soft);color:var(--green)}.p-pink{background:var(--pink-soft);color:var(--pink)}.p-teal{background:var(--teal-soft);color:var(--teal)}
+.grp{padding:8px 14px 4px;font:700 13px var(--body);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center;scroll-margin-top:80px}
+.row{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row.em{border-left:5px solid #dc2626;background:rgba(220,38,38,.08)}
+.row a{font:600 13px var(--mono);color:var(--accent);text-decoration:none;padding-top:1px}
+.row .nm{font-weight:600}
+.row .meta{grid-column:2;display:flex;flex-wrap:wrap;gap:4px 8px;font-size:12.5px;color:var(--muted);align-items:center}
+.fresh{font:500 12px var(--body);text-transform:none;letter-spacing:0;color:var(--muted)}
+.msg{padding:14px;color:var(--muted)}
+.keybox{max-width:520px;margin:40px auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:10px}
+.keybox input{font:16px var(--mono);padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+/* TV mode */
+body.tv header,body.tv .lede,body.tv .chips,body.tv .tvbar{display:none!important}
+body.tv{font-size:18px}body.tv main .wrap{max-width:none;padding-block:12px 70px}
+body.tv h2{font-size:46px}body.tv .row .nm{font-size:20px}body.tv .row .meta{font-size:15px}
+body.tv .section{max-height:calc(100vh - 110px)}
+#tvui .bar{position:fixed;left:0;right:0;bottom:0;height:6px;background:var(--accent);transform-origin:left;z-index:30}
+@keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+#tvui .ctl{position:fixed;right:12px;bottom:14px;display:flex;gap:10px;align-items:center;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 12px;font-size:14px;color:var(--muted)}
+</style>
+</head>
+<body>
+<header><div class="wrap"><div><h1>Technician Work Order Board</h1><span>Open work by building · live from Limble</span></div><button class="btn primary" id="tvbtn" type="button">TV mode</button></div></header>
+<main><div class="wrap" id="view"><p class="msg">Loading…</p></div></main>
+<script>
+const API="https://limble-connector.siemonsmas.workers.dev/api/tech-board";
+const PINS={M1:[30.75,4.1],M:[38.6,4.1],I:[72.6,8.1],J:[82.9,4.7],K:[27.8,26.4],L:[16.9,31.7],H:[82.25,23.1],G:[78.1,30.2],A:[89.4,33.8],F:[82.6,36.1],E:[76.4,41.2],D:[71.25,57.7],C:[82.1,73.9],B:[90.25,73.9],SFA:[7.4,16.6],Z:[18.8,90.6],X:[43.25,91.1]};
+const CODES=["A","B","C","D","E","F","G","H","I","J","J1","K","L","M","M1","SFA","X","Z","MOB","GEN"];
+const AREAS=[["MOB","Mobile equipment","Forklifts, trucks, trailers, carts"],["GEN","General requests","Campus-wide and no building"]];
+const LEVEL={emergency:["Emergency","p-red"],high:["High","p-pink"],medium:["Medium","p-blue"],low:["Low","p-green"]};
+const TV_SECS=20,REFRESH=120000;
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},set(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
+const view=document.getElementById("view");
+// The board key comes in the link (#key=...) once, then this device remembers it and drops it from the address bar.
+const hp=new URLSearchParams(location.hash.slice(1));if(hp.get("key")){store.set("tb-key",hp.get("key"));history.replaceState(null,"",location.pathname+location.search)}
+const qp=new URLSearchParams(location.search);
+let KEY=store.get("tb-key"),DATA=null,ERR="",sel=qp.get("tech")||store.get("tb-tech")||"",tv=false,tvIdx=0,tvTimer=null,lock=null;
+if(qp.get("tv")==="1")setTimeout(()=>startTV(),300);
+const name=k=>k==="MOB"?"Mobile equipment":k==="GEN"?"General requests":"Building "+k;
+function ago(iso){const s=Math.max(0,(Date.now()-new Date(iso))/1000);return s<60?"just now":s<3600?Math.floor(s/60)+" min ago":Math.floor(s/3600)+" h ago"}
+async function load(){
+  if(!KEY){render();return}
+  try{const r=await fetch(API,{headers:{Authorization:"Bearer "+KEY},cache:"no-store"});const j=await r.json().catch(()=>({}));
+    if(!r.ok){ERR=j.error||"Couldn't load the board ("+r.status+").";if(r.status===401){store.set("tb-key","");KEY=""}}else{DATA=j;ERR=""}}
+  catch(e){ERR="Can't reach the board right now. It will try again in two minutes."}
+  if(!tv)render();
+}
+function row(r){const l=LEVEL[r.level];return `<div class="row${r.level==="emergency"?" em":""}"><a href="https://app.limblecmms.com/taskList?taskID=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">#${esc(r.id)}</a><span class="nm">${esc(r.name)}</span><span class="meta">${l?`<span class="pill ${l[1]}">${l[0]}</span>`:""}${r.overdue?`<span class="pill p-red">Overdue</span>`:""}${r.due?`<span>Due ${esc(r.due)}</span>`:""}<span>${esc(r.status)}</span>${r.kind?`<span>${esc(r.kind)}</span>`:""}${r.where?`<span>${esc(r.where)}</span>`:""}${r.with&&r.with.length?`<span>With ${esc(r.with.join(", "))}</span>`:""}</span></div>`}
+function block(items,cls,title,pill){
+  const by={};items.forEach(r=>(by[r.area]=by[r.area]||[]).push(r));
+  const pins=Object.keys(PINS).map(c=>{const n=(by[c]||[]).length;return `<button class="pin ${n?cls:""}" ${n?`data-n="${n}"`:""} data-go="${c}" style="left:${PINS[c][0]}%;top:${PINS[c][1]}%" aria-label="Building ${c}${n?", "+n:""}"></button>`}).join("");
+  const tiles=AREAS.map(([k,l,s])=>{const n=(by[k]||[]).length;return `<button class="tile ${n?cls:""}" data-go="${k}"><b>${l}</b><small>${s}</small><span class="c">${n}</span></button>`}).join("");
+  const groups=CODES.filter(c=>by[c]).map(c=>`<div class="grp" id="g-${c}">${esc(name(c))} <span class="pill ${cls==="wr"?"p-amber":"p-teal"}">${by[c].length}</span></div>${by[c].map(row).join("")}`).join("");
+  return `<div class="grid"><div><div class="mapbox"><div class="aerial"><img src="map.jpg" alt="Aerial campus map with building labels" width="2400" height="1800">${pins}</div></div><div class="tiles">${tiles}</div></div>
+  <section class="section"><h3><span>${title} ${pill}</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3>${ERR?`<p class="msg">${esc(ERR)}</p>`:""}${groups||`<p class="msg">${cls==="wr"?"No waiting work requests. Everything has someone on it.":"No open work orders assigned right now."}</p>`}</section></div>`;
+}
+function render(slide){
+  if(!KEY){view.innerHTML=`<form class="keybox" id="keyform"><h2>Board key</h2><p class="lede">This screen needs the board key from Clint. Paste it once; this device remembers it.</p><input id="k" autocomplete="off" aria-label="Board key"><button class="btn primary">Open the board</button>${ERR?`<p class="lede">${esc(ERR)}</p>`:""}</form>`;return}
+  if(!DATA){view.innerHTML=`<p class="msg">${esc(ERR||"Loading work orders from Limble…")}</p>`;return}
+  const s=slide||(sel?{tech:sel}:{});
+  const t=s.tech&&DATA.techs.find(x=>String(x.id)===String(s.tech));
+  const chips=`<div class="chips"><button class="chip" data-tech="" aria-pressed="${!sel}">Waiting requests <span class="n">${DATA.waiting.length}</span></button>${DATA.techs.map(x=>`<button class="chip" data-tech="${x.id}" aria-pressed="${String(x.id)===String(sel)}">${esc(x.name)} <span class="n">${x.open}</span></button>`).join("")}</div>`;
+  if(t)view.innerHTML=`<h2>${esc(t.name)}</h2><p class="lede">Teal buildings have open work assigned to ${esc(t.name.split(" ")[0])}; the number is how many. Tap one to jump to its list.</p>${chips}${block(t.items,"mine",esc(t.name),`<span class="pill p-teal">${t.open} open</span>${t.overdue?` <span class="pill p-red">${t.overdue} overdue</span>`:""}`)}`;
+  else view.innerHTML=`<h2>Waiting work requests</h2><p class="lede">Technician-team work requests in Limble that nobody has picked up flash yellow. Pick your name to see the buildings where you have work. This device remembers who you picked.</p>${chips}${block(DATA.waiting,"wr","Waiting work requests",`<span class="pill p-amber">${DATA.waiting.length}</span>`)}`;
+}
+document.addEventListener("submit",e=>{if(e.target.id==="keyform"){e.preventDefault();const v=document.getElementById("k").value.trim();if(v){KEY=v;store.set("tb-key",v);ERR="";load()}}});
+document.addEventListener("click",e=>{
+  const c=e.target.closest("[data-tech]");if(c){sel=c.dataset.tech;store.set("tb-tech",sel);render();return}
+  const g=e.target.closest("[data-go]");if(g&&!tv){const el=document.getElementById("g-"+g.dataset.go);if(el)el.scrollIntoView({block:"start",behavior:"smooth"})}
+  if(e.target.closest("#tvbtn"))startTV();if(e.target.closest("[data-tvexit]"))stopTV();
+});
+function slides(){return [{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
+function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
+async function startTV(){if(tv||!DATA)return;tv=true;document.body.classList.add("tv");tvIdx=0;
+  const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit TV mode</button></div>';document.body.appendChild(ui);
+  try{await document.documentElement.requestFullscreen()}catch(e){}try{lock=await navigator.wakeLock.request("screen")}catch(e){}
+  show();tvTimer=setInterval(()=>{tvIdx++;show()},TV_SECS*1000)}
+function stopTV(){if(!tv)return;tv=false;clearInterval(tvTimer);document.body.classList.remove("tv");document.getElementById("tvui")?.remove();try{lock&&lock.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}render()}
+document.addEventListener("keydown",e=>{if(e.key==="Escape")stopTV()});
+document.addEventListener("visibilitychange",async()=>{if(tv&&document.visibilityState==="visible"){try{lock=await navigator.wakeLock.request("screen")}catch(e){}}});
+load();setInterval(load,REFRESH);
+</script>
+</body>
+</html>
