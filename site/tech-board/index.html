@@ -100,7 +100,7 @@ async function load(){
   try{const r=await fetch(API,{headers:{Authorization:"Bearer "+KEY},cache:"no-store"});const j=await r.json().catch(()=>({}));
     if(!r.ok){ERR=j.error||"Couldn't load the board ("+r.status+").";if(r.status===401){store.set("tb-key","");KEY=""}}else{DATA=j;ERR=""}}
   catch(e){ERR="Can't reach the board right now. It will try again in two minutes."}
-  if(!tv)render();
+  render(tv?{}:undefined);
 }
 function row(r){const l=LEVEL[r.level];return `<div class="row${r.level==="emergency"?" em":""}"><a href="https://app.limblecmms.com/taskList?taskID=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">#${esc(r.id)}</a><span class="nm">${esc(r.name)}</span><span class="meta">${l?`<span class="pill ${l[1]}">${l[0]}</span>`:""}${r.overdue?`<span class="pill p-red">Overdue</span>`:""}${r.due?`<span>Due ${esc(r.due)}</span>`:""}<span>${esc(r.status)}</span>${r.kind?`<span>${esc(r.kind)}</span>`:""}${r.where?`<span>${esc(r.where)}</span>`:""}${r.with&&r.with.length?`<span>With ${esc(r.with.join(", "))}</span>`:""}</span></div>`}
 function block(items,cls,title,pill){
@@ -126,12 +126,13 @@ document.addEventListener("click",e=>{
   const g=e.target.closest("[data-go]");if(g&&!tv){const el=document.getElementById("g-"+g.dataset.go);if(el)el.scrollIntoView({block:"start",behavior:"smooth"})}
   if(e.target.closest("#tvbtn"))startTV();if(e.target.closest("[data-tvexit]"))stopTV();
 });
-function slides(){return [{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
+// TV mode stays on the main page (waiting work requests); it refreshes every 2 minutes.
+function slides(){return [{}]}
 function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
 async function startTV(){if(tv||!DATA)return;tv=true;document.body.classList.add("tv");tvIdx=0;
-  const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit TV mode</button></div>';document.body.appendChild(ui);
+  const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="ctl"><button class="btn" data-tvexit>Exit TV mode</button></div>';document.body.appendChild(ui);
   try{await document.documentElement.requestFullscreen()}catch(e){}try{lock=await navigator.wakeLock.request("screen")}catch(e){}
-  show();tvTimer=setInterval(()=>{tvIdx++;show()},TV_SECS*1000)}
+  show()}
 function stopTV(){if(!tv)return;tv=false;clearInterval(tvTimer);document.body.classList.remove("tv");document.getElementById("tvui")?.remove();try{lock&&lock.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}render()}
 document.addEventListener("keydown",e=>{if(e.key==="Escape")stopTV()});
 document.addEventListener("visibilitychange",async()=>{if(tv&&document.visibilityState==="visible"){try{lock=await navigator.wakeLock.request("screen")}catch(e){}}});
