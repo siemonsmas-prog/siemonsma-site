@@ -65,6 +65,16 @@ h2{font:700 30px var(--display);text-transform:uppercase;letter-spacing:.02em;ma
 .msg{padding:14px;color:var(--muted)}
 .keybox{max-width:520px;margin:40px auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:10px}
 .keybox input{font:16px var(--mono);padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.sum{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.sum div{padding:10px 14px;display:grid}.sum div+div{border-left:1px solid var(--line)}
+.sum b{font:700 30px var(--display);font-variant-numeric:tabular-nums;line-height:1.1}.sum span{font-size:12.5px;color:var(--muted)}
+.sum .late b{color:var(--red)}
+.techbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;padding:12px 14px}
+.techbtn{appearance:none;font:inherit;color:var(--ink);text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;display:grid;grid-template-columns:auto auto;justify-content:start;gap:2px 14px}
+.techbtn:hover{border-color:var(--accent)}
+.techbtn .tn{grid-column:1/-1;font:700 20px var(--display);text-transform:uppercase;letter-spacing:.02em}
+.techbtn .tc{font-size:14px;color:var(--muted)}.techbtn .tc b{font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}.techbtn .tc.late b{color:var(--red)}
+body.tv .sum b{font-size:40px}body.tv .techbtn .tn{font-size:26px}body.tv .techbtn .tc{font-size:17px}body.tv .techbtn .tc b{font-size:22px}
 /* TV mode */
 body.tv header,body.tv .lede,body.tv .chips,body.tv .tvbar{display:none!important}
 body.tv{font-size:18px}body.tv main .wrap{max-width:none;padding-block:12px 70px}
@@ -103,22 +113,27 @@ async function load(){
   render(tv?{}:undefined);
 }
 function row(r){const l=LEVEL[r.level];return `<div class="row${r.level==="emergency"?" em":""}"><a href="https://app.limblecmms.com/taskList?taskID=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">#${esc(r.id)}</a><span class="nm">${esc(r.name)}</span><span class="meta">${l?`<span class="pill ${l[1]}">${l[0]}</span>`:""}${r.overdue?`<span class="pill p-red">Overdue</span>`:""}${r.due?`<span>Due ${esc(r.due)}</span>`:""}<span>${esc(r.status)}</span>${r.kind?`<span>${esc(r.kind)}</span>`:""}${r.where?`<span>${esc(r.where)}</span>`:""}${r.with&&r.with.length?`<span>With ${esc(r.with.join(", "))}</span>`:""}</span></div>`}
-function block(items,cls,title,pill){
+function block(items,cls,title,pill,side){
   const by={};items.forEach(r=>(by[r.area]=by[r.area]||[]).push(r));
   const pins=Object.keys(PINS).map(c=>{const n=(by[c]||[]).length;return `<button class="pin ${n?cls:""}" ${n?`data-n="${n}"`:""} data-go="${c}" style="left:${PINS[c][0]}%;top:${PINS[c][1]}%" aria-label="Building ${c}${n?", "+n:""}"></button>`}).join("");
   const tiles=AREAS.map(([k,l,s])=>{const n=(by[k]||[]).length;return `<button class="tile ${n?cls:""}" data-go="${k}"><b>${l}</b><small>${s}</small><span class="c">${n}</span></button>`}).join("");
   const groups=CODES.filter(c=>by[c]).map(c=>`<div class="grp" id="g-${c}">${esc(name(c))} <span class="pill ${cls==="wr"?"p-amber":"p-teal"}">${by[c].length}</span></div>${by[c].map(row).join("")}`).join("");
   return `<div class="grid"><div><div class="mapbox"><div class="aerial"><img src="map.jpg" alt="Aerial campus map with building labels" width="2400" height="1800">${pins}</div></div><div class="tiles">${tiles}</div></div>
-  <section class="section"><h3><span>${title} ${pill}</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3>${ERR?`<p class="msg">${esc(ERR)}</p>`:""}${groups||`<p class="msg">${cls==="wr"?"No waiting work requests. Everything has someone on it.":"No open work orders assigned right now."}</p>`}</section></div>`;
+  ${side||`<section class="section"><h3><span>${title} ${pill}</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3>${ERR?`<p class="msg">${esc(ERR)}</p>`:""}${groups||`<p class="msg">${cls==="wr"?"No waiting work requests. Everything has someone on it.":"No open work orders assigned right now."}</p>`}</section>`}</div>`;
 }
 function render(slide){
   if(!KEY){view.innerHTML=`<form class="keybox" id="keyform"><h2>Board key</h2><p class="lede">This screen needs the board key from Clint. Paste it once; this device remembers it.</p><input id="k" autocomplete="off" aria-label="Board key"><button class="btn primary">Open the board</button>${ERR?`<p class="lede">${esc(ERR)}</p>`:""}</form>`;return}
   if(!DATA){view.innerHTML=`<p class="msg">${esc(ERR||"Loading work orders from Limble…")}</p>`;return}
   const s=slide||(sel?{tech:sel}:{});
   const t=s.tech&&DATA.techs.find(x=>String(x.id)===String(s.tech));
+  const back=`<div class="chips"><button class="chip" data-tech="">← All technicians</button></div>`;
+  const totOpen=DATA.techs.reduce((a,x)=>a+x.open,0),totLate=DATA.techs.reduce((a,x)=>a+x.overdue,0);
+  const side=`<section class="section"><h3><span>Technicians</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3>${ERR?`<p class="msg">${esc(ERR)}</p>`:""}
+    <div class="sum"><div><b>${DATA.waiting.length}</b><span>Waiting requests</span></div><div><b>${totOpen}</b><span>Assigned open</span></div><div class="${totLate?"late":""}"><b>${totLate}</b><span>Past due</span></div></div>
+    <div class="techbtns">${DATA.techs.map(x=>`<button class="techbtn" data-tech="${x.id}"><span class="tn">${esc(x.name)}</span><span class="tc"><b>${x.open}</b> open</span><span class="tc ${x.overdue?"late":""}"><b>${x.overdue}</b> past due</span></button>`).join("")}</div></section>`;
   const chips=`<div class="chips"><button class="chip" data-tech="" aria-pressed="${!sel}">Waiting requests <span class="n">${DATA.waiting.length}</span></button>${DATA.techs.map(x=>`<button class="chip" data-tech="${x.id}" aria-pressed="${String(x.id)===String(sel)}">${esc(x.name)} <span class="n">${x.open}</span></button>`).join("")}</div>`;
-  if(t)view.innerHTML=`<h2>${esc(t.name)}</h2><p class="lede">Teal buildings have open work assigned to ${esc(t.name.split(" ")[0])}; the number is how many. Tap one to jump to its list.</p>${chips}${block(t.items,"mine",esc(t.name),`<span class="pill p-teal">${t.open} open</span>${t.overdue?` <span class="pill p-red">${t.overdue} overdue</span>`:""}`)}`;
-  else view.innerHTML=`<h2>Waiting work requests</h2><p class="lede">Technician-team work requests in Limble that nobody has picked up flash yellow. Pick your name to see the buildings where you have work. This device remembers who you picked.</p>${chips}${block(DATA.waiting,"wr","Waiting work requests",`<span class="pill p-amber">${DATA.waiting.length}</span>`)}`;
+  if(t)view.innerHTML=`<h2>${esc(t.name)}</h2><p class="lede">Teal buildings have open work assigned to ${esc(t.name.split(" ")[0])}; the number is how many. Tap one to jump to its list.</p>${back}${block(t.items,"mine",esc(t.name),`<span class="pill p-teal">${t.open} open</span>${t.overdue?` <span class="pill p-red">${t.overdue} overdue</span>`:""}`)}`;
+  else view.innerHTML=`<h2>Waiting work requests</h2><p class="lede">Technician-team work requests in Limble that nobody has picked up flash yellow. Tap your name to see your buildings.</p>${block(DATA.waiting,"wr","Waiting work requests",`<span class="pill p-amber">${DATA.waiting.length}</span>`,side)}`;
 }
 document.addEventListener("submit",e=>{if(e.target.id==="keyform"){e.preventDefault();const v=document.getElementById("k").value.trim();if(v){KEY=v;store.set("tb-key",v);ERR="";load()}}});
 document.addEventListener("click",e=>{
