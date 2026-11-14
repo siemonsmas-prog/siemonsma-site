@@ -83,22 +83,12 @@ body.tv .sum b{font-size:40px}body.tv .techbtn .tn{font-size:26px}body.tv .techb
 .stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}.stgrid div{border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:grid}.stgrid b{font:700 26px/1.1 var(--display);font-variant-numeric:tabular-nums}.stgrid span{font-size:12.5px;color:var(--muted)}
 .stgrid .hv{background:var(--pink-soft)}.stgrid .hv b{color:var(--pink)}.stgrid .hp{background:var(--amber-soft)}.stgrid .hp b{color:var(--amber)}.stgrid .hh{background:var(--red-soft)}.stgrid .hh b{color:var(--red)}.stgrid .zero{opacity:.55}
 body.tv .stat h4{font-size:16px}body.tv .stgrid b{font-size:34px}body.tv .stgrid span{font-size:15px}body.tv .stgrid{grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
-.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
-.st{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px 22px;display:grid;align-content:start;gap:4px}
-.st b{font:700 64px/1 var(--display);font-variant-numeric:tabular-nums}.st span{font:600 17px var(--body);color:var(--muted)}.st em{font-style:normal;font-size:15px;color:var(--muted)}
-.st.hero b{font-size:110px}.st.late b{color:var(--red)}
-.st.chart{grid-column:1/4;grid-row:2/5}.st.chart h3{display:flex;justify-content:space-between;margin:0 0 8px;font:600 17px var(--body)}.st.chart .up{color:var(--red)}
-.stats .st:nth-child(n+6){grid-column:4}.st.chart .bars{height:calc(100% - 40px);min-height:240px}
-.bars{display:flex;align-items:flex-end;gap:6px;height:300px}.bc{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px}
-.bc i{display:block;width:100%;background:var(--blue);border-radius:4px 4px 0 0;min-height:2px}.bc .bv{font:700 20px var(--display);min-height:24px}.bc .bd{font-size:12px;color:var(--muted);white-space:nowrap}
-.statsbtn{border-style:dashed}
 .msgscreen{min-height:calc(100vh - 120px);display:flex;flex-direction:column;justify-content:center;gap:28px;padding:40px 60px;background:var(--surface);border:1px solid var(--line);border-left:16px solid var(--accent);border-radius:14px}
 .msgscreen .mtag{font:700 28px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
 .msgscreen .mtext{margin:0;font:700 clamp(36px,5vw,96px)/1.12 var(--display);color:var(--ink);text-wrap:balance}
 .msgscreen .mfrom{font:600 24px var(--body);color:var(--muted)}
 .msgscreen.urgent{border-left-color:var(--red);background:var(--red-soft)}.msgscreen.urgent .mtag{color:var(--red)}
-body.tv .msgscreen{min-height:1000px}body.tv .msgscreen .mtext{font-size:96px}body.tv .stats{height:930px;grid-template-rows:auto 1fr 1fr 1fr}body.tv .st.chart{display:flex;flex-direction:column}body.tv .st.chart .bars{flex:1;height:auto}body.tv .st.hero b{font-size:130px}body.tv .st span{font-size:20px}body.tv .st b{font-size:80px}body.tv .st.hero b{font-size:130px}
-@media (max-width:900px){.stats{grid-template-columns:1fr 1fr}.st.chart{grid-column:1/-1}.stats .st:nth-child(n){grid-row:auto;grid-column:auto}.st.chart{grid-column:1/-1}.st.hero b{font-size:72px}}
+body.tv .msgscreen{min-height:1000px}body.tv .msgscreen .mtext{font-size:96px}
 .bigcounts .team{display:grid}.bigcounts .tr{display:flex;align-items:baseline;gap:16px;padding:10px 24px;border-top:1px solid var(--line)}
 .bigcounts .tr b{font:700 54px/1 var(--display);color:var(--blue);font-variant-numeric:tabular-nums;min-width:2.2ch}.bigcounts .tr span{font:600 20px var(--body);color:var(--muted)}
 .bigcounts .tr.rec b{color:var(--amber)}
@@ -146,31 +136,12 @@ function statusBlock(){const st=DATA&&DATA.statusCounts;if(!st||!st.length)retur
   return `<div class="stat"><h4>All open work orders by status <b>${tot}</b></h4><div class="stgrid">${st.map(x=>`<div class="${cls(x.name)}${x.count?"":" zero"}"><b>${x.count}</b><span>${esc(x.name)}</span></div>`).join("")}</div></div>`}
 function msgView(M){const when=new Date(M.at).toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"});
   return `<div class="msgscreen ${M.level==="urgent"?"urgent":""}"><div class="mtag">${M.level==="urgent"?"Urgent message":"Message to the team"}</div><p class="mtext">${esc(M.text).replace(/\n/g,"<br>")}</p><div class="mfrom">${esc(M.from||"Clint")} · ${esc(when)}</div></div>`}
-function statsView(S,showBack){
-  const n=x=>Number(x||0).toLocaleString("en-US"),B=S.backlog||[],max=Math.max(1,...B.map(b=>b.n));
-  const first=B[0],last=B[B.length-1],up=first&&last?last.n-first.n:0;
-  const md=d=>new Date(d+"T12:00:00Z").toLocaleDateString("en-US",{month:"short",day:"numeric",timeZone:"UTC"});
-  const bars=B.map((b,i)=>`<div class="bc"><span class="bv">${i===0||i===B.length-1?b.n:""}</span><i style="height:${Math.round(b.n/max*100)}%"></i><span class="bd">${md(b.date)}</span></div>`).join("");
-  const T=S.openByType||{};
-  return `<h2>The work keeps coming</h2><p class="lede">From Limble: the last 30 days and right now.</p>${showBack?`<div class="chips"><button class="chip" data-tech="">← All technicians</button></div>`:""}
-  <div class="stats">
-    <div class="st hero"><b>${n(S.newPerDay)}</b><span>new jobs come in every workday</span></div>
-    <div class="st hero"><b>${n(S.donePerDay)}</b><span>jobs the team closes every workday</span></div>
-    <div class="st hero"><b>${n(S.openNow)}</b><span>open right now</span><em>${n(T.requests)} requests · ${n(T.workOrders)} work orders · ${n(T.pms)} PMs${T.planned?` · ${n(T.planned)} planned`:""}</em></div>
-    <div class="st hero late"><b>${n(S.pastDue)}</b><span>past their due date</span></div>
-    <div class="st chart"><h3><span>Open work orders, week by week</span>${first?`<span class="up">${up>=0?"Up":"Down"} ${Math.abs(up)} since ${md(first.date)}</span>`:""}</h3><div class="bars">${bars}</div></div>
-    <div class="st"><b>${n(S.requests30)}</b><span>work requests sent in, last 30 days</span></div>
-    <div class="st"><b>${n(S.oldestDays)}</b><span>days old: the oldest open job</span></div>
-    <div class="st"><b>${n(S.dueNext7)}</b><span>more jobs come due in the next 7 days</span></div>
-  </div>`}
 function ago(iso){const s=Math.max(0,(Date.now()-new Date(iso))/1000);return s<60?"just now":s<3600?Math.floor(s/60)+" min ago":Math.floor(s/3600)+" h ago"}
-let STATS=null,STATS_AT=0;
 async function load(){
   if(!KEY){render();return}
   try{const r=await fetch(API,{headers:{Authorization:"Bearer "+KEY},cache:"no-store"});const j=await r.json().catch(()=>({}));
-    if(!r.ok){ERR=j.error||"Couldn't load the board ("+r.status+").";if(r.status===401){store.set("tb-key","");KEY=""}}else{DATA=j;ERR="";if(STATS)DATA.stats=STATS}}
+    if(!r.ok){ERR=j.error||"Couldn't load the board ("+r.status+").";if(r.status===401){store.set("tb-key","");KEY=""}}else{DATA=j;ERR=""}}
   catch(e){ERR="Can't reach the board right now. It will try again in two minutes."}
-    if(DATA&&KEY&&Date.now()-STATS_AT>15*60000){STATS_AT=Date.now();fetch(API+"?stats=1",{headers:{Authorization:"Bearer "+KEY},cache:"no-store"}).then(r=>r.ok?r.json():null).then(j=>{if(j&&!j.error){STATS=j;if(DATA){DATA.stats=j;if(!tv)render()}}}).catch(()=>{})}
   if(tv)show();else render();
 }
 function row(r){const l=LEVEL[r.level];return `<div class="row${r.level==="emergency"?" em":""}"><a href="https://app.limblecmms.com/taskList?taskID=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">#${esc(r.id)}</a><span class="nm">${esc(r.name)}</span><span class="meta">${l?`<span class="pill ${l[1]}">${l[0]}</span>`:""}${r.overdue?`<span class="pill p-red">Overdue</span>`:""}${r.due?`<span>Due ${esc(r.due)}</span>`:""}<span>${esc(r.status)}</span>${r.kind?`<span>${esc(r.kind)}</span>`:""}${r.where?`<span>${esc(r.where)}</span>`:""}${r.with&&r.with.length?`<span>With ${esc(r.with.join(", "))}</span>`:""}</span></div>`}
@@ -187,13 +158,12 @@ function render(slide){
   if(!DATA){view.innerHTML=`<p class="msg">${esc(ERR||"Loading work orders from Limble…")}</p>`;return}
   const s=slide||(sel?{tech:sel}:{});
   if(s.msg&&DATA.message){view.innerHTML=msgView(DATA.message);return}
-  if((s.stats||s.tech==="stats")&&DATA.stats){view.innerHTML=statsView(DATA.stats,!tv);return}
   const t=s.tech&&DATA.techs.find(x=>String(x.id)===String(s.tech));
   const back=`<div class="chips"><button class="chip" data-tech="">← All technicians</button></div>`;
   const totOpen=DATA.techs.reduce((a,x)=>a+x.open,0),totLate=DATA.techs.reduce((a,x)=>a+x.overdue,0);
   const side=`<section class="section"><h3><span>Technicians</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3>${ERR?`<p class="msg">${esc(ERR)}</p>`:""}
     <div class="sum"><div><b>${DATA.waiting.length}</b><span>Waiting requests</span></div><div><b>${totOpen}</b><span>Assigned open</span></div><div class="${totLate?"late":""}"><b>${totLate}</b><span>Past due</span></div>${"teamDone" in DATA?`<div class="done"><b>${DATA.teamDone}</b><span>Team completed this week</span></div>`:""}${"monthDone" in DATA?`<div class="done"><b>${DATA.monthDone}</b><span>Completed in ${esc(monthName(DATA.month).split(" ")[0])} so far</span></div>`:""}${DATA.record?`<div class="rec"><b>${DATA.record.count}</b><span>Monthly record (${esc(monthName(DATA.record.month))})</span></div>`:""}</div>
-    <div class="techbtns">${DATA.techs.map(x=>`<button class="techbtn" data-tech="${x.id}"><span class="tn">${esc(x.name)}</span><span class="tc"><b>${x.open}</b> open</span><span class="tc ${x.overdue?"late":""}"><b>${x.overdue}</b> past due</span></button>`).join("")}${DATA.stats?`<button class="techbtn statsbtn" data-tech="stats"><span class="tn">Team stats</span><span class="tc">The work keeps coming</span></button>`:""}</div>${statusBlock()}</section>`;
+    <div class="techbtns">${DATA.techs.map(x=>`<button class="techbtn" data-tech="${x.id}"><span class="tn">${esc(x.name)}</span><span class="tc"><b>${x.open}</b> open</span><span class="tc ${x.overdue?"late":""}"><b>${x.overdue}</b> past due</span></button>`).join("")}</div>${statusBlock()}</section>`;
   const chips=`<div class="chips"><button class="chip" data-tech="" aria-pressed="${!sel}">Waiting requests <span class="n">${DATA.waiting.length}</span></button>${DATA.techs.map(x=>`<button class="chip" data-tech="${x.id}" aria-pressed="${String(x.id)===String(sel)}">${esc(x.name)} <span class="n">${x.open}</span></button>`).join("")}</div>`;
   const counts=t&&`<section class="section bigcounts"><h3><span>${esc(t.name)}</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3><div class="big"><b>${t.open}</b><span>Work order${t.open===1?"":"s"} in ${esc(t.name.split(" ")[0])}'s name</span></div><div class="big ${t.overdue?"late":"ok"}"><b>${t.overdue}</b><span>Past due</span></div>${teamRows()}</section>`;
   if(t)view.innerHTML=`<h2>${esc(t.name)}</h2><p class="lede">Teal buildings have open work assigned to ${esc(t.name.split(" ")[0])}; the number is how many. Tap one to jump to its list.</p>${back}${block(t.items,"mine",esc(t.name),`<span class="pill p-teal">${t.open} open</span>${t.overdue?` <span class="pill p-red">${t.overdue} overdue</span>`:""}`,tv?counts:"")}`;
@@ -206,7 +176,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#tvbtn"))startTV();if(e.target.closest("[data-tvexit]"))stopTV();
 });
 // TV mode: the main page, then each tech with open work, 20 seconds each. Data refreshes every 2 minutes.
-function slides(){return [...(DATA&&DATA.message?[{msg:1}]:[]),{},...(DATA&&DATA.stats?[{stats:1}]:[]),...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
+function slides(){return [...(DATA&&DATA.message?[{msg:1}]:[]),{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
 function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
 async function startTV(){if(tv||!DATA)return;tv=true;document.body.classList.add("tv");fitTV();tvIdx=0;
   const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit display mode</button></div>';document.body.appendChild(ui);
