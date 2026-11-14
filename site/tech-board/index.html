@@ -110,6 +110,24 @@ body.tv .section{max-height:none}body.tv .grid{grid-template-columns:minmax(0,1.
 .hbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex:none}.hbtns .btn{white-space:nowrap}header .wrap>div{min-width:0}
 @media (max-width:720px){header .wrap{flex-wrap:wrap}.hbtns{width:100%;justify-content:flex-start}}
 body.oneslide #tvui .bar,body.oneslide #tvstep{display:none}
+/* Manager mode */
+body.tv:not(.mgr) .pin,body.tv:not(.mgr) .tile,body.tv:not(.mgr) .techbtn{cursor:default}
+.mgronly{display:none}body.mgr .mgronly{display:inline-flex}body.mgr #tvui .bar{display:none}body.mgr #tvui .ctl{border-color:var(--accent)}
+#pinpad,#wolist{position:fixed;inset:0;z-index:60;background:rgba(10,15,20,.55);display:grid;place-items:center;padding:16px}
+.pinbox{background:var(--surface);color:var(--ink);border-radius:16px;padding:28px;width:min(420px,100%);display:grid;gap:14px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.pinbox h3{margin:0;font:700 30px var(--display);text-transform:uppercase;text-align:center}
+.pindots{display:flex;justify-content:center;gap:16px}.pindots i{width:20px;height:20px;border-radius:50%;border:2px solid var(--muted)}.pindots i.on{background:var(--ink);border-color:var(--ink)}
+.pinmsg{margin:0;min-height:20px;text-align:center;color:var(--red);font-weight:600}
+.pinkeys{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.pinkeys button{font:700 30px var(--display);padding:16px 0;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.pinkeys button[data-pin="C"],.pinkeys button[data-pin="X"]{font:600 16px var(--body)}
+.shake{animation:shake .35s}@keyframes shake{25%{transform:translateX(-10px)}50%{transform:translateX(10px)}75%{transform:translateX(-6px)}}
+.wobox{background:var(--surface);color:var(--ink);border-radius:16px;padding:22px 26px;width:min(1200px,100%);max-height:88vh;display:flex;flex-direction:column;gap:6px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.wobox h3{margin:0;display:flex;justify-content:space-between;align-items:center;gap:12px;font:700 34px var(--display);text-transform:uppercase}
+.wosub{margin:0 0 6px;color:var(--muted);font-size:18px}.wosub .late{color:var(--red)}
+.wolistrows{overflow:auto;display:grid;gap:8px}
+.wo{display:grid;grid-template-columns:auto 1fr;column-gap:14px;row-gap:4px;padding:12px 14px;border:1px solid var(--line);border-radius:10px}
+.wo.od{border-color:var(--red);background:var(--red-soft)}.wid{font:600 16px var(--mono);color:var(--muted);grid-row:span 2}.wn{font:600 22px var(--body)}
+.wm{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:16px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -157,7 +175,8 @@ async function load(){
   try{const r=await fetch(API,{headers:{Authorization:"Bearer "+KEY},cache:"no-store"});const j=await r.json().catch(()=>({}));
     if(!r.ok){ERR=j.error||"Couldn't load the board ("+r.status+").";if(r.status===401){store.set("tb-key","");KEY=""}}else{DATA=j;ERR="";checkNewMessage()}}
   catch(e){ERR="Can't reach the board right now. It will try again in a few seconds."}
-  if(tv){const sl=slides();if(tvIdx>=sl.length){tvIdx=0;show()}else{render(sl[tvIdx]);const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}}else render();
+  if(tv&&mgr)mgrRender();
+  else if(tv){const sl=slides();if(tvIdx>=sl.length){tvIdx=0;show()}else{render(sl[tvIdx]);const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}}else render();
 }
 function row(r){const l=LEVEL[r.level];return `<div class="row${r.level==="emergency"?" em":""}"><a href="https://app.limblecmms.com/taskList?taskID=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">#${esc(r.id)}</a><span class="nm">${esc(r.name)}</span><span class="meta">${l?`<span class="pill ${l[1]}">${l[0]}</span>`:""}${r.overdue?`<span class="pill p-red">Overdue</span>`:""}${r.due?`<span>Due ${esc(r.due)}</span>`:""}<span>${esc(r.status)}</span>${r.kind?`<span>${esc(r.kind)}</span>`:""}${r.where?`<span>${esc(r.where)}</span>`:""}${r.with&&r.with.length?`<span>With ${esc(r.with.join(", "))}</span>`:""}</span></div>`}
 function block(items,cls,title,pill,side){
@@ -186,6 +205,15 @@ function render(slide){
 }
 document.addEventListener("submit",e=>{if(e.target.id==="keyform"){e.preventDefault();const v=document.getElementById("k").value.trim();if(v){KEY=v;store.set("tb-key",v);ERR="";load()}}});
 document.addEventListener("click",e=>{
+  const pk=e.target.closest("[data-pin]");if(pk){pinKey(pk.dataset.pin);return}
+  if(e.target.closest("[data-close]")||e.target.id==="wolist"){closeModal();mgrTouch();return}
+  if(e.target.closest("[data-mgr]")){if(mgr)mgrLock();else openPin();return}
+  if(tv){mgrTouch();
+    const tc=e.target.closest("[data-tech]"),go=e.target.closest("[data-go]");
+    if((tc||go)&&!mgr){openPin(()=>{if(tc&&tc.dataset.tech){mgrView={tech:tc.dataset.tech};mgrRender()}else if(go)openArea(go.dataset.go)});return}
+    if(tc){mgrView=tc.dataset.tech?{tech:tc.dataset.tech}:{};closeModal();mgrRender();return}
+    if(go){openArea(go.dataset.go);return}
+  }
   const c=e.target.closest("[data-tech]");if(c){sel=c.dataset.tech;store.set("tb-tech",sel);render();return}
   const g=e.target.closest("[data-go]");if(g&&!tv){const el=document.getElementById("g-"+g.dataset.go);if(el)el.scrollIntoView({block:"start",behavior:"smooth"})}
   if(e.target.closest("#tvbtn"))startTV();const snd=e.target.closest("[data-sound]");if(snd)playMsgSound(snd.dataset.sound);unlockSound();if(e.target.closest("[data-tvexit]"))stopTV();
@@ -193,16 +221,40 @@ document.addEventListener("click",e=>{
 // Display mode: the main screen only, plus any board message. Data refreshes every 15 seconds without restarting the current screen.
 // Display mode stays on the main screen. When a board message is up, it alternates: message 20 s, main 45 s.
 function slides(){return [...(DATA&&DATA.message?[{msg:1}]:[]),{}]}
+// Manager mode (for meetings): on the display, a password unlocks clicking. Buildings open their work
+// orders; a tech opens their screen; on a tech's screen, a building opens that tech's work there.
+// The password is checked in the browser, so it only keeps casual hands off the TV; it is not a real lock.
+const MGR_PIN="1234",MGR_IDLE=5*60000;
+let mgr=false,mgrView={},mgrIdle=null,pinBuf="",pinNext=null;
+function mgrTouch(){clearTimeout(mgrIdle);if(mgr)mgrIdle=setTimeout(mgrLock,MGR_IDLE)}
+function mgrUnlock(){mgr=true;mgrView={};clearTimeout(tvTimer);document.body.classList.add("mgr");closePin();mgrTouch();mgrRender();updMgrBtn();if(pinNext){const f=pinNext;pinNext=null;f()}}
+function mgrLock(){mgr=false;clearTimeout(mgrIdle);document.body.classList.remove("mgr");closeModal();updMgrBtn();if(tv){tvIdx=0;show()}}
+function updMgrBtn(){const b=document.getElementById("mgrbtn");if(b)b.textContent=mgr?"Lock manager mode":"Manager mode"}
+function mgrRender(){render(mgrView);const st=document.getElementById("tvstep");if(st)st.textContent=mgrView.tech?"Manager mode · tech screen":"Manager mode"}
+function openPin(next){pinNext=next||null;pinBuf="";closePin();const d=document.createElement("div");d.id="pinpad";d.innerHTML=`<div class="pinbox" role="dialog" aria-label="Manager password"><h3>Manager password</h3><div class="pindots" id="pindots"></div><p class="pinmsg" id="pinmsg"></p><div class="pinkeys">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-pin="${n}">${n}</button>`).join("")}<button data-pin="C">Clear</button><button data-pin="0">0</button><button data-pin="X">Cancel</button></div></div>`;document.body.appendChild(d);pinDots()}
+function closePin(){document.getElementById("pinpad")?.remove()}
+function pinDots(){const d=document.getElementById("pindots");if(d)d.innerHTML=[0,1,2,3].map(i=>`<i class="${i<pinBuf.length?"on":""}"></i>`).join("")}
+function pinKey(k){if(k==="X"){closePin();pinNext=null;return}if(k==="C"){pinBuf="";pinDots();return}if(pinBuf.length>=8)return;pinBuf+=k;pinDots();
+  if(pinBuf.length>=MGR_PIN.length){if(pinBuf===MGR_PIN)mgrUnlock();else{pinBuf="";pinDots();const m=document.getElementById("pinmsg");if(m)m.textContent="Wrong password. Try again.";document.querySelector(".pinbox")?.classList.remove("shake");void document.querySelector(".pinbox")?.offsetWidth;document.querySelector(".pinbox")?.classList.add("shake")}}}
+function closeModal(){document.getElementById("wolist")?.remove()}
+function openArea(code){
+  const t=mgrView.tech&&DATA.techs.find(x=>String(x.id)===String(mgrView.tech));let list=[],title;
+  if(t){list=t.items.filter(r=>r.area===code);title=`${esc(t.name)} · ${esc(name(code))}`}
+  else{const m=new Map();DATA.waiting.filter(r=>r.area===code).forEach(r=>m.set(r.id,{...r,who:["Waiting for a tech"]}));
+    DATA.techs.forEach(x=>x.items.filter(r=>r.area===code).forEach(r=>{const e=m.get(r.id);if(e)e.who.push(x.name);else m.set(r.id,{...r,who:[x.name]})}));
+    list=[...m.values()];title=`${esc(name(code))} · all open work`}
+  list.sort((a,b)=>(b.overdue-a.overdue)||String(a.due||"9").localeCompare(String(b.due||"9")));
+  closeModal();const d=document.createElement("div");d.id="wolist";d.dataset.code=code;d.innerHTML=`<div class="wobox" role="dialog"><h3><span>${title}</span><button class="btn" data-close>Close</button></h3><p class="wosub">${list.length} open${list.filter(r=>r.overdue).length?` · <b class="late">${list.filter(r=>r.overdue).length} past due</b>`:""}</p><div class="wolistrows">${list.map(r=>{const l=LEVEL[r.level];return `<div class="wo${r.overdue?" od":""}"><span class="wid">#${esc(r.id)}</span><span class="wn">${esc(r.name)}</span><span class="wm">${l?`<span class="pill ${l[1]}">${l[0]}</span>`:""}${r.overdue?`<span class="pill p-red">Past due</span>`:""}${r.due?`<span>Due ${esc(r.due)}</span>`:""}<span>${esc(r.status)}</span>${r.kind?`<span>${esc(r.kind)}</span>`:""}${r.who?`<span>${esc(r.who.join(", "))}</span>`:""}${r.with&&r.with.length?`<span>with ${esc(r.with.join(", "))}</span>`:""}</span></div>`}).join("")||`<p class="msg">Nothing open here.</p>`}</div></div>`;document.body.appendChild(d)}
 function slideSecs(x){return x&&x.msg?SECS.msg:x&&x.tech?SECS.tech:SECS.main}
-function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const TV_SECS=slideSecs(sl[tvIdx]);clearTimeout(tvTimer);tvTimer=setTimeout(()=>{tvIdx++;show()},TV_SECS*1000);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`;document.body.classList.toggle("oneslide",sl.length<2)}
+function show(){if(mgr){mgrRender();return}const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const TV_SECS=slideSecs(sl[tvIdx]);clearTimeout(tvTimer);tvTimer=setTimeout(()=>{tvIdx++;show()},TV_SECS*1000);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`;document.body.classList.toggle("oneslide",sl.length<2)}
 async function startTV(){if(tv||!DATA)return;unlockSound();tv=true;document.body.classList.add("tv");fitTV();tvIdx=0;
-  const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit display mode</button></div>';document.body.appendChild(ui);
+  const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn mgronly" data-tech="">← Main screen</button><button class="btn" id="mgrbtn" data-mgr>Manager mode</button><button class="btn" data-tvexit>Exit display mode</button></div>';document.body.appendChild(ui);
   try{await document.documentElement.requestFullscreen()}catch(e){}try{lock=await navigator.wakeLock.request("screen")}catch(e){}
   show()}
 function fitTV(){document.body.style.zoom=tv?String(Math.min(innerWidth/1920,innerHeight/1080)):""}
 addEventListener("resize",fitTV);
-function stopTV(){if(!tv)return;tv=false;fitTV();clearTimeout(tvTimer);document.body.classList.remove("tv");document.getElementById("tvui")?.remove();try{lock&&lock.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}render()}
-document.addEventListener("keydown",e=>{if(e.key==="Escape")stopTV()});
+function stopTV(){if(!tv)return;if(mgr){mgr=false;clearTimeout(mgrIdle);document.body.classList.remove("mgr");closeModal()}closePin();tv=false;fitTV();clearTimeout(tvTimer);document.body.classList.remove("tv");document.getElementById("tvui")?.remove();try{lock&&lock.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}render()}
+document.addEventListener("keydown",e=>{if(document.getElementById("pinpad")){if(/^[0-9]$/.test(e.key))pinKey(e.key);else if(e.key==="Backspace"){pinBuf=pinBuf.slice(0,-1);pinDots()}else if(e.key==="Escape")pinKey("X");return}if(e.key==="Escape"){if(document.getElementById("wolist"))closeModal();else if(mgr)mgrLock();else stopTV()}});
 document.addEventListener("visibilitychange",async()=>{if(tv&&document.visibilityState==="visible"){try{lock=await navigator.wakeLock.request("screen")}catch(e){}}});
 load();setInterval(load,REFRESH);
 </script>
