@@ -107,10 +107,12 @@ body.tv .section{max-height:none}body.tv .grid{grid-template-columns:minmax(0,1.
 #tvui .bar{position:fixed;left:0;right:0;bottom:0;height:6px;background:var(--accent);transform-origin:left;z-index:30}
 @keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 #tvui .ctl{position:fixed;right:12px;bottom:14px;display:flex;gap:10px;align-items:center;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 12px;font-size:14px;color:var(--muted)}
+.hbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex:none}.hbtns .btn{white-space:nowrap}header .wrap>div{min-width:0}
+@media (max-width:720px){header .wrap{flex-wrap:wrap}.hbtns{width:100%;justify-content:flex-start}}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div><h1>Technician Work Order Board</h1><span>Open work by building · live from Limble</span></div><button class="btn primary" id="tvbtn" type="button">Display mode</button></div></header>
+<header><div class="wrap"><div><h1>Technician Work Order Board</h1><span>Open work by building · live from Limble</span></div><span class="hbtns"><button class="btn" type="button" data-sound="normal">Test chime</button><button class="btn" type="button" data-sound="urgent">Test emergency sound</button><button class="btn primary" id="tvbtn" type="button">Display mode</button></span></div></header>
 <main><div class="wrap" id="view"><p class="msg">Loading…</p></div></main>
 <script>
 const API="https://limble-connector.siemonsmas.workers.dev/api/tech-board";
@@ -118,7 +120,8 @@ const PINS={M1:[30.75,4.1],M:[38.6,4.1],I:[72.6,8.1],J:[82.9,4.7],K:[27.8,26.4],
 const CODES=["A","B","C","D","E","F","G","H","I","J","J1","K","L","M","M1","SFA","X","Z","MOB","GEN"];
 const AREAS=[["MOB","Mobile equipment","Forklifts, trucks, trailers, carts"],["GEN","General requests","Campus-wide and no building"]];
 const LEVEL={emergency:["Emergency","p-red"],high:["High","p-pink"],medium:["Medium","p-blue"],low:["Low","p-green"]};
-const TV_SECS=20,REFRESH=120000;
+// Seconds on each display screen: the main board stays up longer, each tech goes by quickly.
+const SECS={main:45,tech:10,msg:20},REFRESH=120000;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},set(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
 const view=document.getElementById("view");
@@ -134,13 +137,24 @@ function teamRows(){if(!DATA||!("teamDone" in DATA))return"";const rec=DATA.reco
 function statusBlock(){const st=DATA&&DATA.statusCounts;if(!st||!st.length)return"";const tot=st.reduce((a,x)=>a+x.count,0);
   const cls=n=>/vendor/i.test(n)?"hv":/part/i.test(n)?"hp":/hold/i.test(n)?"hh":"";
   return `<div class="stat"><h4>All open work orders by status <b>${tot}</b></h4><div class="stgrid">${st.map(x=>`<div class="${cls(x.name)}${x.count?"":" zero"}"><b>${x.count}</b><span>${esc(x.name)}</span></div>`).join("")}</div></div>`}
+// Sounds for board messages, made in the browser (no sound files). Standard: a soft two-note chime.
+// Urgent / shop emergency: three rounds of a sharp high-low alert tone. Browsers only allow sound after
+// someone has tapped the page once, so starting display mode with the button unlocks it.
+let AC=null;
+function unlockSound(){try{AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume()}catch(e){}}
+function tone(f,t0,dur,type,vol){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=f;g.gain.setValueAtTime(0,t0);g.gain.linearRampToValueAtTime(vol,t0+.02);g.gain.exponentialRampToValueAtTime(.0001,t0+dur);o.connect(g).connect(AC.destination);o.start(t0);o.stop(t0+dur+.05)}
+function playMsgSound(level){unlockSound();if(!AC)return;const t=AC.currentTime+.05;
+  if(level==="urgent"){for(let k=0;k<3;k++){const b=t+k*0.9;tone(988,b,.22,"square",.18);tone(740,b+.25,.22,"square",.18);tone(988,b+.5,.22,"square",.18)}}
+  else{tone(880,t,1.4,"sine",.35);tone(1318.5,t+.28,1.8,"sine",.3)}}
+function checkNewMessage(){const M=DATA&&DATA.message;if(!M)return;const id=(M.at||"")+"|"+(M.text||"");if(store.get("tb-msg-seen")===id)return;store.set("tb-msg-seen",id);
+  playMsgSound(M.level);if(tv){tvIdx=0;setTimeout(show,0)}}
 function msgView(M){const when=new Date(M.at).toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"});
   return `<div class="msgscreen ${M.level==="urgent"?"urgent":""}"><div class="mtag">${M.level==="urgent"?"Urgent message":"Message to the team"}</div><p class="mtext">${esc(M.text).replace(/\n/g,"<br>")}</p><div class="mfrom">${esc(M.from||"Clint")} · ${esc(when)}</div></div>`}
 function ago(iso){const s=Math.max(0,(Date.now()-new Date(iso))/1000);return s<60?"just now":s<3600?Math.floor(s/60)+" min ago":Math.floor(s/3600)+" h ago"}
 async function load(){
   if(!KEY){render();return}
   try{const r=await fetch(API,{headers:{Authorization:"Bearer "+KEY},cache:"no-store"});const j=await r.json().catch(()=>({}));
-    if(!r.ok){ERR=j.error||"Couldn't load the board ("+r.status+").";if(r.status===401){store.set("tb-key","");KEY=""}}else{DATA=j;ERR=""}}
+    if(!r.ok){ERR=j.error||"Couldn't load the board ("+r.status+").";if(r.status===401){store.set("tb-key","");KEY=""}}else{DATA=j;ERR="";checkNewMessage()}}
   catch(e){ERR="Can't reach the board right now. It will try again in two minutes."}
   if(tv)show();else render();
 }
@@ -173,18 +187,19 @@ document.addEventListener("submit",e=>{if(e.target.id==="keyform"){e.preventDefa
 document.addEventListener("click",e=>{
   const c=e.target.closest("[data-tech]");if(c){sel=c.dataset.tech;store.set("tb-tech",sel);render();return}
   const g=e.target.closest("[data-go]");if(g&&!tv){const el=document.getElementById("g-"+g.dataset.go);if(el)el.scrollIntoView({block:"start",behavior:"smooth"})}
-  if(e.target.closest("#tvbtn"))startTV();if(e.target.closest("[data-tvexit]"))stopTV();
+  if(e.target.closest("#tvbtn"))startTV();const snd=e.target.closest("[data-sound]");if(snd)playMsgSound(snd.dataset.sound);unlockSound();if(e.target.closest("[data-tvexit]"))stopTV();
 });
 // TV mode: the main page, then each tech with open work, 20 seconds each. Data refreshes every 2 minutes.
 function slides(){return [...(DATA&&DATA.message?[{msg:1}]:[]),{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
-function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
-async function startTV(){if(tv||!DATA)return;tv=true;document.body.classList.add("tv");fitTV();tvIdx=0;
+function slideSecs(x){return x&&x.msg?SECS.msg:x&&x.tech?SECS.tech:SECS.main}
+function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const TV_SECS=slideSecs(sl[tvIdx]);clearTimeout(tvTimer);tvTimer=setTimeout(()=>{tvIdx++;show()},TV_SECS*1000);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
+async function startTV(){if(tv||!DATA)return;unlockSound();tv=true;document.body.classList.add("tv");fitTV();tvIdx=0;
   const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit display mode</button></div>';document.body.appendChild(ui);
   try{await document.documentElement.requestFullscreen()}catch(e){}try{lock=await navigator.wakeLock.request("screen")}catch(e){}
-  show();tvTimer=setInterval(()=>{tvIdx++;show()},TV_SECS*1000)}
+  show()}
 function fitTV(){document.body.style.zoom=tv?String(Math.min(innerWidth/1920,innerHeight/1080)):""}
 addEventListener("resize",fitTV);
-function stopTV(){if(!tv)return;tv=false;fitTV();clearInterval(tvTimer);document.body.classList.remove("tv");document.getElementById("tvui")?.remove();try{lock&&lock.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}render()}
+function stopTV(){if(!tv)return;tv=false;fitTV();clearTimeout(tvTimer);document.body.classList.remove("tv");document.getElementById("tvui")?.remove();try{lock&&lock.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}render()}
 document.addEventListener("keydown",e=>{if(e.key==="Escape")stopTV()});
 document.addEventListener("visibilitychange",async()=>{if(tv&&document.visibilityState==="visible"){try{lock=await navigator.wakeLock.request("screen")}catch(e){}}});
 load();setInterval(load,REFRESH);
