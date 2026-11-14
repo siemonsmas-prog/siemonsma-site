@@ -83,6 +83,12 @@ body.tv .sum b{font-size:40px}body.tv .techbtn .tn{font-size:26px}body.tv .techb
 .stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}.stgrid div{border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:grid}.stgrid b{font:700 26px/1.1 var(--display);font-variant-numeric:tabular-nums}.stgrid span{font-size:12.5px;color:var(--muted)}
 .stgrid .hv{background:var(--pink-soft)}.stgrid .hv b{color:var(--pink)}.stgrid .hp{background:var(--amber-soft)}.stgrid .hp b{color:var(--amber)}.stgrid .hh{background:var(--red-soft)}.stgrid .hh b{color:var(--red)}.stgrid .zero{opacity:.55}
 body.tv .stat h4{font-size:16px}body.tv .stgrid b{font-size:34px}body.tv .stgrid span{font-size:15px}body.tv .stgrid{grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
+.msgscreen{min-height:calc(100vh - 120px);display:flex;flex-direction:column;justify-content:center;gap:28px;padding:40px 60px;background:var(--surface);border:1px solid var(--line);border-left:16px solid var(--accent);border-radius:14px}
+.msgscreen .mtag{font:700 28px var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.msgscreen .mtext{margin:0;font:700 clamp(36px,5vw,96px)/1.12 var(--display);color:var(--ink);text-wrap:balance}
+.msgscreen .mfrom{font:600 24px var(--body);color:var(--muted)}
+.msgscreen.urgent{border-left-color:var(--red);background:var(--red-soft)}.msgscreen.urgent .mtag{color:var(--red)}
+body.tv .msgscreen{min-height:1000px}body.tv .msgscreen .mtext{font-size:96px}
 .bigcounts .team{display:grid}.bigcounts .tr{display:flex;align-items:baseline;gap:16px;padding:10px 24px;border-top:1px solid var(--line)}
 .bigcounts .tr b{font:700 54px/1 var(--display);color:var(--blue);font-variant-numeric:tabular-nums;min-width:2.2ch}.bigcounts .tr span{font:600 20px var(--body);color:var(--muted)}
 .bigcounts .tr.rec b{color:var(--amber)}
@@ -128,6 +134,8 @@ function teamRows(){if(!DATA||!("teamDone" in DATA))return"";const rec=DATA.reco
 function statusBlock(){const st=DATA&&DATA.statusCounts;if(!st||!st.length)return"";const tot=st.reduce((a,x)=>a+x.count,0);
   const cls=n=>/vendor/i.test(n)?"hv":/part/i.test(n)?"hp":/hold/i.test(n)?"hh":"";
   return `<div class="stat"><h4>All open work orders by status <b>${tot}</b></h4><div class="stgrid">${st.map(x=>`<div class="${cls(x.name)}${x.count?"":" zero"}"><b>${x.count}</b><span>${esc(x.name)}</span></div>`).join("")}</div></div>`}
+function msgView(M){const when=new Date(M.at).toLocaleString("en-US",{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit",timeZone:"America/Chicago"});
+  return `<div class="msgscreen ${M.level==="urgent"?"urgent":""}"><div class="mtag">${M.level==="urgent"?"Urgent message":"Message to the team"}</div><p class="mtext">${esc(M.text).replace(/\n/g,"<br>")}</p><div class="mfrom">${esc(M.from||"Clint")} · ${esc(when)}</div></div>`}
 function ago(iso){const s=Math.max(0,(Date.now()-new Date(iso))/1000);return s<60?"just now":s<3600?Math.floor(s/60)+" min ago":Math.floor(s/3600)+" h ago"}
 async function load(){
   if(!KEY){render();return}
@@ -149,6 +157,7 @@ function render(slide){
   if(!KEY){view.innerHTML=`<form class="keybox" id="keyform"><h2>Board key</h2><p class="lede">This screen needs the board key from Clint. Paste it once; this device remembers it.</p><input id="k" autocomplete="off" aria-label="Board key"><button class="btn primary">Open the board</button>${ERR?`<p class="lede">${esc(ERR)}</p>`:""}</form>`;return}
   if(!DATA){view.innerHTML=`<p class="msg">${esc(ERR||"Loading work orders from Limble…")}</p>`;return}
   const s=slide||(sel?{tech:sel}:{});
+  if(s.msg&&DATA.message){view.innerHTML=msgView(DATA.message);return}
   const t=s.tech&&DATA.techs.find(x=>String(x.id)===String(s.tech));
   const back=`<div class="chips"><button class="chip" data-tech="">← All technicians</button></div>`;
   const totOpen=DATA.techs.reduce((a,x)=>a+x.open,0),totLate=DATA.techs.reduce((a,x)=>a+x.overdue,0);
@@ -167,7 +176,7 @@ document.addEventListener("click",e=>{
   if(e.target.closest("#tvbtn"))startTV();if(e.target.closest("[data-tvexit]"))stopTV();
 });
 // TV mode: the main page, then each tech with open work, 20 seconds each. Data refreshes every 2 minutes.
-function slides(){return [{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
+function slides(){return [...(DATA&&DATA.message?[{msg:1}]:[]),{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
 function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
 async function startTV(){if(tv||!DATA)return;tv=true;document.body.classList.add("tv");fitTV();tvIdx=0;
   const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit display mode</button></div>';document.body.appendChild(ui);
