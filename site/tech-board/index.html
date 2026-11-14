@@ -65,10 +65,10 @@ h2{font:700 30px var(--display);text-transform:uppercase;letter-spacing:.02em;ma
 .msg{padding:14px;color:var(--muted)}
 .keybox{max-width:520px;margin:40px auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px;display:grid;gap:10px}
 .keybox input{font:16px var(--mono);padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
-.sum{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--line)}
+.sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));border-bottom:1px solid var(--line)}
 .sum div{padding:10px 14px;display:grid}.sum div+div{border-left:1px solid var(--line)}
 .sum b{font:700 30px var(--display);font-variant-numeric:tabular-nums;line-height:1.1}.sum span{font-size:12.5px;color:var(--muted)}
-.sum .late b{color:var(--red)}
+.sum .late b{color:var(--red)}.sum .done b{color:var(--blue)}.sum .rec b{color:var(--amber)}
 .techbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px;padding:12px 14px}
 .techbtn{appearance:none;font:inherit;color:var(--ink);text-align:left;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;display:grid;grid-template-columns:auto auto;justify-content:start;gap:2px 14px}
 .techbtn:hover{border-color:var(--accent)}
@@ -78,24 +78,33 @@ body.tv .sum b{font-size:40px}body.tv .techbtn .tn{font-size:26px}body.tv .techb
 .bigcounts .big{padding:22px 24px;display:grid;gap:2px;border-bottom:1px solid var(--line)}.bigcounts .big:last-child{border-bottom:0}
 .bigcounts .big b{font:700 120px/1 var(--display);font-variant-numeric:tabular-nums}
 .bigcounts .big span{font:600 22px var(--body);color:var(--muted)}
-.bigcounts .big.late b,.bigcounts .big.late span{color:var(--red)}.bigcounts .big.ok b{color:var(--green)}
-body.tv .bigcounts .big b{font-size:clamp(120px,14vw,200px)}body.tv .bigcounts .big span{font-size:28px}
+.bigcounts .big.late b,.bigcounts .big.late span{color:var(--red)}.bigcounts .big.ok b{color:var(--green)}.bigcounts .big.done b{color:var(--blue)}
+.stat{border-top:1px solid var(--line);padding:10px 14px 14px}.stat h4{margin:0 0 8px;font:600 13px var(--body);color:var(--muted);text-transform:uppercase;letter-spacing:.04em}.stat h4 b{color:var(--ink)}
+.stgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px}.stgrid div{border:1px solid var(--line);border-radius:8px;padding:6px 10px;display:grid}.stgrid b{font:700 26px/1.1 var(--display);font-variant-numeric:tabular-nums}.stgrid span{font-size:12.5px;color:var(--muted)}
+.stgrid .hv{background:var(--pink-soft)}.stgrid .hv b{color:var(--pink)}.stgrid .hp{background:var(--amber-soft)}.stgrid .hp b{color:var(--amber)}.stgrid .hh{background:var(--red-soft)}.stgrid .hh b{color:var(--red)}.stgrid .zero{opacity:.55}
+body.tv .stat h4{font-size:16px}body.tv .stgrid b{font-size:34px}body.tv .stgrid span{font-size:15px}body.tv .stgrid{grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
+.bigcounts .team{display:grid}.bigcounts .tr{display:flex;align-items:baseline;gap:16px;padding:10px 24px;border-top:1px solid var(--line)}
+.bigcounts .tr b{font:700 54px/1 var(--display);color:var(--blue);font-variant-numeric:tabular-nums;min-width:2.2ch}.bigcounts .tr span{font:600 20px var(--body);color:var(--muted)}
+.bigcounts .tr.rec b{color:var(--amber)}
+body.tv .bigcounts .big{padding:17px 24px}body.tv .bigcounts .big b{font-size:150px}body.tv .bigcounts .big span{font-size:28px}
+body.tv .bigcounts .tr{padding:11px 24px}body.tv .bigcounts .tr b{font-size:70px}body.tv .bigcounts .tr span{font-size:26px}
+body.tv .sum{grid-template-columns:repeat(3,1fr)}
 /* A tech's buildings with past-due work flash red. */
 .pin.mine.late{border-color:#ef4444;background:rgba(239,68,68,.4);box-shadow:0 0 0 3px rgba(0,0,0,.4),0 0 24px 8px #ef4444}.pin.mine.late::after{background:#dc2626;color:#fff}
 .tile.mine.late{border-color:#ef4444;background:rgba(239,68,68,.16)}.tile.mine.late .c{color:var(--red)}
 @media (prefers-reduced-motion:no-preference){.pin.late,.tile.late{animation:blink .8s steps(2,jump-none) infinite}}
 /* TV mode */
 body.tv header,body.tv .lede,body.tv .chips,body.tv .tvbar{display:none!important}
-body.tv{font-size:18px}body.tv main .wrap{max-width:none;padding-block:12px 70px}
+body.tv{font-size:18px}body.tv main .wrap{max-width:none;padding-block:12px 20px}body.tv h2{margin-top:0}
 body.tv h2{font-size:46px}body.tv .row .nm{font-size:20px}body.tv .row .meta{font-size:15px}
-body.tv .section{max-height:calc(100vh - 110px)}
+body.tv .section{max-height:none}body.tv .grid{grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);align-items:start}
 #tvui .bar{position:fixed;left:0;right:0;bottom:0;height:6px;background:var(--accent);transform-origin:left;z-index:30}
 @keyframes fill{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 #tvui .ctl{position:fixed;right:12px;bottom:14px;display:flex;gap:10px;align-items:center;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 12px;font-size:14px;color:var(--muted)}
 </style>
 </head>
 <body>
-<header><div class="wrap"><div><h1>Technician Work Order Board</h1><span>Open work by building · live from Limble</span></div><button class="btn primary" id="tvbtn" type="button">TV mode</button></div></header>
+<header><div class="wrap"><div><h1>Technician Work Order Board</h1><span>Open work by building · live from Limble</span></div><button class="btn primary" id="tvbtn" type="button">Display mode</button></div></header>
 <main><div class="wrap" id="view"><p class="msg">Loading…</p></div></main>
 <script>
 const API="https://limble-connector.siemonsmas.workers.dev/api/tech-board";
@@ -113,6 +122,12 @@ const qp=new URLSearchParams(location.search);
 let KEY=store.get("tb-key"),DATA=null,ERR="",sel=qp.get("tech")||store.get("tb-tech")||"",tv=false,tvIdx=0,tvTimer=null,lock=null;
 if(qp.get("tv")==="1")setTimeout(()=>startTV(),300);
 const name=k=>k==="MOB"?"Mobile equipment":k==="GEN"?"General requests":"Building "+k;
+function monthName(m){return new Date(m+"-15T12:00:00Z").toLocaleDateString("en-US",{month:"long",year:"numeric",timeZone:"UTC"})}
+function teamRows(){if(!DATA||!("teamDone" in DATA))return"";const rec=DATA.record,isNew=rec&&rec.month===DATA.month;
+  return `<div class="team"><div class="tr"><b>${DATA.teamDone}</b><span>Team completed this week</span></div>${"monthDone" in DATA?`<div class="tr"><b>${DATA.monthDone}</b><span>Team completed in ${esc(monthName(DATA.month).split(" ")[0])} so far</span></div>`:""}${rec?`<div class="tr rec"><b>${rec.count}</b><span>${isNew?"New monthly record, this month!":"Monthly record ("+esc(monthName(rec.month))+")"}</span></div>`:""}</div>`}
+function statusBlock(){const st=DATA&&DATA.statusCounts;if(!st||!st.length)return"";const tot=st.reduce((a,x)=>a+x.count,0);
+  const cls=n=>/vendor/i.test(n)?"hv":/part/i.test(n)?"hp":/hold/i.test(n)?"hh":"";
+  return `<div class="stat"><h4>All open work orders by status <b>${tot}</b></h4><div class="stgrid">${st.map(x=>`<div class="${cls(x.name)}${x.count?"":" zero"}"><b>${x.count}</b><span>${esc(x.name)}</span></div>`).join("")}</div></div>`}
 function ago(iso){const s=Math.max(0,(Date.now()-new Date(iso))/1000);return s<60?"just now":s<3600?Math.floor(s/60)+" min ago":Math.floor(s/3600)+" h ago"}
 async function load(){
   if(!KEY){render();return}
@@ -138,10 +153,10 @@ function render(slide){
   const back=`<div class="chips"><button class="chip" data-tech="">← All technicians</button></div>`;
   const totOpen=DATA.techs.reduce((a,x)=>a+x.open,0),totLate=DATA.techs.reduce((a,x)=>a+x.overdue,0);
   const side=`<section class="section"><h3><span>Technicians</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3>${ERR?`<p class="msg">${esc(ERR)}</p>`:""}
-    <div class="sum"><div><b>${DATA.waiting.length}</b><span>Waiting requests</span></div><div><b>${totOpen}</b><span>Assigned open</span></div><div class="${totLate?"late":""}"><b>${totLate}</b><span>Past due</span></div></div>
-    <div class="techbtns">${DATA.techs.map(x=>`<button class="techbtn" data-tech="${x.id}"><span class="tn">${esc(x.name)}</span><span class="tc"><b>${x.open}</b> open</span><span class="tc ${x.overdue?"late":""}"><b>${x.overdue}</b> past due</span></button>`).join("")}</div></section>`;
+    <div class="sum"><div><b>${DATA.waiting.length}</b><span>Waiting requests</span></div><div><b>${totOpen}</b><span>Assigned open</span></div><div class="${totLate?"late":""}"><b>${totLate}</b><span>Past due</span></div>${"teamDone" in DATA?`<div class="done"><b>${DATA.teamDone}</b><span>Team completed this week</span></div>`:""}${"monthDone" in DATA?`<div class="done"><b>${DATA.monthDone}</b><span>Completed in ${esc(monthName(DATA.month).split(" ")[0])} so far</span></div>`:""}${DATA.record?`<div class="rec"><b>${DATA.record.count}</b><span>Monthly record (${esc(monthName(DATA.record.month))})</span></div>`:""}</div>
+    <div class="techbtns">${DATA.techs.map(x=>`<button class="techbtn" data-tech="${x.id}"><span class="tn">${esc(x.name)}</span><span class="tc"><b>${x.open}</b> open</span><span class="tc ${x.overdue?"late":""}"><b>${x.overdue}</b> past due</span></button>`).join("")}</div>${statusBlock()}</section>`;
   const chips=`<div class="chips"><button class="chip" data-tech="" aria-pressed="${!sel}">Waiting requests <span class="n">${DATA.waiting.length}</span></button>${DATA.techs.map(x=>`<button class="chip" data-tech="${x.id}" aria-pressed="${String(x.id)===String(sel)}">${esc(x.name)} <span class="n">${x.open}</span></button>`).join("")}</div>`;
-  const counts=t&&`<section class="section bigcounts"><h3><span>${esc(t.name)}</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3><div class="big"><b>${t.open}</b><span>Work order${t.open===1?"":"s"} in ${esc(t.name.split(" ")[0])}'s name</span></div><div class="big ${t.overdue?"late":"ok"}"><b>${t.overdue}</b><span>Past due</span></div></section>`;
+  const counts=t&&`<section class="section bigcounts"><h3><span>${esc(t.name)}</span><span class="fresh">${DATA?"Updated "+esc(ago(DATA.asOf)):""}</span></h3><div class="big"><b>${t.open}</b><span>Work order${t.open===1?"":"s"} in ${esc(t.name.split(" ")[0])}'s name</span></div><div class="big ${t.overdue?"late":"ok"}"><b>${t.overdue}</b><span>Past due</span></div>${teamRows()}</section>`;
   if(t)view.innerHTML=`<h2>${esc(t.name)}</h2><p class="lede">Teal buildings have open work assigned to ${esc(t.name.split(" ")[0])}; the number is how many. Tap one to jump to its list.</p>${back}${block(t.items,"mine",esc(t.name),`<span class="pill p-teal">${t.open} open</span>${t.overdue?` <span class="pill p-red">${t.overdue} overdue</span>`:""}`,tv?counts:"")}`;
   else view.innerHTML=`<h2>Waiting work requests</h2><p class="lede">Technician-team work requests in Limble that nobody has picked up flash yellow. Tap your name to see your buildings.</p>${block(DATA.waiting,"wr","Waiting work requests",`<span class="pill p-amber">${DATA.waiting.length}</span>`,side)}`;
 }
@@ -154,11 +169,13 @@ document.addEventListener("click",e=>{
 // TV mode: the main page, then each tech with open work, 20 seconds each. Data refreshes every 2 minutes.
 function slides(){return [{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
 function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
-async function startTV(){if(tv||!DATA)return;tv=true;document.body.classList.add("tv");tvIdx=0;
-  const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit TV mode</button></div>';document.body.appendChild(ui);
+async function startTV(){if(tv||!DATA)return;tv=true;document.body.classList.add("tv");fitTV();tvIdx=0;
+  const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit display mode</button></div>';document.body.appendChild(ui);
   try{await document.documentElement.requestFullscreen()}catch(e){}try{lock=await navigator.wakeLock.request("screen")}catch(e){}
   show();tvTimer=setInterval(()=>{tvIdx++;show()},TV_SECS*1000)}
-function stopTV(){if(!tv)return;tv=false;clearInterval(tvTimer);document.body.classList.remove("tv");document.getElementById("tvui")?.remove();try{lock&&lock.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}render()}
+function fitTV(){document.body.style.zoom=tv?String(Math.min(innerWidth/1920,innerHeight/1080)):""}
+addEventListener("resize",fitTV);
+function stopTV(){if(!tv)return;tv=false;fitTV();clearInterval(tvTimer);document.body.classList.remove("tv");document.getElementById("tvui")?.remove();try{lock&&lock.release()}catch(e){}try{document.fullscreenElement&&document.exitFullscreen()}catch(e){}render()}
 document.addEventListener("keydown",e=>{if(e.key==="Escape")stopTV()});
 document.addEventListener("visibilitychange",async()=>{if(tv&&document.visibilityState==="visible"){try{lock=await navigator.wakeLock.request("screen")}catch(e){}}});
 load();setInterval(load,REFRESH);
