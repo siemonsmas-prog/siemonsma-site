@@ -109,6 +109,7 @@ body.tv .section{max-height:none}body.tv .grid{grid-template-columns:minmax(0,1.
 #tvui .ctl{position:fixed;right:12px;bottom:14px;display:flex;gap:10px;align-items:center;z-index:30;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 6px 6px 12px;font-size:14px;color:var(--muted)}
 .hbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;flex:none}.hbtns .btn{white-space:nowrap}header .wrap>div{min-width:0}
 @media (max-width:720px){header .wrap{flex-wrap:wrap}.hbtns{width:100%;justify-content:flex-start}}
+body.oneslide #tvui .bar,body.oneslide #tvstep{display:none}
 </style>
 </head>
 <body>
@@ -189,10 +190,11 @@ document.addEventListener("click",e=>{
   const g=e.target.closest("[data-go]");if(g&&!tv){const el=document.getElementById("g-"+g.dataset.go);if(el)el.scrollIntoView({block:"start",behavior:"smooth"})}
   if(e.target.closest("#tvbtn"))startTV();const snd=e.target.closest("[data-sound]");if(snd)playMsgSound(snd.dataset.sound);unlockSound();if(e.target.closest("[data-tvexit]"))stopTV();
 });
-// Display mode: any board message, then the main page (45 s), then each tech with open work (10 s). Data refreshes every 15 seconds without restarting the current screen.
-function slides(){return [...(DATA&&DATA.message?[{msg:1}]:[]),{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
+// Display mode: the main screen only, plus any board message. Data refreshes every 15 seconds without restarting the current screen.
+// Display mode stays on the main screen. When a board message is up, it alternates: message 20 s, main 45 s.
+function slides(){return [...(DATA&&DATA.message?[{msg:1}]:[]),{}]}
 function slideSecs(x){return x&&x.msg?SECS.msg:x&&x.tech?SECS.tech:SECS.main}
-function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const TV_SECS=slideSecs(sl[tvIdx]);clearTimeout(tvTimer);tvTimer=setTimeout(()=>{tvIdx++;show()},TV_SECS*1000);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
+function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const TV_SECS=slideSecs(sl[tvIdx]);clearTimeout(tvTimer);tvTimer=setTimeout(()=>{tvIdx++;show()},TV_SECS*1000);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`;document.body.classList.toggle("oneslide",sl.length<2)}
 async function startTV(){if(tv||!DATA)return;unlockSound();tv=true;document.body.classList.add("tv");fitTV();tvIdx=0;
   const ui=document.createElement("div");ui.id="tvui";ui.innerHTML='<div class="bar"></div><div class="ctl"><span id="tvstep"></span><button class="btn" data-tvexit>Exit display mode</button></div>';document.body.appendChild(ui);
   try{await document.documentElement.requestFullscreen()}catch(e){}try{lock=await navigator.wakeLock.request("screen")}catch(e){}
