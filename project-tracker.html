@@ -294,6 +294,7 @@ details.cols .pop input{width:18px;height:18px;accent-color:var(--accent);margin
 .fact svg{width:24px;height:24px;color:var(--muted);flex:none}
 .fact div{display:grid;min-width:0}
 .fact small{color:var(--muted);font-size:.78rem}
+.fact input.due-in{width:auto;max-width:100%;min-height:0;padding:3px 8px;font-weight:600;cursor:pointer}
 .fact b{font-size:1.02rem;overflow-wrap:anywhere}
 @media (max-width:420px){.facts{grid-template-columns:1fr}}
 .qlinks{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -779,6 +780,7 @@ function visHTML(p){
   const all=[...g,...m];if(!all.length)return `<span class="meta">Only you</span>`;
   return `<div class="vlist">${all.slice(0,4).join("")}${all.length>4?`<span class="meta">+${all.length-4} more</span>`:""}</div>`}
 const STATUS_ST={"Not started":"s-idle","On track":"s-ok","At risk":"s-warn","Blocked":"s-bad","On hold":"s-warn","Complete":"s-done"};
+const dueInput=p=>`<input type="date" class="due-in" data-pdue="${p.id}" value="${esc(p.dueDate||"")}" aria-label="Target date for ${esc(p.name)}">`;
 const statusSelect=p=>{const st=p.status||"Not started";return `<select class="st prio-sel ${STATUS_ST[st]||"s-idle"}" data-pstatus="${p.id}" aria-label="Status for ${esc(p.name)}">${STATUSES.map(x=>`<option ${x===st?"selected":""}>${x}</option>`).join("")}</select>`};
 const statusPill=st=>`<span class="st ${STATUS_ST[st]||"s-idle"}">${esc(st||"Not started")}</span>`;
 const COLS=[
@@ -1204,7 +1206,7 @@ function renderSheet(){
         ${fact(IC.target,"Status",isLead?statusSelect(p):statusPill(p.status),"status")}
         ${fact(IC.dollar,p.details?.cost&&!p.details?.budget?"Cost":"Budget",budgetOf(p)?money(budgetOf(p)):"")}
         ${fact(IC.flag,"Priority",isLead?prioSelect(p):prioPill(p.priority),"prio")}
-        ${fact(IC.cal,"Target date",fmtDate(p.dueDate)||(attnOf(p).some(x=>x.f==="due")?"—":""),"due")}
+        ${fact(IC.cal,"Target date",isLead?dueInput(p):fmtDate(p.dueDate)||(attnOf(p).some(x=>x.f==="due")?"—":""),"due")}
         ${fact(IC.user,"Project lead",esc(p.lead))}
         ${S.isOwner?fact(IC.user,"Contractor / vendor",vendorHTML(p.vendor)):""}
         ${fact(IC.pct,"Complete",(p.percent||0)+"%")}
@@ -1742,7 +1744,7 @@ document.addEventListener("change",async e=>{
   if(e.target.id==="fLoc"){const o=document.getElementById("fLocOther"),sh=document.getElementById("fLocShow"),b=bldgOf(e.target.value);o.hidden=e.target.value!=="__other";sh.hidden=!b;sh.innerHTML=bldgAddrLine(b);if(!o.hidden)document.getElementById("fLocName").focus();return}
   if(e.target.id==="fDept"){const o=document.getElementById("fDeptOther");o.hidden=e.target.value!=="__other";if(!o.hidden)o.focus();return}
   if(e.target.dataset?.col){const on=colsOn();e.target.checked?on.add(e.target.dataset.col):on.delete(e.target.dataset.col);try{localStorage.setItem("cols",JSON.stringify([...on]))}catch(err){}S.colsOpen=true;render();S.colsOpen=false;return}
-  if(e.target.id==="vpAdd"&&e.target.value&&W){W.d.members=[...(W.d.members||[]),e.target.value];wizardCollect();renderWizard();setTimeout(()=>document.getElementById("vpAdd")?.focus(),0);return}if(e.target.dataset?.pstatus){const id=e.target.dataset.pstatus,v=e.target.value;try{await S.db.doc("projects/"+id).update({status:v,updatedAt:now()});toast("Status set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.dataset?.prio){const id=e.target.dataset.prio,v=e.target.value;try{await S.db.doc("projects/"+id).update({priority:v,updatedAt:now()});toast("Urgency set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.id==="fileIn"&&e.target.files.length){const n=await uploadFiles(S.open,e.target.files,"");if(n.length)toast(n.length+" file"+(n.length>1?"s":"")+" added")}});
+  if(e.target.id==="vpAdd"&&e.target.value&&W){W.d.members=[...(W.d.members||[]),e.target.value];wizardCollect();renderWizard();setTimeout(()=>document.getElementById("vpAdd")?.focus(),0);return}if(e.target.dataset?.pstatus){const id=e.target.dataset.pstatus,v=e.target.value;try{await S.db.doc("projects/"+id).update({status:v,updatedAt:now()});toast("Status set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.dataset?.pdue){const id=e.target.dataset.pdue,v=e.target.value,y=+v.slice(0,4);if(v&&(y<2000||y>2100))return;const p=S.projects.find(x=>x.id===id);if(p&&(p.dueDate||"")===v)return;try{await S.db.doc("projects/"+id).update({dueDate:v,updatedAt:now()});toast(v?"Target date set to "+fmtDate(v):"Target date cleared")}catch(err){toast(friendly(err))}return}if(e.target.dataset?.prio){const id=e.target.dataset.prio,v=e.target.value;try{await S.db.doc("projects/"+id).update({priority:v,updatedAt:now()});toast("Urgency set to "+v)}catch(err){toast(friendly(err))}return}if(e.target.id==="fileIn"&&e.target.files.length){const n=await uploadFiles(S.open,e.target.files,"");if(n.length)toast(n.length+" file"+(n.length>1?"s":"")+" added")}});
 document.addEventListener("keydown",e=>{
   if(e.key==="Escape"&&layer.dataset.view){W=null;closeSheet()}
   if(e.key==="Enter"&&e.target.classList?.contains("card"))e.target.click();
