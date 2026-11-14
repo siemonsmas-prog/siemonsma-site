@@ -121,7 +121,7 @@ const CODES=["A","B","C","D","E","F","G","H","I","J","J1","K","L","M","M1","SFA"
 const AREAS=[["MOB","Mobile equipment","Forklifts, trucks, trailers, carts"],["GEN","General requests","Campus-wide and no building"]];
 const LEVEL={emergency:["Emergency","p-red"],high:["High","p-pink"],medium:["Medium","p-blue"],low:["Low","p-green"]};
 // Seconds on each display screen: the main board stays up longer, each tech goes by quickly.
-const SECS={main:45,tech:10,msg:20},REFRESH=120000;
+const SECS={main:45,tech:10,msg:20},REFRESH=15000;
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const store={get(k){try{return localStorage.getItem(k)||""}catch(e){return ""}},set(k,v){try{v?localStorage.setItem(k,v):localStorage.removeItem(k)}catch(e){}}};
 const view=document.getElementById("view");
@@ -155,8 +155,8 @@ async function load(){
   if(!KEY){render();return}
   try{const r=await fetch(API,{headers:{Authorization:"Bearer "+KEY},cache:"no-store"});const j=await r.json().catch(()=>({}));
     if(!r.ok){ERR=j.error||"Couldn't load the board ("+r.status+").";if(r.status===401){store.set("tb-key","");KEY=""}}else{DATA=j;ERR="";checkNewMessage()}}
-  catch(e){ERR="Can't reach the board right now. It will try again in two minutes."}
-  if(tv)show();else render();
+  catch(e){ERR="Can't reach the board right now. It will try again in a few seconds."}
+  if(tv){const sl=slides();if(tvIdx>=sl.length){tvIdx=0;show()}else{render(sl[tvIdx]);const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}}else render();
 }
 function row(r){const l=LEVEL[r.level];return `<div class="row${r.level==="emergency"?" em":""}"><a href="https://app.limblecmms.com/taskList?taskID=${encodeURIComponent(r.id)}" target="_blank" rel="noopener">#${esc(r.id)}</a><span class="nm">${esc(r.name)}</span><span class="meta">${l?`<span class="pill ${l[1]}">${l[0]}</span>`:""}${r.overdue?`<span class="pill p-red">Overdue</span>`:""}${r.due?`<span>Due ${esc(r.due)}</span>`:""}<span>${esc(r.status)}</span>${r.kind?`<span>${esc(r.kind)}</span>`:""}${r.where?`<span>${esc(r.where)}</span>`:""}${r.with&&r.with.length?`<span>With ${esc(r.with.join(", "))}</span>`:""}</span></div>`}
 function block(items,cls,title,pill,side){
@@ -189,7 +189,7 @@ document.addEventListener("click",e=>{
   const g=e.target.closest("[data-go]");if(g&&!tv){const el=document.getElementById("g-"+g.dataset.go);if(el)el.scrollIntoView({block:"start",behavior:"smooth"})}
   if(e.target.closest("#tvbtn"))startTV();const snd=e.target.closest("[data-sound]");if(snd)playMsgSound(snd.dataset.sound);unlockSound();if(e.target.closest("[data-tvexit]"))stopTV();
 });
-// TV mode: the main page, then each tech with open work, 20 seconds each. Data refreshes every 2 minutes.
+// Display mode: any board message, then the main page (45 s), then each tech with open work (10 s). Data refreshes every 15 seconds without restarting the current screen.
 function slides(){return [...(DATA&&DATA.message?[{msg:1}]:[]),{},...(DATA?DATA.techs.filter(x=>x.open).map(x=>({tech:x.id})):[])]}
 function slideSecs(x){return x&&x.msg?SECS.msg:x&&x.tech?SECS.tech:SECS.main}
 function show(){const sl=slides();if(tvIdx>=sl.length)tvIdx=0;render(sl[tvIdx]);const TV_SECS=slideSecs(sl[tvIdx]);clearTimeout(tvTimer);tvTimer=setTimeout(()=>{tvIdx++;show()},TV_SECS*1000);const b=document.querySelector("#tvui .bar");if(b){b.style.animation="none";void b.offsetWidth;b.style.animation=`fill ${TV_SECS}s linear`}const st=document.getElementById("tvstep");if(st)st.textContent=`${tvIdx+1} of ${sl.length}`}
